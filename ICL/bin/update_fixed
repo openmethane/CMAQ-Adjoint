@@ -1,0 +1,30 @@
+#!/bin/csh -f
+
+# RCS file, release, date & time of last delta, author, state, [and locker]
+# $Header: /Volumes/Data/CVS/CMAQ_CVSrepos/ICL/src/bin/update_fixed,v 1.1.1.1 2009/12/16 19:15:59 sjr Exp $ 
+
+# what(1) key, module and SID; SCCS file; date and time of last delta:
+# %W% %P% %G% %U%
+
+# extract archive's "fixed" global include files
+
+ set echo
+ set Arc = /project/work/rep/include
+ set Rel = HEAD
+#set Dest = $Arc/release
+ set Dest = $cwd
+ setenv CVSROOT $Arc/ICL
+
+ cvs -r -q export -r $Rel -d $Dest src/fixed/block/BLKPRM_500.EXT
+ cvs -r -q export -r $Rel -d $Dest src/fixed/cgrid/CGRID_DECL.EXT
+ cvs -r -q export -r $Rel -d $Dest src/fixed/const/CONST.EXT
+ cvs -r -q export -r $Rel -d $Dest src/fixed/emctrl/EMISPRM.chem.EXT
+ cvs -r -q export -r $Rel -d $Dest src/fixed/emctrl/EMISPRM.vdif.EXT
+ cvs -r -q export -r $Rel -d $Dest src/fixed/filenames/FILES_CTM.EXT
+ cvs -r -q export -r $Rel -d $Dest src/fixed/ioapi/FDESC3.EXT
+ cvs -r -q export -r $Rel -d $Dest src/fixed/ioapi/IODECL3.EXT
+ cvs -r -q export -r $Rel -d $Dest src/fixed/ioapi/PARMS3.EXT
+ cvs -r -q export -r $Rel -d $Dest src/fixed/ioapi/XSTAT3.EXT
+ cvs -r -q export -r $Rel -d $Dest src/fixed/par/PE_COMM.EXT
+
+ exit()
