@@ -1,0 +1,19 @@
+#!/bin/csh -f
+
+# RCS file, release, date & time of last delta, author, state, [and locker]
+# $Header: /Volumes/Data/CVS/CMAQ_CVSrepos/ICL/src/bin/whatcvs,v 1.1.1.1 2009/12/16 19:15:59 sjr Exp $ 
+
+# what(1) key, module and SID; SCCS file; date and time of last delta:
+# %W% %P% %G% %U%
+
+ if ( -e CVS && -d CVS ) then
+    set root = `cat CVS/Root`
+    set rep = `cat CVS/Repository`
+    echo " For the CVS directory found here ..."
+    echo "   It thinks the root is:               $root"
+    echo "   It thinks the checked-out module is: $rep"
+    else
+    echo "   No CVS sandbox"
+    endif
+ echo "   The env CVSROOT is currently         $CVSROOT"
+ exit()
