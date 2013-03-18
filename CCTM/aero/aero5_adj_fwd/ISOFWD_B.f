@@ -1494,7 +1494,7 @@ C          npflag = 1
 CC          WRITE(*,*) 'Setting NONPHYS to TRUE'
 CC          PAUSE
 CC          WRITE(*,*) 'After pause'
-C      ENDIF
+      ENDIF
 C      OPEN (199, FILE='adj_sens.csv',STATUS='UNKNOWN',
 C     &             POSITION='APPEND')
 C      WRITE(199,888) w,rh,temp,wpdb,npflag,ncase

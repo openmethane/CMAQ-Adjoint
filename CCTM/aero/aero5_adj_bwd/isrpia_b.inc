@@ -134,7 +134,7 @@ C
 C
 C *** ERROR SYSTEM *****************************************************
 C
-      CHARACTER(40) errmsg
+      CHARACTER*40 errmsg
       INTEGER   ERRSTK, NOFER   
       LOGICAL   STKOFL, NONPHYS, tayser      
       COMMON /EROR/ STKOFL, NOFER, ERRSTK(NERRMX), ERRMSG(NERRMX),
