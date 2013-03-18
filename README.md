@@ -1,6 +1,3 @@
-foal
-====
-
 CMAQ adjoint repository
 
 Please see the CMAQ adjoint wiki for instructions on how to pull the repository from GitLab. 
