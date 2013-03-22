@@ -66,7 +66,7 @@
 # set APPL  = test
 # set APPL  = aero_adj
 # set CFG   = cfg
- set MODEL = ADJOINT_FWD
+ set MODEL = ADJOINT_BWD
 
 #set Local   # do NOT copy the source files into the BLD directory -
              # comment out to copy the source files (default if not set)
@@ -95,8 +95,8 @@
 #set ModDriver = ${Adj_Home}/driver/ctm_adj_fwd
 #set ModDriver = ${Adj_Home}/driver/ctm_adj_bwd
 # set ModDriver = ${Adj_Home}/driver/ctm_yamo_adj_fwd
- set ModDriver = driver/yamo_adj_fwd
-#set ModDriver = ${Adj_Home}/driver/ctm_yamo_adj_bwd
+# set ModDriver = driver/yamo_adj_fwd
+ set ModDriver = driver/yamo_adj_bwd
 
 # set ModChkpnt = ${Adj_Home}/chkpnt/chkpnt_ioapi
  set ModChkpnt = chkpnt/chkpnt_ioapi
@@ -114,8 +114,8 @@
 #set ModInit   = ${Adj_Home}/init/init_adj_fwd
 #set ModInit   = ${Adj_Home}/init/init_adj_bwd
 # set ModInit   = ${Adj_Home}/init/init_yamo_adj_fwd
- set ModInit   = init/yamo
-#set ModInit   = ${Adj_Home}/init/init_yamo_adj_bwd
+# set ModInit   = init/yamo
+ set ModInit   = init/adj_bwd
 
  set ModAdjc   = adjcon/adjcon_noop
 #set ModAdjc   = ${Adj_Home}/adjcon/denrate
@@ -123,11 +123,11 @@
 
  set ModCpl    = couple/gencoor
 
-#set ModHadv   = hadv/hadv_noop
+# set ModHadv   = hadv/hadv_noop
 #set ModHadv   = ${Adj_Home}/hadv/hppm
 #set ModHadv   = ${Adj_Home}/hadv/hyamo
- set ModHadv   = hadv/hppm_cadj_fwd
-#set ModHadv   = ${Adj_Home}/hadv/hppm_cadj_bwd
+#set ModHadv   = ${Adj_Home}/hadv/hppm_cadj_fwd
+ set ModHadv   = hadv/hppm_cadj_bwd
 #set ModHadv   = ${Adj_Home}/hadv/hppm_dadj_fwd
 #set ModHadv   = ${Adj_Home}/hadv/hppm_dadj_bwd
 
@@ -138,15 +138,15 @@
 #set ModVadv   = ${Adj_Home}/vadv/vppm_cadj_bwd
 #set ModVadv   = ${Adj_Home}/vadv/vppm_dadj_fwd
 #set ModVadv   = ${Adj_Home}/vadv/vppm_dadj_bwd
- set ModVadv   = vadv/vyamo_cadj_fwd
-#set ModVadv   = ${Adj_Home}/vadv/vyamo_cadj_bwd 
+# set ModVadv   = vadv/vyamo_cadj_fwd
+ set ModVadv   = vadv/vyamo_cadj_bwd 
 #set ModVadv   = ${Adj_Home}/vadv/vyamo_dadj_fwd 
 #set ModVadv   = ${Adj_Home}/vadv/vyamo_dadj_bwd 
 
 # set ModHdiff  = ${Adj_Home}/hdiff/hdiff_noop
 #set ModHdiff  = ${Adj_Home}/hdiff/multiscale
- set ModHdiff  = hdiff/multiscale_adj_fwd
-#set ModHdiff  = ${Adj_Home}/hdiff/multiscale_adj_bwd
+# set ModHdiff  = hdiff/multiscale_adj_fwd
+ set ModHdiff  = hdiff/multiscale_adj_bwd
 
 #set ModVdiff  = ${Adj_Home}/vdiff/vdiff_noop
 # set ModVdiff  = ${Adj_Home}/vdiff/eddy
@@ -157,10 +157,10 @@
 #set ModVdiff  = ${Adj_Home}/vdiff/eddy_adj_bwd
 # set ModVdiff  = vdiff/acm2_adj_fwd
 #set ModVdiff  = ${Adj_Home}/vdiff/acm2_adj_bwd
- set ModVdiff  = vdiff/acm2_inline_adj_fwd
-#set ModVdiff  = ${Adj_Home}/vdiff/acm2_inline_adj_bwd
+# set ModVdiff  = vdiff/acm2_inline_adj_fwd
+ set ModVdiff  = vdiff/acm2_inline_adj_bwd
  
-#set ModPhot   = phot/phot_noop
+# set ModPhot   = phot/phot_noop
 #set ModPhot   = ${Adj_Home}/phot/phot_table
 #set ModPhot   = ${Adj_Home}/phot/phot_sat
  set ModPhot   = phot/phot_inline
@@ -173,18 +173,18 @@
 #set ModChem   = ${Adj_Home}/chem/ebi_cb05cl_ae5
 #set ModChem   = ${Adj_Home}/chem/ebi_saprc99
 #set ModChem   = ${Adj_Home}/chem/ebi_saprc99_ae5
- set ModChem   = chem/kpp_cb05cl_ae5_adj_fwd
-#set ModChem   = ${Adj_Home}/chem/kpp_cb05cl_ae5_adj_bwd
+# set ModChem   = chem/kpp_cb05cl_ae5_adj_fwd
+ set ModChem   = chem/kpp_cb05cl_ae5_adj_bwd
 
 #set ModAero   = ${Adj_Home}/aero/aero_noop
 #set ModAero   = ${Adj_Home}/aero/aero_bwd_noop
 #set ModAero   = ${Adj_Home}/aero/aero4
 #set ModAero   = ${Adj_Home}/aero/aero5
- set ModAero   = aero/aero5_adj_fwd
-#set ModAero   = ${Adj_Home}/aero/aero5_adj_bwd
+# set ModAero   = aero/aero5_adj_fwd
+ set ModAero   = aero/aero5_adj_bwd
 
-#set ModAdepv  = aero_depv/aero_depv_noop
- set ModAdepv  = aero_depv/aero_depv2
+ set ModAdepv  = aero_depv/aero_depv_noop
+#set ModAdepv  = ${Adj_Home}/aero_depv/aero_depv2
 
 # set ModCloud  = ${Adj_Home}/cloud/cloud_noop
  set ModCloud  = cloud/cloud_noop
@@ -219,7 +219,7 @@
 #>    library paths
 
 # set Base = $cwd
- set APPL  = fwd
+ set APPL  = bwd
 # set APPL  = aero_adj
  set CFG   = cfg.$APPL
 #

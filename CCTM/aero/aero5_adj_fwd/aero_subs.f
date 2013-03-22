@@ -2088,10 +2088,10 @@ C-----------------------------------------------------------------------
 
       SUBROUTINE GETM0I (M0I)
 
-      INCLUDE 'isrpia_b.inc'
+      !INCLUDE 'isrpia_b.inc'
 
 C     Arguments:
-      REAL( 8 ), INTENT( OUT ) :: M0I( NPAIR )
+      REAL( 8 ), INTENT( OUT ) :: M0I( 13 ) ! NPAIR = 13
 
 C     ---------------
 C     Begin Execution
