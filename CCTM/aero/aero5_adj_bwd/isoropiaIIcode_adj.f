@@ -624,9 +624,9 @@ C
       AERLIQ(7+1)        = WATER*1.0D3/18.0D0
       AERLIQ(7+NGASAQ+2) = COH
 C
-      DO I=8,10              ! Liquid aerosol species
-         AERLIQ(I+5) = MOLAL(I)
-      ENDDO      
+C      DO I=8,10              ! Liquid aerosol species
+C         AERLIQ(I+5) = MOLAL(I)
+C      ENDDO      
 C
       AERSLD(1)  = CNANO3          ! Solid aerosol species
       AERSLD(2)  = CNH4NO3
