@@ -2088,10 +2088,28 @@ C-----------------------------------------------------------------------
 
       SUBROUTINE GETM0I (M0I)
 
-      !INCLUDE 'isrpia_b.inc'
+      INTEGER, PARAMETER :: NIONS  =   7
+      INTEGER, PARAMETER :: NPAIR  =  13
+      INTEGER, PARAMETER :: NGASAQ =   3
+      REAL*8     :: MOLAL(NIONS)
+      REAL*8     :: MOLALR(NPAIR)
+      REAL*8     :: M0(NPAIR)
+      REAL*8     :: GAMA(NPAIR)
+      REAL*8     :: GAMOU(NPAIR)
+      REAL*8     :: GAMIN(NPAIR)
+      REAL*8     :: GASAQ(NGASAQ)
+      REAL*8     :: COH
+      REAL*8     :: CHNO3
+      REAL*8     :: CHCL
+      REAL*8     :: WATER
+      COMMON /IONS/ MOLAL,        MOLALR,        M0,
+     &              GAMA,
+     &              GAMOU,        GAMIN,         GASAQ,
+     &              COH,          CHNO3,         CHCL,
+     &              WATER
 
 C     Arguments:
-      REAL( 8 ), INTENT( OUT ) :: M0I( 13 ) ! NPAIR = 13
+      REAL( 8 ), INTENT( OUT ) :: M0I( NPAIR )
 
 C     ---------------
 C     Begin Execution
