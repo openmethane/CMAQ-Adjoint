@@ -2083,9 +2083,6 @@ C	   GAS( 1 ) = GNH3R8 * ( 1.0D-6 / dble(PRECURSOR_MW( NH3_IDX ) ))
 C         GAS( 2 ) = GNO3R8 * ( 1.0D-6 / dble(PRECURSOR_MW( HNO3_IDX ) ))
 C         GAS( 3 ) = GCLR8  * ( 1.0D-6 / dble(PRECURSOR_MW( HCL_IDX )) )
 	  
-	   IF (WI(1)+WI(2)+WI(3)+WI(4)+WI(5) .LE. 1.d-20
-     +   .OR.WI(1)+WI(4)+WI(5) .LE. 1.d-20
-     +   .OR.WI(1)+WI(5) .LE. 1.d-20) THEN
 	        CALL PUSHREAL8ARRAY(aerliq, 12)
 		  CALL PUSHREAL8ARRAY(wi, 5)
 		  
@@ -2104,12 +2101,6 @@ C         GAS( 3 ) = GCLR8  * ( 1.0D-6 / dble(PRECURSOR_MW( HCL_IDX )) )
                  GAS( 2 ) = GNO3R8 * ( 1.0D-6 / dble(PRECURSOR_MW( HNO3_IDX ) ))
                  GAS( 3 ) = GCLR8  * ( 1.0D-6 / dble(PRECURSOR_MW( HCL_IDX )) )
 		  end if
-         ELSE
-	        CALL PUSHINTEGER4(1)
-		   GAS( 1 ) = GNH3R8 * ( 1.0D-6 / dble(PRECURSOR_MW( NH3_IDX ) ))
-               GAS( 2 ) = GNO3R8 * ( 1.0D-6 / dble(PRECURSOR_MW( HNO3_IDX ) ))
-               GAS( 3 ) = GCLR8  * ( 1.0D-6 / dble(PRECURSOR_MW( HCL_IDX )) )
-	   END IF
 !
 ! *** Update gas-phase concentrations
 !
