@@ -3043,6 +3043,7 @@ C
       INTEGER, PARAMETER    :: NSO4S = 14 
       INTEGER, PARAMETER    :: NRHS  = 20 
       INTEGER, PARAMETER    :: NASRD = NSO4S*NRHS
+      REAL*8     :: ASRAT, ASSO4 !slz
       COMMON /ASRC/ ASRAT(NASRD), ASSO4(NSO4S)
 C
       DATA ASSO4/1.0D-9, 2.5D-9, 5.0D-9, 7.5D-9, 1.0D-8,
@@ -19490,7 +19491,7 @@ C
 !         WRITE(*,*) 'W: ',W
 !         WRITE(*,*) 'RH: ',RH, ' TEMP: ',TEMP
 !        WRITE(*,*) 'FUNCG5AP_GB, after NR - Err 104: ',abs1
-!        RETURN
+        RETURN
       ELSE
 C
         IF (molal(1)  >  tiny .AND. molal(5)  >  tiny) THEN
@@ -24063,7 +24064,7 @@ C
 !         WRITE(*,*) 'W: ',W
 !         WRITE(*,*) 'RH: ',RH, ' TEMP: ',TEMP
 !        WRITE(*,*) 'FUNCH6AP_HB, after NR - Err 104: ',abs1
-!        RETURN
+        RETURN
       ELSE
 C
 C      CALL FUNCH6AB(XT,Y2)
