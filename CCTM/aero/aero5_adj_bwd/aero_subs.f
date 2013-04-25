@@ -149,6 +149,9 @@
         REAL :: y3
         REAL :: y2
         REAL :: y1
+
+        ERF( XX ) = SIGN( 1.0,XX ) * SQRT( 1.0 - EXP( -4.0 * XX * XX / PI ) )
+        ERFC( XX ) = 1.0 - ERF( XX )
 	  
 !	  integer pcontrol
 !
@@ -848,6 +851,8 @@ C *** Determine if Hybrid
          IF ( AEROSPC( I )%CHARGE .NE. 0 ) TMP = TMP + AEROSPC_CONC( I,N_MODE )
       END DO
       HYBRID = ( TMP .GE. CUTOFF ) .AND. ( AIRRH .GE. 0.18 )
+!slz
+      hybrid=.false.
 
       DELT  = DBLE( DT )
       CONVFAC = DELT * H2SO4RATM1
@@ -1276,6 +1281,12 @@ C *** Set flags to account for mass conservation violations in ISRP3F
       CALL ISOROPIA(wi, rhi, tempi, cntrl, wt, gas, aerliq, aersld,
      +              scasi, other, TrustIso)
 
+!slz
+      if (.not.TrustIso) then
+       GAS( 1 ) = GNH3R8 * ( 1.0D-6 / PRECURSOR_MW( NH3_IDX ) )
+       GAS( 2 ) = GNO3R8 * ( 1.0D-6 / PRECURSOR_MW( HNO3_IDX ) )
+       GAS( 3 ) = GCLR8  * ( 1.0D-6 / PRECURSOR_MW( HCL_IDX ) )
+      end if
 C *** Update gas-phase concentrations
 
       PRECURSOR_CONC( NH3_IDX )  = GAS( 1 ) * PRECURSOR_MW( NH3_IDX ) * 1.0E6
@@ -2087,7 +2098,6 @@ C     M0I : Single-solute molalities (mol/kg-H2O) for 13 salts
 C-----------------------------------------------------------------------
 
       SUBROUTINE GETM0I (M0I)
-
       INTEGER, PARAMETER :: NIONS  =   7
       INTEGER, PARAMETER :: NPAIR  =  13
       INTEGER, PARAMETER :: NGASAQ =   3
