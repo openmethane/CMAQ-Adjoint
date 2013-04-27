@@ -31284,6 +31284,14 @@ C
           chi3jb = 0.D0
         END IF
         temp3jb = delnojb/(c2+c3*delcl)
+        ! Kludge - slc.4.2013 
+        ! to keep HCl sensitivities from growing due to division by a small number (delcl) 
+        ! Bounding only sensitivity information in order to not change amount of Cl predicted
+        if (temp3jb .gt. 1.d15) then
+           temp3jb = 1d15
+        elseif (temp3jb .lt. -1d15) then
+           temp3jb = -1d15
+        end if        
         temp3jb0 = -(c1*delcl*temp3jb/(c2+c3*delcl))
         c1jb = delcl*temp3jb
         delcljb = delcljb + c3*temp3jb0 + c1*temp3jb
