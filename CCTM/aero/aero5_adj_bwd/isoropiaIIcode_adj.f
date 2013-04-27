@@ -29350,6 +29350,14 @@ C
             chi3ib = 0.D0
           END IF
           temp3ib = delnoib/(c2+c3*delcl)
+          ! Kludge - slc.4.2013
+          ! to keep HCl sensitivities from growing due to division by a small number (delcl)
+          ! Bounding only sensitivity information in order to not change amount of Cl predicted
+          if (temp3ib .gt. 1.d15) then
+             temp3ib = 1d15
+          elseif (temp3ib .lt. -1d15) then
+             temp3ib = -1d15
+          end if
           temp3ib0 = -(c1*delcl*temp3ib/(c2+c3*delcl))
           c1ib = delcl*temp3ib
           delclib = delclib + c3*temp3ib0 + c1*temp3ib
