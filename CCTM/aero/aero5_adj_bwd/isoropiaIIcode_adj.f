@@ -19491,7 +19491,7 @@ C
 !         WRITE(*,*) 'W: ',W
 !         WRITE(*,*) 'RH: ',RH, ' TEMP: ',TEMP
 !        WRITE(*,*) 'FUNCG5AP_GB, after NR - Err 104: ',abs1
-        RETURN
+!        RETURN
       ELSE
 C
         IF (molal(1)  >  tiny .AND. molal(5)  >  tiny) THEN
@@ -24064,7 +24064,7 @@ C
 !         WRITE(*,*) 'W: ',W
 !         WRITE(*,*) 'RH: ',RH, ' TEMP: ',TEMP
 !        WRITE(*,*) 'FUNCH6AP_HB, after NR - Err 104: ',abs1
-        RETURN
+!        RETURN
       ELSE
 C
 C      CALL FUNCH6AB(XT,Y2)

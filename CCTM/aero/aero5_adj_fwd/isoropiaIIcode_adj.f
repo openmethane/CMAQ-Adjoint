@@ -29351,6 +29351,14 @@ C
             chi3ib = 0.D0
           END IF
           temp3ib = delnoib/(c2+c3*delcl)
+          ! Kludge - slc.4.2013
+          ! to keep HCl sensitivities from growing due to division by a small number (delcl)
+          ! Bounding only sensitivity information in order to not change amount of Cl predicted
+          if (temp3ib .gt. 1.d10) then
+             temp3ib = 1d10
+          elseif (temp3ib .lt. -1d10) then
+             temp3ib = -1d10
+          end if
           temp3ib0 = -(c1*delcl*temp3ib/(c2+c3*delcl))
           c1ib = delcl*temp3ib
           delclib = delclib + c3*temp3ib0 + c1*temp3ib
@@ -29370,9 +29378,6 @@ C
           m3 = -(a4*c2*chi4/c3)
           CALL POLY3_IB(m1, m1ib, m2, m2ib, m3, m3ib, delcl, delclib, 
      +                  islv)
-C          WRITE(*,*) 'm1ib',m1ib,'m2ib',m2ib,'m3ib',m3ib
-C          WRITE(*,*) 'delcl(b)',delcl, delclib
-C          WRITE(*,*) 'islv',islv
           temp2 = chi4/c3
           temp2ib = -(a4*c2*m3ib/c3)
           temp2ib0 = m2ib/c3
@@ -29398,10 +29403,6 @@ C          WRITE(*,*) 'islv',islv
           temp0ib = 2.0*temp0*xk4*r*temp*a3ib/gama(10)
           waterib = waterib + temp0ib + temp1ib
           gamaib(10) = gamaib(10) - temp0*temp0ib
-C          WRITE(*,*) 'GAMA IB at end of CALCNHA_IBWD', gamaib(10)
-C          WRITE(*,*) 'wib(4,5)',wib(4),wib(5)
-C          WRITE(*,*) 'w ',w, 'rh',rh
-C          PAUSE 
           ghno3ib = 0.D0
         END IF
         ghclib = 0.D0
@@ -31285,6 +31286,14 @@ C
           chi3jb = 0.D0
         END IF
         temp3jb = delnojb/(c2+c3*delcl)
+        ! Kludge - slc.4.2013 
+        ! to keep HCl sensitivities from growing due to division by a small number (delcl) 
+        ! Bounding only sensitivity information in order to not change amount of Cl predicted
+        if (temp3jb .gt. 1.d10) then
+           temp3jb = 1d10
+        elseif (temp3jb .lt. -1d10) then
+           temp3jb = -1d10
+        end if        
         temp3jb0 = -(c1*delcl*temp3jb/(c2+c3*delcl))
         c1jb = delcl*temp3jb
         delcljb = delcljb + c3*temp3jb0 + c1*temp3jb
