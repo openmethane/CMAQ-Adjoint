@@ -570,12 +570,12 @@ C
             CALL CALCH6_B(wpb, gasb, aerliqb)             ! Only liquid (metastable)
          ELSEIF (1.0 <= SULRAT .AND. SULRAT < 2.0) THEN 
             CALL ISOINIT3 (WI, RHI, TEMPI)
-            SCASE = 'I6'
-            CALL ISRP3F_IB(wpb, gasb, aerliqb, rhi, tempi)     ! Only liquid (metastable)
-         ELSEIF (SULRAT < 1.0) THEN             
+            SCASE = 'I6' 
+            CALL ISRP3F_IB(wpb, gasb, aerliqb)            ! Only liquid (metastable)
+         ELSEIF (SULRAT < 1.0) THEN              
             CALL ISOINIT3 (WI, RHI, TEMPI)
             SCASE = 'J3'
-            CALL ISRP3F_JB(wpb, gasb, aerliqb, rhi, tempi)     ! Only liquid (metastable)
+            CALL ISRP3F_JB(wpb, gasb, aerliqb)            ! Only liquid (metastable)
          ENDIF
       ENDIF
 C
@@ -30515,7 +30515,7 @@ C *** ADJOINT & UPDATE BY SHANNON CAPPS
 C
 C=======================================================================
 C
-      SUBROUTINE ISRP3F_JB(wpjb, gasjb, aerliqjb)
+      SUBROUTINE ISRP3F_JB(wpjb, gasjb, aerliqjb) !(wpb, gasb, aerliqb, rhi, tempi)  
       INCLUDE 'isrpia_adj.inc'
 C
       REAL*8     :: gas(3), aerliq(NIONS+NGASAQ+2)
