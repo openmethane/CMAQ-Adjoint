@@ -571,11 +571,11 @@ C
          ELSEIF (1.0 <= SULRAT .AND. SULRAT < 2.0) THEN 
             CALL ISOINIT3 (WI, RHI, TEMPI)
             SCASE = 'I6'
-            CALL ISRP3F_IB(wpb, gasb, aerliqb, rhi, tempi)     ! Only liquid (metastable)
+            CALL ISRP3F_IB(wpb, gasb, aerliqb)     ! Only liquid (metastable)
          ELSEIF (SULRAT < 1.0) THEN             
             CALL ISOINIT3 (WI, RHI, TEMPI)
             SCASE = 'J3'
-            CALL ISRP3F_JB(wpb, gasb, aerliqb, rhi, tempi)     ! Only liquid (metastable)
+            CALL ISRP3F_JB(wpb, gasb, aerliqb)     ! Only liquid (metastable)
          ENDIF
       ENDIF
 C
