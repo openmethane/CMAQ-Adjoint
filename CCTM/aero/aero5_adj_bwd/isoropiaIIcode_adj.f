@@ -1823,7 +1823,6 @@ C
       CALAIN  = .TRUE.
       FRST    = .TRUE.
       FLAGNP  = .FALSE.
-      NONPHYS = .FALSE.
       SCASE   = 'XX'
       SULRATW = 2.D0
       SODRAT  = ZERO
@@ -30516,7 +30515,7 @@ C *** ADJOINT & UPDATE BY SHANNON CAPPS
 C
 C=======================================================================
 C
-      SUBROUTINE ISRP3F_JB(wpjb, gasjb, aerliqjb) !(wpb, gasb, aerliqb, rhi, tempi)  
+      SUBROUTINE ISRP3F_JB(wpjb, gasjb, aerliqjb)  
       INCLUDE 'isrpia_adj.inc'
 C
       REAL*8     :: gas(3), aerliq(NIONS+NGASAQ+2)
