@@ -1823,7 +1823,6 @@ C
       CALAIN  = .TRUE.
       FRST    = .TRUE.
       FLAGNP  = .FALSE.
-      NONPHYS = .FALSE.
       SCASE   = 'XX'
       SULRATW = 2.D0
       SODRAT  = ZERO
