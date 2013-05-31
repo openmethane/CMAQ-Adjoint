@@ -18,7 +18,7 @@ C   permissions subject to the above restrictions.                     *
 C***********************************************************************
 
 C RCS file, release, date & time of last delta, author, state, [and locker]
-C $Header: /Volumes/Data/CVS/CMAQ_CVSrepos/CCTM/src/chem/kpp_cb05cl_ae5_adj_fwd/kppdriver.F,v 1.4 2011/10/14 16:27:01 mturner Exp $ 
+C $Header: /Volumes/Data/CVS/CMAQ_CVSrepos/CCTM/src/chem/kpp_cb05cl_ae5_adj_fwd/kppdriver.F,v 1.5 2013/05/14 21:06:51 ppercell Exp $ 
 
 C what(1) key, module and SID; SCCS file; date and time of last delta:
 C %W% %P% %G% %U%
@@ -204,7 +204,7 @@ c            END IF
 c         CHEMLAST = 1.0d0
 	 
 C Create new adjoint file and open for update
-         CALL CHK_FILE_OPEN ( ADJ_CHEM_CHK, JDATE, JTIME, .TRUE. )
+         CALL CHK_FILE_OPEN ( ADJ_CHEM_CHK, JDATE, JTIME, .TRUE., TSTEP )
 	 
       ENDIF      ! First time
 

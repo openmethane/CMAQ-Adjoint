@@ -18,7 +18,7 @@ C   permissions subject to the above restrictions.                     *
 C***********************************************************************
 
 C RCS file, release, date & time of last delta, author, state, [and locker]
-C $Header: /Volumes/Data/CVS/CMAQ_CVSrepos/CCTM/src/hadv/hppm_dadj_fwd/yadvppm.F,v 1.3 2011/10/10 23:05:14 ppercell Exp $
+C $Header: /Volumes/Data/CVS/CMAQ_CVSrepos/CCTM/src/hadv/hppm_dadj_fwd/yadvppm.F,v 1.4 2013/05/14 21:06:52 ppercell Exp $
 
 C what(1) key, module and SID; SCCS file; date and time of last delta:
 C %W% %P% %G% %U%
@@ -90,7 +90,6 @@ C External Functions not declared in IODECL3.EXT:
       REAL,    EXTERNAL :: ZFDBC
 
 C File Variables:
-      REAL :: ADV_CHK(1:NCOLS, 1:NROWS, 1:NLAYS, 1:N_SPC_ADV) ! advection checkpoint
       REAL :: VHAT(1:NCOLS+1, 1:NROWS+1) ! x2-component CX-velocity
       REAL :: BCON(1:NBNDY, 1:N_SPC_ADV) ! boundary concentrations
 
@@ -175,12 +174,13 @@ C Create global map to CGRID
          CALL SUBST_HI_LO_BND_PE('R', BNDY_LO_PE, BNDY_HI_PE)
 
 C Create new adjoint file and open for update
-         CALL CHK_FILE_OPEN ( ADJ_YADV_CHK, JDATE, JTIME, .TRUE. )
+         CALL CHK_FILE_OPEN ( ADJ_YADV_CHK, JDATE, JTIME, .TRUE., TSTEP )
 
       END IF                    ! FIRSTIME
 
 C Write horizontal advection checkpoint at sync step
-      CALL CHK_FILE_WRITE ( ADJ_YADV_CHK, JDATE, JTIME, CGRID(1:NCOLS, 1:NROWS, 1:NLAYS,ADV_MAP(1:N_SPC_ADV)) )
+      CALL CHK_FILE_WRITE ( ADJ_YADV_CHK, JDATE, JTIME,
+     &     CGRID(1:NCOLS, 1:NROWS, 1:NLAYS, ADV_MAP(1:N_SPC_ADV)) )
 
       SYNC = TIME2SEC(TSTEP(2))
       DO L = 1, NLAYS

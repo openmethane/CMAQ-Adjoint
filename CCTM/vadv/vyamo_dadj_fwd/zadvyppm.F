@@ -18,7 +18,7 @@ C   permissions subject to the above restrictions.                     *
 C***********************************************************************
 
 C RCS file, release, date & time of last delta, author, state, [and locker]
-C $Header: /Volumes/Data/CVS/CMAQ_CVSrepos/CCTM/src/vadv/vyamo_dadj_fwd/zadvyppm.F,v 1.3 2011/10/10 23:06:07 ppercell Exp $
+C $Header: /Volumes/Data/CVS/CMAQ_CVSrepos/CCTM/src/vadv/vyamo_dadj_fwd/zadvyppm.F,v 1.4 2013/05/14 21:06:52 ppercell Exp $
 
 C what(1) key, module and SID; SCCS file; date and time of last delta:
 C %W% %P% %G% %U%
@@ -236,12 +236,13 @@ C get file local domain offsets
      &        STRTCOLMC3, ENDCOLMC3, STRTROWMC3, ENDROWMC3 )
 
 C Create new adjoint file and open for update
-         CALL CHK_FILE_OPEN ( ADJ_ZADV_CHK, JDATE, JTIME, .TRUE. )
+         CALL CHK_FILE_OPEN ( ADJ_ZADV_CHK, JDATE, JTIME, .TRUE., TSTEP )
 
       END IF                    ! FIRSTIME
 
 C Write vertical advection checkpoint at sync step
-      CALL CHK_FILE_WRITE ( ADJ_ZADV_CHK, JDATE, JTIME, CGRID(1:NCOLS, 1:NROWS, 1:NLAYS, ADV_MAP(1:N_SPC_ADV)) )
+      CALL CHK_FILE_WRITE ( ADJ_ZADV_CHK, JDATE, JTIME,
+     &     CGRID(1:NCOLS, 1:NROWS, 1:NLAYS, ADV_MAP(1:N_SPC_ADV)) )
 
 C Time-stepped gridded computation for Z-direction advection.
       DTSEC  = FLOAT( TIME2SEC( TSTEP( 2 ) ) ) ! process time step (seconds)

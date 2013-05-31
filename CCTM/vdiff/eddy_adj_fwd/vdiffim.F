@@ -18,7 +18,7 @@ C   permissions subject to the above restrictions.                     *
 C***********************************************************************
 
 C RCS file, release, date & time of last delta, author, state, [and locker]
-C $Header: /Volumes/Data/CVS/CMAQ_CVSrepos/CCTM/src/vdiff/eddy_adj_fwd/vdiffim.F,v 1.3 2011/08/11 11:20:17 jaroslav Exp $
+C $Header: /Volumes/Data/CVS/CMAQ_CVSrepos/CCTM/src/vdiff/eddy_adj_fwd/vdiffim.F,v 1.4 2013/05/14 21:06:52 ppercell Exp $
 
 C what(1) key, module and SID; SCCS file; date and time of last delta:
 C @(#)vdiffim.F 1.8 /project/mod3/CMAQ/src/vdiff/eddy/SCCS/s.vdiffim.F 25 Jul 1997 12:57:45
@@ -596,7 +596,7 @@ C combined gas emssions conversion factor
          CNGRD = 0.0
 
 C Create new adjoint file and open for update
-         CALL  CHK_FILE_OPEN ( ADJ_VDIFF_CHK, JDATE, JTIME, .TRUE. )
+         CALL CHK_FILE_OPEN ( ADJ_VDIFF_CHK, JDATE, JTIME, .TRUE., TSTEP )
 
          END IF          !  if Firstime
 
