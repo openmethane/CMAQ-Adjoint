@@ -36,7 +36,7 @@
       CONTAINS
 
 !-----------------------------------------------------------------------
-      SUBROUTINE CHK_FILE_OPEN ( CHK_ID, SDATE, STIME, CREATENEW )
+      SUBROUTINE CHK_FILE_OPEN ( CHK_ID, SDATE, STIME, CREATENEW, TSTEP )
 !-----------------------------------------------------------------------
 ! Function:
 !     Subroutine creates checkpoint file
@@ -55,6 +55,10 @@
 !     - made ADJ_VDIFF_CHK a full copy of the CGRID array
 !   Nov  2011 by M. Turner, CU Boulder:
 !     - Added phot species to chem checkpoint file
+!   May  2013 by Peter Percell at UH-IMAQS:
+!     - changed ADJ_RHOJ_CHK to ADJ_VA_RHOJ_CHK and added ADJ_HA_RHOJ_CHK
+!     - added TSTEP as an optional calling argument to pass in a computed
+!       sync step
 !-----------------------------------------------------------------------
 
       USE GRID_CONF             ! horizontal & vertical domain specifications
@@ -91,6 +95,9 @@
       INTEGER, INTENT(IN)       :: SDATE        ! starting date (YYYYDDD)
       INTEGER, INTENT(IN)       :: STIME        ! starting time (HHMMSS)
       LOGICAL, INTENT(IN)       :: CREATENEW    ! create new file or open the old one
+      INTEGER, INTENT(IN), OPTIONAL :: TSTEP(2) ! time step vector (HHMMSS)
+                                                !   TSTEP(1) = local output step
+                                                !   TSTEP(2) = sync. step
 
 !     Local variables:
       CHARACTER(len=NAMLEN_ADJ) :: PNAME = 'CHK_FILE_OPEN'
@@ -249,8 +256,22 @@
             END DO
             INDX = INDX + N_TR_SPC
 
-         CASE ( ADJ_RHOJ_CHK )
-            CHK%FDESC(1) = 'RHOJ checkpoint file'
+         CASE ( ADJ_HA_RHOJ_CHK )
+            CHK%FDESC(1) = 'Horizontal advection RHOJ checkpoint file'
+            CHK%FDESC(2) = 'From CMAQ model dyn alloc version CTM'
+            CHK%NVARS = 1
+            ALLOCATE(CHK%VTYPE(CHK%NVARS))
+            ALLOCATE(CHK%VNAME(CHK%NVARS))
+            ALLOCATE(CHK%UNITS(CHK%NVARS))
+            ALLOCATE(CHK%VDESC(CHK%NVARS))
+            ALLOCATE(CHK%VINDX(CHK%NVARS))
+            CHK%VTYPE(1) = M3REAL
+            CHK%VNAME(1) = 'RHOJ'
+            CHK%UNITS(1) = 'KG/M**2'
+            CHK%VDESC(1) = 'advected air density X total Jacobian'
+
+         CASE ( ADJ_VA_RHOJ_CHK )
+            CHK%FDESC(1) = 'Vertical advection RHOJ checkpoint file'
             CHK%FDESC(2) = 'From CMAQ model dyn alloc version CTM'
             CHK%NVARS = 1
             ALLOCATE(CHK%VTYPE(CHK%NVARS))
@@ -332,7 +353,7 @@
             CHK%VNAME(INDX + 1) = 'RHOJ'
             CHK%VTYPE(1:CHK%NVARS) = M3REAL
             CHK%UNITS(1:CHK%NVARS) = 'Coupled CGRID'
-            CHK%VDESC(1:CHK%NVARS) = 'Y advection checkpoint for ' //
+            CHK%VDESC(1:CHK%NVARS) = 'Z advection checkpoint for ' //
      &           CHK%VNAME(1:CHK%NVARS)
 
          CASE DEFAULT
@@ -343,7 +364,12 @@
       END SELECT
 
       IF ( CREATENEW ) THEN
-         CALL CHK_FILE_CREATE_IMPL(CHK_ID)
+         IF ( CONST_SYNC_STEP .AND. .NOT. PRESENT(TSTEP) ) THEN
+            XMSG = 'TSTEP must be a calling argument for CHK_FILE_OPEN'
+            CALL M3EXIT(PNAME, SDATE, STIME, XMSG, XSTAT1)
+         END IF
+
+         CALL CHK_FILE_CREATE_IMPL(CHK_ID, TSTEP)
       ELSE
          CALL CHK_FILE_OPEN_IMPL(CHK_ID)
       ENDIF

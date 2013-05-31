@@ -38,7 +38,7 @@
 
 
 !-----------------------------------------------------------------------
-      SUBROUTINE CHK_FILE_CREATE_IMPL ( CHK_ID )
+      SUBROUTINE CHK_FILE_CREATE_IMPL ( CHK_ID, TSTEP )
 !-----------------------------------------------------------------------
 !
 !  FUNCTION:  Create netCDF file CHK_ID using info stored in the CHK_FILE
@@ -54,6 +54,8 @@
 !                               partialy inspired by CRTFIL3 from IOAPI3
 !   Oct  2010 by J.Resler, ICS: Adapted for integration into the new
 !                               CMAQ adjoint version
+!   May 2013 by Peter Percell at UH-IMAQS:
+!   -- added TSTEP as a calling argument to pass in a computed sync step
 !-----------------------------------------------------------------------
 
         USE GRID_CONF             ! horizontal & vertical domain specifications
@@ -69,12 +71,16 @@
 
 !  ARGUMENTS and their descriptions:
 
-       INTEGER                    :: CHK_ID !  identification of the checkpoint file
+        INTEGER             :: CHK_ID   !  identification of the checkpoint file
+        INTEGER, INTENT(IN) :: TSTEP(2) ! time step vector (HHMMSS)
+                                        !   TSTEP(1) = local output step
+                                        !   TSTEP(2) = sciproc sync. step (chem)
 
 
 !  LOCAL VARIABLES and their descriptions:
 !
-        CHARACTER(NAMLEN_ADJ)    :: PNAME = 'FDV_FILE_CREATE'
+        CHARACTER(NAMLEN_ADJ)    :: PNAME = 'CHK_FILE_CREATE_IMPL'
+        CHARACTER( 96 )          :: XMSG = ' '
 		INTEGER                  :: ISCR
 		INTEGER                  :: IERR            !  netCDF error status return
 		INTEGER                  :: VAR             !  loop counter for file variables
@@ -125,7 +131,11 @@
 !   synchronization timestep if we wish to produce
 !   IOAPI3 compatible files
 !   TODO: rewrite without this requirement
-      CHK%TSTEP = CHK_FILE_TSTEP()
+      IF ( .NOT. CONST_SYNC_STEP ) THEN
+         XMSG = 'CMAQ adjoint requires fixed synchronization timestep.'
+         CALL M3EXIT( PNAME, 0, 0, XMSG, XSTAT1 )
+      END IF
+      CHK%TSTEP = TSTEP(2)
 
 !...........  Create the netCDF file, and put it into definition mode.
 

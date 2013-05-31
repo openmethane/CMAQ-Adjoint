@@ -32,32 +32,43 @@
 !   Oct  2010 by J.Resler, ICS: Adapted for integration into the new
 !                               CMAQ adjoint version from Peter Percell
 !   Oct  2011 by Peter Percell at UH-IMAQS: removed unused checkpoint files
+!   May  2013 by Peter Percell at UH-IMAQS:
+!   - changed ADJ_RHOJ_CHK to ADJ_VA_RHOJ_CHK and added ADJ_HA_RHOJ_CHK
+!   - removed the overly restrictive function CHK_FILE_TSTEP which forces
+!     the user to pick the synchronization step by setting CTM_MAXSYNC and
+!     CTM_MINSYNC to the same value in the run script
+!   - added the logical flag CONST_SYNC_STEP to signal whether or not the
+!     checkpointing implementation requires a constant synchronization step
 !-----------------------------------------------------------------------
 
       IMPLICIT NONE
 
 
 ! Number of checkpoint files
-      INTEGER, PARAMETER                   :: N_CHKS = 7
+      INTEGER, PARAMETER                   :: N_CHKS = 8
 
 ! Checkpoint files ids
       INTEGER, PARAMETER                   :: ADJ_CHEM_CHK = 1
       INTEGER, PARAMETER                   :: ADJ_AERO_CHK = 2
       INTEGER, PARAMETER                   :: ADJ_VDIFF_CHK = 3
-      INTEGER, PARAMETER                   :: ADJ_RHOJ_CHK = 4
-      INTEGER, PARAMETER                   :: ADJ_XADV_CHK = 5
-      INTEGER, PARAMETER                   :: ADJ_YADV_CHK = 6
-      INTEGER, PARAMETER                   :: ADJ_ZADV_CHK = 7
+      INTEGER, PARAMETER                   :: ADJ_HA_RHOJ_CHK = 4
+      INTEGER, PARAMETER                   :: ADJ_VA_RHOJ_CHK = 5
+      INTEGER, PARAMETER                   :: ADJ_XADV_CHK = 6
+      INTEGER, PARAMETER                   :: ADJ_YADV_CHK = 7
+      INTEGER, PARAMETER                   :: ADJ_ZADV_CHK = 8
 
 ! Checkpoint file names
       CHARACTER(16), PARAMETER :: CHK_NAMES(N_CHKS) =
-     & ( / 'ADJ_CHEM_CHK  ','ADJ_AERO_CHK  ','ADJ_VDIFF_CHK ','ADJ_RHOJ_CHK  ',
-     &     'ADJ_XADV_CHK  ','ADJ_YADV_CHK  ','ADJ_ZADV_CHK  ' / )
+     & ( / 'ADJ_CHEM_CHK  ','ADJ_AERO_CHK  ','ADJ_VDIFF_CHK ','ADJ_HA_RHOJ_CHK ',
+     &     'ADJ_VA_RHOJ_CHK ','ADJ_XADV_CHK  ','ADJ_YADV_CHK  ','ADJ_ZADV_CHK  ' / )
 
 
 ! We cannot include PARMS3.EXT here, define own parameters
       INTEGER, PARAMETER                     :: MXDLEN_ADJ =  80
       INTEGER, PARAMETER                     :: NAMLEN_ADJ =  16
+
+! True if checkpointing implementation requires a constant synchronization time step
+      LOGICAL, PARAMETER                     :: CONST_SYNC_STEP = .FALSE.
 
 ! Description of the checkpoint file
       TYPE CHK_FILE
@@ -121,58 +132,6 @@
       ENDIF
 
       END SUBROUTINE CHK_FILE_PATH
-
-
-!-----------------------------------------------------------------------
-      INTEGER FUNCTION CHK_FILE_TSTEP ()
-!-----------------------------------------------------------------------
-! Function:
-!     Function checks the limits of the synchronization timestep and returns this timestep
-!     The fixed timestep is required by implementations with IOAPI3
-!     compatible file format of the checkpoint file
-!
-! Output:
-!     CHK_FILE_TSTEP
-!
-! Subroutines and functions called:
-!     ENVINT, M3EXIT, SEC2TIME
-
-! Revision History:
-!   Oct  2010 by J.Resler, ICS: Initial version
-!-----------------------------------------------------------------------
-
-      IMPLICIT NONE
-
-!  includes
-        INCLUDE SUBST_IOPARMS
-
-!  external functions
-      INTEGER, EXTERNAL       :: ENVINT
-      INTEGER, EXTERNAL       :: SEC2TIME
-
-!  local variables
-      CHARACTER(NAMLEN_ADJ)    :: PNAME = 'CHK_FILE_TSTEP'
-      INTEGER                  :: MAXSYNC      ! force max TSTEP(2) (sec)
-      INTEGER                  :: MINSYNC      ! force min TSTEP(2) (sec)
-      CHARACTER( 80 )          :: VARDESC      ! environment variable description
-      LOGICAL                  :: IERR
-      CHARACTER( 250 )         :: XMSG = ' '
-
-!-----------------------------------------------------------------------
-
-      MAXSYNC = 720         ! default
-      MAXSYNC = ENVINT( 'CTM_MAXSYNC', VARDESC, MAXSYNC, IERR )
-      MINSYNC = 60          ! default
-      MINSYNC = ENVINT( 'CTM_MINSYNC', VARDESC, MINSYNC, IERR )
-      IF ( MAXSYNC .NE. MINSYNC ) THEN
-         XMSG = 'CMAQ adjoint requires fixed synchronization timestep '//
-     &       '- set variables CTM_MINSYNC and CTM_MAXSYNC to equal value.'
-         CALL M3EXIT( PNAME, 0, 0, XMSG, XSTAT1 )
-      END IF
-      CHK_FILE_TSTEP = SEC2TIME( MINSYNC )
-
-
-      END FUNCTION CHK_FILE_TSTEP
 
 
       END MODULE CHK_FILES_DEFS
