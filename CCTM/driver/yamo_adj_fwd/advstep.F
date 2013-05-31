@@ -18,13 +18,13 @@ C   permissions subject to the above restrictions.                     *
 C***********************************************************************
 
 C RCS file, release, date & time of last delta, author, state, [and locker]
-C $Header: /Volumes/Data/CVS/CMAQ_CVSrepos/CCTM/src/driver/yamo_adj_fwd/advstep.F,v 1.2 2011/08/11 13:55:47 jaroslav Exp $
+C $Header: /Volumes/Data/CVS/CMAQ_CVSrepos/CCTM/src/driver/yamo_adj_fwd/advstep.F,v 1.3 2013/05/15 20:14:11 ppercell Exp $
 
 C what(1) key, module and SID; SCCS file; date and time of last delta:
 C %W% %P% %G% %U%
 
 C:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      SUBROUTINE ADVSTEP(JDATE, JTIME, TSTEP, NADVSS)
+      SUBROUTINE ADVSTEP(JDATE, JTIME, TSTEP, ASTEP)
 
 C-----------------------------------------------------------------------
 C Function:
@@ -36,6 +36,10 @@ C    The synchronization step, TSTEP(2), has already been determined.
 
 C Revision history:
 C   Aug 2010 by Peter Percell at UH-IMAQS: rewrote for adjoint/4dvar
+C   May 2013 by Peter Percell at UH-IMAQS:
+C   - changed default HDIV_LIM to 0.9 (as in CMAQ_5.0.1)
+C   - changed the calling argument NADVSS back to the traditional ASTEP
+C     which is once again required to be an integer divisor of the sync step
 C-----------------------------------------------------------------------
 
       USE GRID_CONF             ! horizontal & vertical domain specifications
@@ -60,7 +64,7 @@ C Arguments:
       INTEGER, INTENT(IN) :: TSTEP(2) ! time step vector (HHMMSS)
                                 !   TSTEP(1) = local output step
                                 !   TSTEP(2) = sciproc sync. step (chem)
-      INTEGER, INTENT(OUT) :: NADVSS(:) ! number of advection sub-steps per sync step
+      INTEGER, INTENT(OUT) :: ASTEP(:) ! advection time steps
 
 C External Functions (not already declared by IODECL3.EXT):
       INTEGER, EXTERNAL :: SECSDIFF, TIME2SEC, SEC2TIME
@@ -84,7 +88,7 @@ C Local Variables:
       REAL, SAVE :: IDX1        ! 1/dx1
       REAL, SAVE :: IDX2        ! 1/dx2
 
-      REAL, SAVE :: HDIV_LIM = 1.0 ! limit on allowable horiz. div. for advection step
+      REAL, SAVE :: HDIV_LIM    ! cutoff for max horizontal divergence step adj
 
       INTEGER :: STATUS         ! ENVREAL status
       CHARACTER(80) :: VARDESC  ! environment variable description
@@ -98,7 +102,7 @@ C Local Variables:
       INTEGER :: SYNC           ! synchronization step (sec)
 
       REAL :: MXADV             ! max acceptable advection step (sec)
-      REAL :: DT                ! advection step (sec)
+      INTEGER :: DT_INT         ! advection step (sec)
 
       REAL :: WIND_DSI(1:NLAYS) ! max { component velocity / dXi }
       REAL :: MX_HDIV(1:NLAYS)  ! max(HDIV) for whole output step
@@ -158,8 +162,14 @@ C Get cell size in meters
          CALL SUBST_LOOP_INDEX('R', 1, NROWS, 1, MY_TEMP,
      &        STARTROW, ENDROW)
 
-         VARDESC = 'Limit on allowable horiz. div. for advection step'
+         HDIV_LIM = 0.9
+         VARDESC = 'Maximum horiz. div. limit for adv step adjustment'
          HDIV_LIM = ENVREAL(ADV_HDIV_LIM, VARDESC, HDIV_LIM, STATUS)
+         IF ( STATUS .NE. 0 ) WRITE( LOGDEV,'(5X, A)' ) VARDESC
+         IF ( STATUS .EQ. 1 ) THEN
+            XMSG = 'Environment variable improperly formatted'
+            CALL M3EXIT( PNAME, JDATE, JTIME, XMSG, XSTAT2 )
+         END IF
 
       END IF                    ! FIRSTIME
 
@@ -216,8 +226,9 @@ C Establish end time for Courant number calculation
          MX_HDIV(L) = SUBST_GLOBAL_MAX(MX_HDIV(L))
       END DO
 
-C For each layer, determine the smallest number of advection sub-steps,
-C NADVSS(L), required by the Courant condition
+C For each layer, determine the largest integer advection time step (sec),
+C that satisfies the Courant condition and is an integer divisor of the
+C synchronization time step (sec)
       WRITE(LOGDEV, 92025)
       SYNC = TIME2SEC(TSTEP(2))
       DO L = NLAYS, 1, -1
@@ -241,27 +252,20 @@ C NADVSS(L), required by the Courant condition
             END IF
          END IF
 
-C Note that the associated advection time step,
-C		DT = REAL(SYNC) / REAL(NADVSS(L))
-C does not need to be an integer; it will be rounded off to either FLOOR(DT) or
-C CEILING(DT) when necessary, e.g., to be compatible with IO/API functions.
-C However, this means that CEILING(DT) must be a safe advection time step, i.e.,
-C CEILING(DT) * WIND_DSI(L) <= CC and CEILING(DT) * MX_HDIV(L) <= HDIV_LIM.
-         NADVSS(L) = CEILING(REAL(SYNC) / MXADV)
-         DT = REAL(SYNC) / REAL(NADVSS(L))
-         DO WHILE ( CEILING(DT) > MXADV )
-            NADVSS(L) = NADVSS(L) + 1
-            DT = REAL(SYNC) / REAL(NADVSS(L))
+C Note that this DO WHILE loop must end by the time DT_INT reaches 1 since
+C MXADV & SYNC >= 1
+         DT_INT = MIN(FLOOR(MXADV), SYNC)
+         DO WHILE ( MOD(SYNC, DT_INT) /= 0 )
+            DT_INT = DT_INT - 1
          END DO
+         ASTEP(L) = SEC2TIME(DT_INT)
 
          IF ( WIND_DSI_DET ) THEN
-            WRITE(LOGDEV, 92027) L, DT, NADVSS(L)
+            WRITE(LOGDEV, 92027) L, ASTEP(L), SYNC/DT_INT
          ELSE
-            WRITE(LOGDEV, 92029) L, DT, NADVSS(L)
+            WRITE(LOGDEV, 92029) L, ASTEP(L), SYNC/DT_INT
          END IF
       END DO
-
-      WRITE(LOGDEV, *) ' '
 
       RETURN
 
@@ -270,10 +274,10 @@ C------------------  FORMAT  STATEMENTS   ------------------------------
 92013 FORMAT(/ 5X, 'From ADVSTEP - date/time: ', I8, '/', I6.6)
 
 92025 FORMAT(/ 5X, 'Layer', 3X, 'Advection', 3X, 'per Sync'
-     &     /13X, 'Step (SEC)', 3X, 'Step')
+     &       /11X, 'Step (HHMMSS)', 2X, 'Step')
 
-92027 FORMAT(5X, I4, 6X, F7.2, 6X, I2)
-92029 FORMAT(5X, I4, 6X, F7.2, 6X, I2, 2X, '<- determined by HDIV_LIM')
+92027 FORMAT(5X, I4, 6X, I6.6, 6X, I2)
+92029 FORMAT(5X, I4, 6X, I6.6, 6X, I2, 2X, '<- determined by HDIV_LIM')
 
 94013 FORMAT(/ 5X, 'Could not determine satisfactory advection time step:',
      &       / 8X, 'output time step = ', I6.6, ' (HHMMSS)',

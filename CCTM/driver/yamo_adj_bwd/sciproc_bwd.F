@@ -17,8 +17,14 @@ C   the MCNC Environmental Modeling Center are used with their         *
 C   permissions subject to the above restrictions.                     *
 C***********************************************************************
 
+C RCS file, release, date & time of last delta, author, state, [and locker]
+C $Header: /Volumes/Data/CVS/CMAQ_CVSrepos/CCTM/src/driver/yamo_adj_bwd/sciproc_bwd.F,v 1.3 2013/05/15 20:14:11 ppercell Exp $
+
+C what(1) key, module and SID; SCCS file; date and time of last delta:
+C %W% %P% %G% %U%
+
 C:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      SUBROUTINE SCIPROC_BWD(LGRID, JDATE, JTIME, TSTEP, NADVSS, XFIRST)
+      SUBROUTINE SCIPROC_BWD(LGRID, JDATE, JTIME, TSTEP, ASTEP, XFIRST)
 
 C-----------------------------------------------------------------------
 C Function:
@@ -27,29 +33,32 @@ C   Science process adjoint for sensitivity analysis
 C Revision History:
 C   Aug 2010 by Peter Percell at UH-IMAQS: created for adjoint/4dvar
 C   Feb 2011 by Peter Percell at UH-IMAQS: added calls to DECOUPLE/COUPLE
+C   May 2013 by Peter Percell at UH-IMAQS:
+C   - call HADV_BWD instead of directly managing calls to XADV_BWD and YADV_BWD
+C   - changed the calling argument NADVSS back to the traditional ASTEP
+C   - changed XFIRST to an array indexed by layer
 C-----------------------------------------------------------------------
 
       IMPLICIT NONE
 
-C Include files:
+C Include Files:
       INCLUDE SUBST_IODECL      ! I/O definitions and declarations
 
 C Arguments:
-      REAL, POINTER :: LGRID(:,:,:,:) ! adjoint variable
-      INTEGER, INTENT(INOUT) :: JDATE ! current model date, coded YYYYDDD
-      INTEGER, INTENT(INOUT) :: JTIME ! current model time, coded HHMMSS
+      REAL, POINTER :: LGRID(:, :, :, :) ! adjoint variable
+      INTEGER, INTENT(IN OUT) :: JDATE ! current model date, coded YYYYDDD
+      INTEGER, INTENT(IN OUT) :: JTIME ! current model time, coded HHMMSS
       INTEGER, INTENT(IN) :: TSTEP(2) ! time step vector (HHMMSS)
                                       !   TSTEP(1) = local output step
                                       !   TSTEP(2) = sciproc sync. step (chem)
-      INTEGER, INTENT(IN) :: NADVSS(:) ! number of advection sub-steps per sync step
-      LOGICAL, INTENT(INOUT) :: XFIRST
+      INTEGER, INTENT(IN) :: ASTEP(:) ! layer advection time step
+      LOGICAL, INTENT(IN OUT) :: XFIRST(:) ! layer XFIRST
 
 C Local Variables:
       LOGICAL, SAVE :: FIRSTIME = .TRUE.
       INTEGER, SAVE :: LOGDEV
 
-      CHARACTER(16) :: PNAME = 'SCIPROC_BWD'
-      CHARACTER(36) :: NMSG = 'After NEXTIME: returned JDATE, JTIME'
+      CHARACTER(36), SAVE :: NMSG = 'After NEXTIME: returned JDATE, JTIME'
 
       INTEGER :: SDATE          ! current science process date, coded YYYYDDD
       INTEGER :: STIME          ! current science process time, coded HHMMSS
@@ -57,66 +66,60 @@ C Local Variables:
       INTERFACE
          SUBROUTINE AERO_BWD(LGRID, JDATE, JTIME, TSTEP)
             IMPLICIT NONE
-            REAL, POINTER       :: LGRID(:,:,:,:)
+            REAL, POINTER       :: LGRID(:, :, :, :)
             INTEGER, INTENT(IN) :: JDATE, JTIME
             INTEGER, INTENT(IN) :: TSTEP(2)
          END SUBROUTINE AERO_BWD
          SUBROUTINE CHEM_BWD(LGRID, JDATE, JTIME, TSTEP)
             IMPLICIT NONE
-            REAL, POINTER       :: LGRID(:,:,:,:)
+            REAL, POINTER       :: LGRID(:, :, :, :)
             INTEGER, INTENT(IN) :: JDATE, JTIME
             INTEGER, INTENT(IN) :: TSTEP(2)
          END SUBROUTINE CHEM_BWD
          SUBROUTINE CLDPROC_BWD(LGRID, JDATE, JTIME, TSTEP)
             IMPLICIT NONE
-            REAL, POINTER       :: LGRID(:,:,:,:)
+            REAL, POINTER       :: LGRID(:, :, :, :)
             INTEGER, INTENT(IN) :: JDATE, JTIME
             INTEGER, INTENT(IN) :: TSTEP(2)
          END SUBROUTINE CLDPROC_BWD
+         SUBROUTINE DECOUPLE(LGRID, JDATE, JTIME, TSTEP)
+            IMPLICIT NONE
+            REAL, POINTER       :: LGRID(:, :, :, :)
+            INTEGER, INTENT(IN) :: JDATE, JTIME
+            INTEGER, INTENT(IN) :: TSTEP(2)
+         END SUBROUTINE DECOUPLE
          SUBROUTINE HDIFF_BWD(LGRID, JDATE, JTIME, TSTEP)
             IMPLICIT NONE
-            REAL, POINTER       :: LGRID(:,:,:,:)
+            REAL, POINTER       :: LGRID(:, :, :, :)
             INTEGER, INTENT(IN) :: JDATE, JTIME
             INTEGER, INTENT(IN) :: TSTEP(2)
          END SUBROUTINE HDIFF_BWD
          SUBROUTINE ZADV_BWD(LGRID, JDATE, JTIME, TSTEP)
             IMPLICIT NONE
-            REAL, POINTER       :: LGRID(:,:,:,:)
+            REAL, POINTER       :: LGRID(:, :, :, :)
             INTEGER, INTENT(IN) :: JDATE, JTIME
             INTEGER, INTENT(IN) :: TSTEP(2)
          END SUBROUTINE ZADV_BWD
-         SUBROUTINE XADV_BWD(LGRID, JDATE, JTIME, TSTEP, NADVSS)
+         SUBROUTINE HADV_BWD(LGRID, JDATE, JTIME, TSTEP, ASTEP, XFIRST)
             IMPLICIT NONE
-            REAL, POINTER       :: LGRID(:,:,:,:)
-            INTEGER, INTENT(IN) :: JDATE, JTIME
-            INTEGER, INTENT(IN) :: TSTEP(2)
-            INTEGER, INTENT(IN) :: NADVSS(:)
-         END SUBROUTINE XADV_BWD
-         SUBROUTINE YADV_BWD(LGRID, JDATE, JTIME, TSTEP, NADVSS)
-            IMPLICIT NONE
-            REAL, POINTER       :: LGRID(:,:,:,:)
-            INTEGER, INTENT(IN) :: JDATE, JTIME
-            INTEGER, INTENT(IN) :: TSTEP(2)
-            INTEGER, INTENT(IN) :: NADVSS(:)
-         END SUBROUTINE YADV_BWD
-         SUBROUTINE VDIFF_BWD(LGRID, JDATE, JTIME, TSTEP)
-            IMPLICIT NONE
-            REAL, POINTER       :: LGRID(:,:,:,:)
-            INTEGER, INTENT(IN) :: JDATE, JTIME
-            INTEGER, INTENT(IN) :: TSTEP(2)
-         END SUBROUTINE VDIFF_BWD
+            REAL, POINTER           :: LGRID(:, :, :, :)
+            INTEGER, INTENT(IN)     :: JDATE, JTIME
+            INTEGER, INTENT(IN)     :: TSTEP(2)
+            INTEGER, INTENT(IN)     :: ASTEP(:)
+            LOGICAL, INTENT(IN OUT) :: XFIRST(:)
+         END SUBROUTINE HADV_BWD
          SUBROUTINE COUPLE(LGRID, JDATE, JTIME, TSTEP)
             IMPLICIT NONE
-            REAL, POINTER       :: LGRID(:,:,:,:)
+            REAL, POINTER       :: LGRID(:, :, :, :)
             INTEGER, INTENT(IN) :: JDATE, JTIME
             INTEGER, INTENT(IN) :: TSTEP(2)
          END SUBROUTINE COUPLE
-         SUBROUTINE DECOUPLE(LGRID, JDATE, JTIME, TSTEP)
+         SUBROUTINE VDIFF_BWD(LGRID, JDATE, JTIME, TSTEP)
             IMPLICIT NONE
-            REAL, POINTER       :: LGRID(:,:,:,:)
+            REAL, POINTER       :: LGRID(:, :, :, :)
             INTEGER, INTENT(IN) :: JDATE, JTIME
             INTEGER, INTENT(IN) :: TSTEP(2)
-         END SUBROUTINE DECOUPLE
+         END SUBROUTINE VDIFF_BWD
       END INTERFACE
 
 C-----------------------------------------------------------------------
@@ -144,19 +147,7 @@ C-----------------------------------------------------------------------
 
       CALL ZADV_BWD(LGRID, JDATE, JTIME, TSTEP)
 
-      IF ( XFIRST ) THEN
-         XFIRST = .FALSE.
-
-         CALL XADV_BWD(LGRID, JDATE, JTIME, TSTEP, NADVSS)
-
-         CALL YADV_BWD(LGRID, JDATE, JTIME, TSTEP, NADVSS)
-      ELSE
-         XFIRST = .TRUE.
-
-         CALL YADV_BWD(LGRID, JDATE, JTIME, TSTEP, NADVSS)
-
-         CALL XADV_BWD(LGRID, JDATE, JTIME, TSTEP, NADVSS)
-      END IF
+      CALL HADV_BWD(LGRID, JDATE, JTIME, TSTEP, ASTEP, XFIRST)
 
       CALL COUPLE(LGRID, JDATE, JTIME, TSTEP)
 

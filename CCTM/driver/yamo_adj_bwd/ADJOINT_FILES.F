@@ -10,6 +10,9 @@ C Revision History:
 C   Aug 2007 by Peter Percell at UH-IMAQS: created for adjoint/4dvar
 C   Oct 2010 J.Resler ICS: checkpoint files moved to CHK_FILES module
 C   Feb 2011 by Peter Percell at UH-IMAQS: removed unneeded code
+C   May 2013 by Peter Percell at UH-IMAQS:
+C   - the adjoint file implementation here uses IOAPI3 tools, so a constant
+C     output step is required
 C-----------------------------------------------------------------------
 
       IMPLICIT NONE
@@ -36,7 +39,8 @@ C Create new adjoint file
 C+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       SUBROUTINE OP_ADJ_FILE(JDATE, JTIME, TSTEP, ADJ_FILE)
 
-      USE HGRD_DEFN             ! horizontal domain specifications
+      USE GRID_CONF             ! horizontal & vertical domain specifications
+      USE CHK_FILES_DEFS        ! adjoint checkpoint files definition
 
       IMPLICIT NONE
 
@@ -116,7 +120,11 @@ C CTM_CONC_1
 
          CASE ( ADJ_LGRID )
 
-            TSTEP3D = TSTEP(2)  ! sync step
+            IF ( CONST_SYNC_STEP ) THEN
+               TSTEP3D = TSTEP(2) ! sync step
+            ELSE
+               TSTEP3D = TSTEP(1) ! output step
+            END IF
 
             FDESC3D(1) = 'Sensitivity output'
             FDESC3D(2) = 'From CMAQ model dyn alloc version CTM'
@@ -124,6 +132,7 @@ C CTM_CONC_1
                FDESC3D(K) = ' '
             END DO
 
+            NLAYS3D = NLAYS
             NVARS3D = 0
 
 C Note: "CF" stands for "cost function units"
