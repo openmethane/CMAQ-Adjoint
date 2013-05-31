@@ -437,9 +437,6 @@ C combined gas emssions conversion factor
 
          CNVTE = CMLMR * CONVPA * CONVEM * MWAIR / ( DX1 * DX2 )
 
-C Open adjoint file for reading
-         CALL  CHK_FILE_OPEN ( ADJ_VDIFF_CHK, JDATE, JTIME, .FALSE. )
-
       END IF          !  if Firstime
 
 C Read vertical diffusion checkpoint at sync step

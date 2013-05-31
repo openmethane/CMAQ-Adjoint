@@ -273,9 +273,6 @@ C set auxiliary depv arrays
 
          END IF
 
-C Open adjoint file for reading
-         CALL  CHK_FILE_OPEN ( ADJ_VDIFF_CHK, JDATE, JTIME, .FALSE. )
-
       END IF                    ! FIRSTIME
 
 C Read vertical diffusion checkpoint at sync step
