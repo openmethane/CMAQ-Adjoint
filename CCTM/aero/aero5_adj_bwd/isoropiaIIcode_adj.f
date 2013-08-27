@@ -8480,7 +8480,7 @@ C            WRITE(*,*) 'Re-executing'
                GOTO 60                   ! Redo root tracking
             ELSE
                CALL PUSHERR (0002, 'CALCD3')    ! WARNING ERROR: NO CONVERGENCE
-               GOTO 50 
+               RETURN                           ! No PUSH/POP yet in adjoint (8.2013.slc)
             ENDIF
          ENDIF
       ENDIF
@@ -8508,9 +8508,13 @@ C
 C      WRITE(*, '(A,E12.5,A,E12.5)') 'In loop: X3',(X3),'Y3',(Y3)
          I = I + 1
       ENDDO
-
-      IF ((I > MAXIT+1) .AND. TST2) THEN
+C
+C *** NO CONVERGENCE ; RETURN WITH ERROR ******************************
+C
+      ! MAXIT + 1 changed to MAXIT - proper value after above loop (8.2013.slc)
+      IF ((I > MAXIT) .AND. TST2) THEN
          CALL PUSHERR (0002, 'CALCD3')    ! WARNING ERROR: NO CONVERGENCE
+         RETURN                           ! No PUSH/POP yet in adjoint (8.2013.slc)
       ENDIF
 C
 C *** CONVERGED ; RETURN **********************************************
@@ -8678,7 +8682,7 @@ C            WRITE(*,*) 'Error'
                GOTO 60                   ! Redo root tracking
             ELSE
                CALL PUSHERR (0002, 'CALCD3')    ! WARNING ERROR: NO CONVERGENCE
-               GOTO 50 
+               RETURN                           ! added 8.2013.slc - no PUSH/POP yet
             ENDIF
          ENDIF
       ENDIF
@@ -8705,9 +8709,13 @@ C
          ENDIF 
          I = I + 1
       ENDDO
-
-      IF ((I > MAXIT+1) .AND. TST2) THEN
+C
+C *** NO CONVERGENCE ; RETURN WITH ERROR ******************************
+C
+      ! MAXIT + 1 changed to MAXIT - proper value after above loop (8.2013.slc)
+      IF ((I > MAXIT) .AND. TST2) THEN
          CALL PUSHERR (0002, 'CALCD3')    ! WARNING ERROR: NO CONVERGENCE
+         RETURN                           ! added 8.2013.slc - no PUSH/POP yet
       ENDIF
 C
 C *** CONVERGED ; RETURN **********************************************
@@ -9225,7 +9233,8 @@ C
 C
 C *** NO SUBDIVISION WITH SOLUTION; IF ABS(Y2)<EPS SOLUTION IS ASSUMED
 C
-      IF ((ABS(Y2) > EPS).AND.TST1.AND.(I > NDIV+1)) THEN
+      ! NDIV + 1 changed to NDIV (8.2013.slc)
+      IF ((ABS(Y2) > EPS).AND.TST1.AND.(I > NDIV)) THEN
          CALL RSTGAMP
          CALL FUNCG5A (PSI6LO, Y3)
          X3 = PSI6LO
@@ -9253,8 +9262,13 @@ C
          ENDIF
          I = I+1
       ENDDO
-      IF ((I > (MAXIT+1)) .AND. TST2) THEN
-         CALL PUSHERR (0002, 'CALCG5')    ! WARNING ERROR: NO CONVERGENCE
+C
+C *** NO CONVERGENCE ; RETURN WITH ERROR ******************************
+C
+      ! MAXIT + 1 changed to MAXIT - proper value after above loop (8.2013.slc)
+      IF ((I > MAXIT) .AND. TST2) THEN
+         CALL PUSHERR (0002, 'CALCG5')   ! WARNING ERROR: NO CONVERGENCE
+         RETURN                          ! no PUSH/POP yet in adjoint (8.2013.slc)
       ENDIF
 C
 C *** CONVERGED ; RETURN **********************************************
@@ -9397,9 +9411,12 @@ C
          ENDIF
          I = I+1
       ENDDO
-
-      IF ((I > (MAXIT+1)) .AND. TST2) THEN
+C
+C *** NO CONVERGENCE ; RETURN WITH ERROR ******************************
+C
+      IF ((I > (MAXIT)) .AND. TST2) THEN
          CALL PUSHERR (0002, 'CALCG5')    ! WARNING ERROR: NO CONVERGENCE
+         RETURN                           ! no PUSH/POP yet in adjoint (8.2013.slc)
       ENDIF
 C
 C *** CONVERGED ; RETURN **********************************************
@@ -9900,8 +9917,12 @@ C
          ENDIF
          I = I+1
       ENDDO
-      IF ((I > (MAXIT+1)) .AND. TST2) THEN
+C
+C *** NO CONVERGENCE ; RETURN WITH ERROR ******************************
+C
+      IF ((I > (MAXIT)) .AND. TST2) THEN
          CALL PUSHERR (0002, 'CALCH6')    ! WARNING ERROR: NO CONVERGENCE
+         RETURN                           ! no PUSH/POP in adjoint yet (8.2013.slc)
       ENDIF
 C
 C *** CONVERGED ; RETURN **********************************************
@@ -10043,8 +10064,12 @@ C
          ENDIF
          I = I+1
       ENDDO
-      IF ((I > (MAXIT+1)) .AND. TST2) THEN
+C
+C *** NO CONVERGENCE ; RETURN WITH ERROR ******************************
+C
+      IF ((I > (MAXIT)) .AND. TST2) THEN
          CALL PUSHERR (0002, 'CALCH6')    ! WARNING ERROR: NO CONVERGENCE
+         RETURN                           ! No PUSH/POP yet in adjoint (8.2013.slc)
       ENDIF
 C
 C *** CONVERGED ; RETURN **********************************************
