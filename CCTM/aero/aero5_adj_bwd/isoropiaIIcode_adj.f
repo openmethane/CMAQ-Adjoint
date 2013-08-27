@@ -570,12 +570,12 @@ C
             CALL CALCH6_B(wpb, gasb, aerliqb)             ! Only liquid (metastable)
          ELSEIF (1.0 <= SULRAT .AND. SULRAT < 2.0) THEN 
             CALL ISOINIT3 (WI, RHI, TEMPI)
-            SCASE = 'I6' 
-            CALL ISRP3F_IB(wpb, gasb, aerliqb)            ! Only liquid (metastable)
-         ELSEIF (SULRAT < 1.0) THEN              
+            SCASE = 'I6'
+            CALL ISRP3F_IB(wpb, gasb, aerliqb)     ! Only liquid (metastable)
+         ELSEIF (SULRAT < 1.0) THEN             
             CALL ISOINIT3 (WI, RHI, TEMPI)
             SCASE = 'J3'
-            CALL ISRP3F_JB(wpb, gasb, aerliqb)            ! Only liquid (metastable)
+            CALL ISRP3F_JB(wpb, gasb, aerliqb)     ! Only liquid (metastable)
          ENDIF
       ENDIF
 C
@@ -9239,7 +9239,7 @@ C
          CALL FUNCG5A (PSI6LO, Y3)
          X3 = PSI6LO
          CALL PUSHERR (0002, 'CALCG5')    ! WARNING ERROR: NO CONVERGENCE
-         GOTO 50
+         RETURN                           ! no PUSH/POP yet in adjoint (8.2013.slc)
       ENDIF
 C
 C *** PERFORM BISECTION ***********************************************
@@ -9382,12 +9382,13 @@ C
 C
 C *** NO SUBDIVISION WITH SOLUTION; IF ABS(Y2)<EPS SOLUTION IS ASSUMED
 C
-      IF ((ABS(Y2) > EPS).AND.TST1.AND.(I > NDIV+1)) THEN
+      ! NDIV + 1 changed to NDIV (8.2013.slc)
+      IF ((ABS(Y2) > EPS).AND.TST1.AND.(I > NDIV)) THEN
          CALL RSTGAMP
          CALL FUNCG5A (PSI6LO, Y3)
          X3 = PSI6LO
          CALL PUSHERR (0002, 'CALCG5')    ! WARNING ERROR: NO CONVERGENCE
-         GOTO 50
+         RETURN                           ! no PUSH/POP yet in adjoint (8.2013.slc)
       ENDIF
 C
 C *** PERFORM BISECTION ***********************************************
@@ -9888,12 +9889,12 @@ C
 C
 C *** NO SUBDIVISION WITH SOLUTION; IF ABS(Y2)<EPS SOLUTION IS ASSUMED
 C
-      IF ((ABS(Y2) > EPS).AND.TST1.AND.(I > NDIV+1)) THEN
+      IF ((ABS(Y2) > EPS).AND.TST1.AND.(I > NDIV)) THEN
          CALL RSTGAMP
          CALL FUNCH6A (PSI6LO, Y3)
          X3 = PSI6LO
          CALL PUSHERR (0002, 'CALCH6')    ! WARNING ERROR: NO CONVERGENCE
-         GOTO 50
+         RETURN                           ! no PUSH/POP yet in adjoint (8.2013.slc)
       ENDIF
 C
 C *** PERFORM BISECTION ***********************************************
@@ -10036,12 +10037,12 @@ C
 C
 C *** NO SUBDIVISION WITH SOLUTION; IF ABS(Y2)<EPS SOLUTION IS ASSUMED
 C
-      IF ((ABS(Y2) > EPS).AND.TST1.AND.(I > NDIV+1)) THEN
+      IF ((ABS(Y2) > EPS).AND.TST1.AND.(I > NDIV)) THEN
          CALL RSTGAMP
          CALL FUNCH6A (PSI6LO, Y3)
          X3 = PSI6LO
          CALL PUSHERR (0002, 'CALCH6')    ! WARNING ERROR: NO CONVERGENCE
-         GOTO 50
+         RETURN                           ! no PUSH/POP yet in adjoint (8.2013.slc)
       ENDIF
 C
 C *** PERFORM BISECTION ***********************************************
@@ -30542,7 +30543,7 @@ C *** ADJOINT & UPDATE BY SHANNON CAPPS
 C
 C=======================================================================
 C
-      SUBROUTINE ISRP3F_JB(wpjb, gasjb, aerliqjb)  
+      SUBROUTINE ISRP3F_JB(wpjb, gasjb, aerliqjb)
       INCLUDE 'isrpia_adj.inc'
 C
       REAL*8     :: gas(3), aerliq(NIONS+NGASAQ+2)
