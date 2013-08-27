@@ -9413,8 +9413,10 @@ C
          ENDIF
          I = I+1
       ENDDO
-
-      IF ((I > (MAXIT+1)) .AND. TST2) THEN
+C
+C *** NO CONVERGENCE ; RETURN WITH ERROR ******************************
+C
+      IF ((I > (MAXIT)) .AND. TST2) THEN
          CALL PUSHERR (0002, 'CALCG5')    ! WARNING ERROR: NO CONVERGENCE
          RETURN                           ! no PUSH/POP yet in adjoint (8.2013.slc)
       ENDIF
