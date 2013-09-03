@@ -206,6 +206,10 @@
         REAL :: temp5
         REAL :: y1
         REAL*8 :: temp4
+
+        ERF(XX) = SIGN( 1.0, XX) * SQRT(1.0 - EXP( -4.0 * XX * XX / PI ))
+        ERFC( XX ) = 1.0 - ERF( XX )
+
 	  
 !	  integer pcontrol
 !
