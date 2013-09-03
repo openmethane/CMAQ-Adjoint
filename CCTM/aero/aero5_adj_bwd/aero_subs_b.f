@@ -39,6 +39,7 @@
         USE SOA_DEFN_B
         USE AERO_DATA_B
         USE MET_DATA
+        USE precursor_data_b
         IMPLICIT NONE
 !
 ! *** arguments:
@@ -285,6 +286,7 @@ C      pcontrol = 5     !secondary inorganic
 !     partitioning between the particle and vapor phases.  Assume all
 !     SOA resides in the accumulation mode.
 !	if(pcontrol.eq.2.or.pcontrol.eq.0.or.pcontrol.eq.6)
+        call pushreal4array(precursor_conc, n_precursor)
          CALL HETCHEM(gamma_n2o5, dt)
 !
 ! *** Heterogeneous Chemistry
@@ -338,6 +340,7 @@ C	  if(pcontrol.eq.3.or.pcontrol.eq.5.or.pcontrol.eq.0) then
         CALL PUSHREAL4ARRAY(moment2_conc, n_mode)
         CALL PUSHREAL4ARRAY(moment0_conc, n_mode)
         CALL PUSHREAL4ARRAY(aeromode_diam, n_mode)
+        call pushreal4array(precursor_conc, n_precursor)
         CALL VOLINORG(dt, col, row, layer, dv_so4, cgr, m3_wet_flag)
 !	  end if
 !
@@ -1088,6 +1091,7 @@ C	  if(pcontrol.eq.3) then   ! mode merging
      
      
 !        if(pcontrol.eq.3.or.pcontrol.eq.5.or.pcontrol.eq.0) then
+        call popreal4array(precursor_conc, n_precursor)
         CALL POPREAL4ARRAY(aeromode_diam, n_mode)
         CALL POPREAL4ARRAY(moment0_conc, n_mode)
         CALL POPREAL4ARRAY(moment2_conc, n_mode)
@@ -1127,6 +1131,7 @@ C	  if(pcontrol.eq.3) then   ! mode merging
         END DO
 	  
 !	  if(pcontrol.eq.2.or.pcontrol.eq.0.or.pcontrol.eq.6)
+        call popreal4array(precursor_conc, n_precursor)
 !     &     CALL HETCHEM_B(gamma_n2o5, dt)
            CALL HETCHEM_ADJ(gamma_n2o5, dt)
 	 
@@ -1537,6 +1542,7 @@ C	  if(pcontrol.eq.3) then   ! mode merging
 !
 ! *** Begin Execution
         IF (firstime) THEN
+          firstime=.false.
           cofcbar_so4 = SQRT(8.0*rgasuniv/(pi*mwh2so4*1.0e-3))
           h2so4ratm1 = aerospc_mw(aso4_idx)/mwh2so4
           soilfac = 1.0e-9*f6dpi/aerospc(asoil_idx)%density
