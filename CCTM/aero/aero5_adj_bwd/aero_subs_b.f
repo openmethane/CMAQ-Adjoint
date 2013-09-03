@@ -2099,8 +2099,18 @@ C         GAS( 3 ) = GCLR8  * ( 1.0D-6 / dble(PRECURSOR_MW( HCL_IDX )) )
 		  CALL PUSHINTEGER4(0)
 		  CNTRL( 1 ) = 0.0D0   ! Forward Problem
               CNTRL( 2 ) = 1.0D0   ! Aerosol in Metastable State
+
+      ! To prevent calls to ISO at T & P at which
+      !    equilibrium thermodynamics do not govern partitioning
+      ! slc.8.2013 - tested in CMAQv.5.0.1 by Jia Xing
+      if (( AIRTEMP .GT. 230.0 )
+     +       .AND.( AIRPRS .GT. 20000.0 ) ) THEN
+
               CALL ISOROPIA(wi, rhi, tempi, cntrl, wt, gas, aerliq, aersld,
      +                scasi, other, TrustIso)
+      else 
+         TrustIso = .false.
+      endif
 
               IF ( .NOT.TrustIso ) THEN		     
                  CALL POPREAL8ARRAY(wi, 5)
@@ -4204,7 +4214,8 @@ C     Modify vapor pressures and get new fluxes
           END IF
 !
 !     Get single-solute molalities for ZSR calculation
-          CALL GETM0I (M0I)
+!slz          CALL GETM0I (M0I)
+           CALL GETM0I (RH, M0I)
 C          CALL GETM0I_M0I ( RH,T,M0I )
 !
 !     Calculate H2O with ZSR and determine delta water
