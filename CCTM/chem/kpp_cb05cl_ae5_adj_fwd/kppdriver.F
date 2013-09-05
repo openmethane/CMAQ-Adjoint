@@ -250,19 +250,17 @@ C.. Get photolysis rates in /min
       CALL PHOT ( MIDDATE, MIDTIME, JDATE, JTIME, NDARK, RJ )        
 
 C -------------->>
-      ALLOCATE ( CHKGRID( MY_NCOLS,MY_NROWS,NLAYS,N_GC_SPC+NPHOTAB ), STAT = ALLOCSTAT )
+!slz      ALLOCATE ( CHKGRID( MY_NCOLS,MY_NROWS,NLAYS,N_GC_SPC+NPHOTAB ), STAT = ALLOCSTAT )
+      ALLOCATE ( CHKGRID( MY_NCOLS,MY_NROWS,NLAYS,N_GC_SPCD ), STAT = ALLOCSTAT )
 
       IF ( ALLOCSTAT .NE. 0 ) THEN
          CALL M3EXIT ( PNAME, JDATE, JTIME, 'CHEMLAST. allocation failed in kppdriver', XSTAT1 )
       END IF
       
       CHKGRID(:,:,:,1:N_GC_SPC)=CGRID(:,:,:,1:N_GC_SPC)
-      CHKGRID(:,:,:,N_GC_SPC+1:N_GC_SPC+NPHOTAB)=RJ(:,:,:,1:NPHOTAB)
+!slz      CHKGRID(:,:,:,N_GC_SPC+1:N_GC_SPC+NPHOTAB)=RJ(:,:,:,1:NPHOTAB)
       
 
-C Checkpoint concentrations
-      CALL CHK_FILE_WRITE ( ADJ_CHEM_CHK, JDATE, JTIME, 
-     &     CHKGRID(:, :, :, 1:N_GC_SPC+NPHOTAB) )
       
 
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -307,7 +305,7 @@ c..Call EBI solver
      
 ccccc Amir: optimize these later with proper chemlast
 c               CHEMLAST(C,R,L) = RSTAT(2)     
-c               CHKGRID(C,R,L,N_GC_SPCD+1) = SNGL (RSTAT(2))
+               CHKGRID(C,R,L,N_GC_SPCD) = SNGL (RSTAT(2))
 
                IF (KPP_ERR.LT.0) THEN
                   PRINT *, C,R,L
@@ -324,6 +322,11 @@ c..Update concentration array
       ENDDO
 	       
 c      CHKGRID(:,:,:,N_GC_SPCD+1) = CHEMLAST(:,:,:)
+
+C Checkpoint concentrations
+      CALL CHK_FILE_WRITE ( ADJ_CHEM_CHK, JDATE, JTIME, 
+     &     CHKGRID(:, :, :, 1:N_GC_SPCD) )
+!slz     &     CHKGRID(:, :, :, 1:N_GC_SPC+NPHOTAB) )
 
       DEALLOCATE (CHKGRID)
 

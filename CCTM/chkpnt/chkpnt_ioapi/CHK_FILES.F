@@ -132,7 +132,8 @@
          CASE ( ADJ_CHEM_CHK )
             CHK%FDESC(1) = 'Chemistry checkpoint file'
             CHK%FDESC(2) = 'From CMAQ model dyn alloc version CTM'
-            CHK%NVARS = N_GC_SPC + NPHOTAB
+!slz            CHK%NVARS = N_GC_SPC + NPHOTAB
+            CHK%NVARS = N_GC_SPCD
             ALLOCATE(CHK%VTYPE(CHK%NVARS))
             ALLOCATE(CHK%VNAME(CHK%NVARS))
             ALLOCATE(CHK%UNITS(CHK%NVARS))
@@ -140,14 +141,17 @@
             ALLOCATE(CHK%VINDX(CHK%NVARS))
             CHK%VTYPE(1:CHK%NVARS) = M3REAL
             CHK%VNAME(1:N_GC_SPC) = GC_SPC(1:N_GC_SPC)
-            DO S = 1, NPHOTAB
-               WRITE (TMP,'(I2)') S
-               TMP = ADJUSTL(TMP)
-               CHK%VNAME(N_GC_SPC+S)='RJ'//TRIM(TMP)
-            END DO
+            CHK%VNAME(N_GC_SPCD) = 'STEP'
+!slz            DO S = 1, NPHOTAB
+!slz               WRITE (TMP,'(I2)') S
+!slz               TMP = ADJUSTL(TMP)
+!slz               CHK%VNAME(N_GC_SPC+S)='RJ'//TRIM(TMP)
+!slz            END DO
             CHK%UNITS(1:N_GC_SPC) = 'ppmV'
-            CHK%UNITS(N_GC_SPC+1:CHK%NVARS) = '1/min'
-            CHK%VDESC(1:CHK%NVARS) = 'Chemistry checkpoint: gas + rj'
+            CHK%UNITS(N_GC_SPCD) = 'min'
+!slz            CHK%UNITS(N_GC_SPC+1:CHK%NVARS) = '1/min'
+!slz            CHK%VDESC(1:CHK%NVARS) = 'Chemistry checkpoint: gas + rj'
+            CHK%VDESC(1:CHK%NVARS) = 'Chemistry checkpoint: gas + time step'
 
          CASE ( ADJ_AERO_CHK )
             CHK%FDESC(1) = 'Aerosols checkpoint file'
