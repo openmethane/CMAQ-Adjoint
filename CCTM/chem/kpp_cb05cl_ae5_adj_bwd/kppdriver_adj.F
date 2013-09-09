@@ -247,7 +247,7 @@ C.. Get photolysis rates in /min
 
 C -------------->>
 !slz      ALLOCATE ( CHKGRID( MY_NCOLS,MY_NROWS,NLAYS,N_GC_SPC+NPHOTAB ), STAT = ALLOCSTAT )
-      ALLOCATE ( CHKGRID( MY_NCOLS,MY_NROWS,NLAYS,N_GC_SPCD ), STAT = ALLOCSTAT )
+      ALLOCATE ( CHKGRID( MY_NCOLS,MY_NROWS,NLAYS,N_GC_SPC+1 ), STAT = ALLOCSTAT )
 
       IF ( ALLOCSTAT .NE. 0 ) THEN
          CALL M3EXIT ( PNAME, JDATE, JTIME, 'CHKGRID. allocation failed in kppdriver', XSTAT1 )
@@ -294,7 +294,7 @@ c..Call EBI solver
                CHEMSTD = DBLE(CHEMSTEP)
 
 !slz               RCTRL(3) = 1.0d0 !dble(chkgrid(c,r,l,n_gc_spc+2))
-               RCTRL(3)=chkgrid(c,r,l,n_gc_spcd) !slz
+               RCTRL(3)=chkgrid(c,r,l,n_gc_spc+1) !slz
 
 	       CALL INTEGRATE_ADJ( 1, YCD, LAMBDA, RKI, CHEMSTD, ATOL, RTOL, 
      &         ICTRL, RCTRL, ISTAT, RSTAT ) 
