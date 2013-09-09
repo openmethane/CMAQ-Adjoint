@@ -305,7 +305,7 @@ c..Call EBI solver
      &         ICTRL, RCTRL, ISTAT, RSTAT, KPP_ERR)
      
 ccccc Amir: optimize these later with proper chemlast
-               CHEMLAST(C,R,L) = RSTAT(2)     
+               CHEMLAST(C,R,L) = RSTAT(3)     
 
                IF (KPP_ERR.LT.0) THEN
                   PRINT *, C,R,L
