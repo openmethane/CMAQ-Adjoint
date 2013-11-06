@@ -202,6 +202,7 @@ C internal functions:
 
       REAL         SINE             ! sine of angle given in degrees
       REAL         COSINE           ! cosine of angle given in degrees
+      INTEGER, EXTERNAL :: TIME2SEC
 
       SINE   ( THETA ) = SIN ( PI180 * THETA )
       COSINE ( THETA ) = COS ( PI180 * THETA )
@@ -213,7 +214,8 @@ C----------------------------------------------------------------------
         LOGDEV = INIT3()
         STDATE = JDATE
         STTIME = JTIME
-        STRTHR = FLOAT ( JTIME / 10000 )
+        STRTHR = FLOAT ( TIME2SEC ( STTIME ) ) /3600. !slzdbgamir
+!slzdbg        STRTHR = FLOAT ( JTIME / 10000 )
         JDSTRT = FLOAT ( MOD ( JDATE, 1000 ) )
 
         CALL NAMEVAL ( J2FILE, EQNAME )

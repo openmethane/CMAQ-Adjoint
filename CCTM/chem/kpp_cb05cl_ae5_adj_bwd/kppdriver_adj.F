@@ -121,7 +121,7 @@ C..Scratch Local Variables:
 C for INTERPX
       INTEGER, SAVE :: STRTCOLMC3, ENDCOLMC3, STRTROWMC3, ENDROWMC3
 
-      REAL*8, ALLOCATABLE, SAVE :: CHEMLAST( :, :, : )
+!slz      REAL*8, ALLOCATABLE, SAVE :: CHEMLAST( :, :, : )
       REAL, ALLOCATABLE :: CHKGRID (:,:,:,:)
       INTEGER ALLOCSTAT
 
@@ -191,13 +191,13 @@ c..If emissions processing requested stop
 
          LFIRST = .FALSE.
 	 
-	     ALLOCATE ( CHEMLAST( MY_NCOLS,MY_NROWS,NLAYS ), STAT = ALLOCSTAT )
-         IF ( ALLOCSTAT .NE. 0 ) THEN
-            CALL M3EXIT ( PNAME, JDATE, JTIME, 'CHEMLAST 
-     &                     allocation failed in kppdriver', XSTAT1 )
-            END IF
-
-         CHEMLAST = 1.0d0
+!slz	     ALLOCATE ( CHEMLAST( MY_NCOLS,MY_NROWS,NLAYS ), STAT = ALLOCSTAT )
+!slz         IF ( ALLOCSTAT .NE. 0 ) THEN
+!slz            CALL M3EXIT ( PNAME, JDATE, JTIME, 'CHEMLAST 
+!slz     &                     allocation failed in kppdriver', XSTAT1 )
+!slz            END IF
+!slz
+!slz         CHEMLAST = 1.0d0
 	 
 C Open checkpoint file as read-only
          CALL CHK_FILE_OPEN ( ADJ_CHEM_CHK, JDATE, JTIME, .FALSE. )
@@ -246,10 +246,11 @@ C.. Get photolysis rates in /min
       CALL PHOT ( MIDDATE, MIDTIME, JDATE, JTIME, NDARK, RJ )        
 
 C -------------->>
-      ALLOCATE ( CHKGRID( MY_NCOLS,MY_NROWS,NLAYS,N_GC_SPC+NPHOTAB ), STAT = ALLOCSTAT )
+!slz      ALLOCATE ( CHKGRID( MY_NCOLS,MY_NROWS,NLAYS,N_GC_SPC+NPHOTAB ), STAT = ALLOCSTAT )
+      ALLOCATE ( CHKGRID( MY_NCOLS,MY_NROWS,NLAYS,N_GC_SPC+1 ), STAT = ALLOCSTAT )
 
       IF ( ALLOCSTAT .NE. 0 ) THEN
-         CALL M3EXIT ( PNAME, JDATE, JTIME, 'CHEMLAST. allocation failed in kppdriver', XSTAT1 )
+         CALL M3EXIT ( PNAME, JDATE, JTIME, 'CHKGRID. allocation failed in kppdriver', XSTAT1 )
       END IF
 
 C Read concentration checkpoint at sync step
@@ -292,7 +293,8 @@ c..Call EBI solver
 
                CHEMSTD = DBLE(CHEMSTEP)
 
-               RCTRL(3) = 1.0d0 !dble(chkgrid(c,r,l,n_gc_spc+2))
+!slz               RCTRL(3) = 1.0d0 !dble(chkgrid(c,r,l,n_gc_spc+2))
+               RCTRL(3)=chkgrid(c,r,l,n_gc_spc+1) !slz
 
 	       CALL INTEGRATE_ADJ( 1, YCD, LAMBDA, RKI, CHEMSTD, ATOL, RTOL, 
      &         ICTRL, RCTRL, ISTAT, RSTAT ) 

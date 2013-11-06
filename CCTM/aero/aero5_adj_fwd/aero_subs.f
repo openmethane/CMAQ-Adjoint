@@ -149,6 +149,9 @@
         REAL :: y3
         REAL :: y2
         REAL :: y1
+
+        ERF( XX ) = SIGN( 1.0,XX ) * SQRT( 1.0 - EXP( -4.0 * XX * XX / PI ) )
+        ERFC( XX ) = 1.0 - ERF( XX )
 	  
 !	  integer pcontrol
 !
@@ -848,6 +851,8 @@ C *** Determine if Hybrid
          IF ( AEROSPC( I )%CHARGE .NE. 0 ) TMP = TMP + AEROSPC_CONC( I,N_MODE )
       END DO
       HYBRID = ( TMP .GE. CUTOFF ) .AND. ( AIRRH .GE. 0.18 )
+!slz
+      hybrid=.false.
 
       DELT  = DBLE( DT )
       CONVFAC = DELT * H2SO4RATM1
@@ -1273,9 +1278,23 @@ C *** Set flags to account for mass conservation violations in ISRP3F
          IF ( WI( 5 ) .LT. 1.0D-10 ) TRUSTCL  = .FALSE.
       END IF
          
-      CALL ISOROPIA(wi, rhi, tempi, cntrl, wt, gas, aerliq, aersld,
-     +              scasi, other, TrustIso)
+      ! To prevent calls to ISO at T & P at which
+      !    equilibrium thermodynamics do not govern partitioning
+      ! slc.8.2013 - tested in CMAQv.5.0.1 by Jia Xing
+      if (( AIRTEMP .GT. 230.0 )
+     +       .AND.( AIRPRS .GT. 20000.0 ) ) THEN
+         CALL ISOROPIA(wi, rhi, tempi, cntrl, wt, gas, aerliq, aersld,
+     +                 scasi, other, TrustIso)
+      else 
+         TrustIso = .false.
+      endif
 
+!slz
+      if (.not.TrustIso) then
+       GAS( 1 ) = GNH3R8 * ( 1.0D-6 / PRECURSOR_MW( NH3_IDX ) )
+       GAS( 2 ) = GNO3R8 * ( 1.0D-6 / PRECURSOR_MW( HNO3_IDX ) )
+       GAS( 3 ) = GCLR8  * ( 1.0D-6 / PRECURSOR_MW( HCL_IDX ) )
+      end if
 C *** Update gas-phase concentrations
 
       PRECURSOR_CONC( NH3_IDX )  = GAS( 1 ) * PRECURSOR_MW( NH3_IDX ) * 1.0E6
@@ -2054,7 +2073,8 @@ C        STOP
       END IF
 
 C     Get single-solute molalities for ZSR calculation
-      CALL GETM0I (M0I)
+!slz      CALL GETM0I (M0I)
+      CALL GETM0I (RH, M0I)
 C      CALL GETM0I_M0I ( RH,T,M0I )
 
 C     Calculate H2O with ZSR and determine delta water
@@ -2086,36 +2106,49 @@ C     M0I : Single-solute molalities (mol/kg-H2O) for 13 salts
  
 C-----------------------------------------------------------------------
 
-      SUBROUTINE GETM0I (M0I)
-
-      INTEGER, PARAMETER :: NIONS  =   7
+      SUBROUTINE GETM0I (RHIN, M0I)
+      implicit none
       INTEGER, PARAMETER :: NPAIR  =  13
-      INTEGER, PARAMETER :: NGASAQ =   3
-      REAL*8     :: MOLAL(NIONS)
-      REAL*8     :: MOLALR(NPAIR)
-      REAL*8     :: M0(NPAIR)
-      REAL*8     :: GAMA(NPAIR)
-      REAL*8     :: GAMOU(NPAIR)
-      REAL*8     :: GAMIN(NPAIR)
-      REAL*8     :: GASAQ(NGASAQ)
-      REAL*8     :: COH
-      REAL*8     :: CHNO3
-      REAL*8     :: CHCL
-      REAL*8     :: WATER
-      COMMON /IONS/ MOLAL,        MOLALR,        M0,
-     &              GAMA,
-     &              GAMOU,        GAMIN,         GASAQ,
-     &              COH,          CHNO3,         CHCL,
-     &              WATER
+
+      INTEGER, PARAMETER :: NZSR=100
+      REAL( 8 ) ::  AWAS, AWSS, AWAC, AWSC, AWAN, AWSN, AWSB, AWAB,
+     &              AWSA, AWLC, AWCS, AWCN, AWCC, AWPS, AWPB, AWPN,
+     &              AWPC, AWMS, AWMN, AWMC
+
+C
+C *** WATER ACTIVITIES OF PURE SALT SOLUTIONS **************************
+C
+      COMMON /ZSR / AWAS(NZSR), AWSS(NZSR), AWAC(NZSR), AWSC(NZSR),
+     &              AWAN(NZSR), AWSN(NZSR), AWSB(NZSR), AWAB(NZSR),
+     &              AWSA(NZSR), AWLC(NZSR), AWCS(NZSR), AWCN(NZSR),
+     &              AWCC(NZSR), AWPS(NZSR), AWPB(NZSR), AWPN(NZSR),
+     &              AWPC(NZSR), AWMS(NZSR), AWMN(NZSR), AWMC(NZSR)
 
 C     Arguments:
+      REAL( 8 ), INTENT( IN )  :: RHIN
       REAL( 8 ), INTENT( OUT ) :: M0I( NPAIR )
+      INTEGER IZ
 
-C     ---------------
-C     Begin Execution
-C     ---------------
+!      M0I = M0    ! Array Assignment
+C Location in pure molality array (function of RH)
+      IZ = MIN( INT( RHIN * REAL( NZSR, 8 ) + 0.5D0 ), NZSR )
+      IZ = MAX( IZ, 1 )
 
-      M0I = M0    ! Array Assignment
+C Default value
+      M0I = 1.0D+5   ! array assignment
+
+C Actual values (10,11 not provided)
+      M0I( 01 ) = AWSC( IZ )   ! NACl
+      M0I( 02 ) = AWSS( IZ )   ! (NA)2SO4
+      M0I( 03 ) = AWSN( IZ )   ! NANO3
+      M0I( 04 ) = AWAS( IZ )   ! (NH4)2SO4
+      M0I( 05 ) = AWAN( IZ )   ! NH4NO3
+      M0I( 06 ) = AWAC( IZ )   ! NH4CL
+      M0I( 07 ) = AWSA( IZ )   ! 2H-SO4
+      M0I( 08 ) = AWSA( IZ )   ! H-HSO4
+      M0I( 09 ) = AWAB( IZ )   ! NH4HSO4
+      M0I( 12 ) = AWSB( IZ )   ! NAHSO4
+      M0I( 13 ) = AWLC( IZ )   ! (NH4)3H(SO4)2
 
       END SUBROUTINE GETM0I
 C-----------------------------------------------------------------------

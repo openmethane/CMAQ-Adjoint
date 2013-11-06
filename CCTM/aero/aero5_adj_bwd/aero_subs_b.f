@@ -39,6 +39,7 @@
         USE SOA_DEFN_B
         USE AERO_DATA_B
         USE MET_DATA
+        USE precursor_data_b
         IMPLICIT NONE
 !
 ! *** arguments:
@@ -206,6 +207,10 @@
         REAL :: temp5
         REAL :: y1
         REAL*8 :: temp4
+
+        ERF(XX) = SIGN( 1.0, XX) * SQRT(1.0 - EXP( -4.0 * XX * XX / PI ))
+        ERFC( XX ) = 1.0 - ERF( XX )
+
 	  
 !	  integer pcontrol
 !
@@ -281,6 +286,7 @@ C      pcontrol = 5     !secondary inorganic
 !     partitioning between the particle and vapor phases.  Assume all
 !     SOA resides in the accumulation mode.
 !	if(pcontrol.eq.2.or.pcontrol.eq.0.or.pcontrol.eq.6)
+        call pushreal4array(precursor_conc, n_precursor)
          CALL HETCHEM(gamma_n2o5, dt)
 !
 ! *** Heterogeneous Chemistry
@@ -334,6 +340,7 @@ C	  if(pcontrol.eq.3.or.pcontrol.eq.5.or.pcontrol.eq.0) then
         CALL PUSHREAL4ARRAY(moment2_conc, n_mode)
         CALL PUSHREAL4ARRAY(moment0_conc, n_mode)
         CALL PUSHREAL4ARRAY(aeromode_diam, n_mode)
+        call pushreal4array(precursor_conc, n_precursor)
         CALL VOLINORG(dt, col, row, layer, dv_so4, cgr, m3_wet_flag)
 !	  end if
 !
@@ -1084,6 +1091,7 @@ C	  if(pcontrol.eq.3) then   ! mode merging
      
      
 !        if(pcontrol.eq.3.or.pcontrol.eq.5.or.pcontrol.eq.0) then
+        call popreal4array(precursor_conc, n_precursor)
         CALL POPREAL4ARRAY(aeromode_diam, n_mode)
         CALL POPREAL4ARRAY(moment0_conc, n_mode)
         CALL POPREAL4ARRAY(moment2_conc, n_mode)
@@ -1123,6 +1131,7 @@ C	  if(pcontrol.eq.3) then   ! mode merging
         END DO
 	  
 !	  if(pcontrol.eq.2.or.pcontrol.eq.0.or.pcontrol.eq.6)
+        call popreal4array(precursor_conc, n_precursor)
 !     &     CALL HETCHEM_B(gamma_n2o5, dt)
            CALL HETCHEM_ADJ(gamma_n2o5, dt)
 	 
@@ -1533,6 +1542,7 @@ C	  if(pcontrol.eq.3) then   ! mode merging
 !
 ! *** Begin Execution
         IF (firstime) THEN
+          firstime=.false.
           cofcbar_so4 = SQRT(8.0*rgasuniv/(pi*mwh2so4*1.0e-3))
           h2so4ratm1 = aerospc_mw(aso4_idx)/mwh2so4
           soilfac = 1.0e-9*f6dpi/aerospc(asoil_idx)%density
@@ -2083,17 +2093,24 @@ C	   GAS( 1 ) = GNH3R8 * ( 1.0D-6 / dble(PRECURSOR_MW( NH3_IDX ) ))
 C         GAS( 2 ) = GNO3R8 * ( 1.0D-6 / dble(PRECURSOR_MW( HNO3_IDX ) ))
 C         GAS( 3 ) = GCLR8  * ( 1.0D-6 / dble(PRECURSOR_MW( HCL_IDX )) )
 	  
-	   IF (WI(1)+WI(2)+WI(3)+WI(4)+WI(5) .LE. 1.d-20
-     +   .OR.WI(1)+WI(4)+WI(5) .LE. 1.d-20
-     +   .OR.WI(1)+WI(5) .LE. 1.d-20) THEN
 	        CALL PUSHREAL8ARRAY(aerliq, 12)
 		  CALL PUSHREAL8ARRAY(wi, 5)
 		  
 		  CALL PUSHINTEGER4(0)
 		  CNTRL( 1 ) = 0.0D0   ! Forward Problem
               CNTRL( 2 ) = 1.0D0   ! Aerosol in Metastable State
+
+      ! To prevent calls to ISO at T & P at which
+      !    equilibrium thermodynamics do not govern partitioning
+      ! slc.8.2013 - tested in CMAQv.5.0.1 by Jia Xing
+      if (( AIRTEMP .GT. 230.0 )
+     +       .AND.( AIRPRS .GT. 20000.0 ) ) THEN
+
               CALL ISOROPIA(wi, rhi, tempi, cntrl, wt, gas, aerliq, aersld,
      +                scasi, other, TrustIso)
+      else 
+         TrustIso = .false.
+      endif
 
               IF ( .NOT.TrustIso ) THEN		     
                  CALL POPREAL8ARRAY(wi, 5)
@@ -2104,12 +2121,6 @@ C         GAS( 3 ) = GCLR8  * ( 1.0D-6 / dble(PRECURSOR_MW( HCL_IDX )) )
                  GAS( 2 ) = GNO3R8 * ( 1.0D-6 / dble(PRECURSOR_MW( HNO3_IDX ) ))
                  GAS( 3 ) = GCLR8  * ( 1.0D-6 / dble(PRECURSOR_MW( HCL_IDX )) )
 		  end if
-         ELSE
-	        CALL PUSHINTEGER4(1)
-		   GAS( 1 ) = GNH3R8 * ( 1.0D-6 / dble(PRECURSOR_MW( NH3_IDX ) ))
-               GAS( 2 ) = GNO3R8 * ( 1.0D-6 / dble(PRECURSOR_MW( HNO3_IDX ) ))
-               GAS( 3 ) = GCLR8  * ( 1.0D-6 / dble(PRECURSOR_MW( HCL_IDX )) )
-	   END IF
 !
 ! *** Update gas-phase concentrations
 !
@@ -4203,7 +4214,8 @@ C     Modify vapor pressures and get new fluxes
           END IF
 !
 !     Get single-solute molalities for ZSR calculation
-          CALL GETM0I (M0I)
+!slz          CALL GETM0I (M0I)
+           CALL GETM0I (RH, M0I)
 C          CALL GETM0I_M0I ( RH,T,M0I )
 !
 !     Calculate H2O with ZSR and determine delta water
