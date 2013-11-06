@@ -81,6 +81,10 @@ C Local Variables:
       INTEGER :: IUNIT
       LOGICAL :: XFIRST
 
+      CHARACTER(16) :: FRCFILENAME = 'ADJ_FORC_FILE'
+                                   ! Name of forcing file 
+                                   ! Contains forcing at each output time step
+
       INTEGER :: STEP_NUM       ! current output time step number
       INTEGER :: IREP           ! model step number within this output step
 
@@ -205,6 +209,10 @@ C Get number of advection sub-steps per sync step, NADVSS(L)
          CALL NEXTIME(SDATE, STIME, -TSTEP(1))
 
          CALL ADVSTEP(SDATE, STIME, TSTEP, NADVSS)
+
+         ! Insert call to RD_ADJ_FILE here (9.2013.slc)
+         CALL RD_ADJ_FILE(LGRID_ADD, SDATE, STIME, FRCFILENAME)
+         LGRID = LGRID + LGRID_ADD
 
          DO IREP = NREPS, 1, -1
             CALL SCIPROC_BWD(LGRID, JDATE, JTIME, TSTEP, NADVSS, XFIRST) ! science processes

@@ -59,6 +59,7 @@ C Local Variables:
 
       INTEGER, ALLOCATABLE :: NADVSS(:) ! number of advection sub-steps per sync step
       REAL, POINTER :: LGRID(:, :, :, :)
+      REAL, POINTER :: LGRID_ADD(:, :, :, :)
       INTEGER :: ALLOCSTAT
 
       REAL :: CLOCK             ! Wall-clock time (sec) at initialization.
@@ -80,6 +81,10 @@ C Local Variables:
 
       INTEGER :: IUNIT
       LOGICAL :: XFIRST
+
+      CHARACTER(16) :: FRCFILENAME = 'ADJ_FORC_FILE'
+                                   ! Name of forcing file 
+                                   ! Contains forcing at each output time step
 
       INTEGER :: STEP_NUM       ! current output time step number
       INTEGER :: IREP           ! model step number within this output step
@@ -159,7 +164,9 @@ C Allocate memory
 C Determine the simulation time period and time stepping constants;
 C initialize the LGRID array.
       LGRID(:, :, :, :) = 0.0
+      LGRID_ADD(:, :, :, :) = 0.0
       CALL INIT_LGRID(LGRID, SDATE, STIME, EDATE, ETIME, TSTEP, NSTEPS)
+      CALL INIT_LGRID(LGRID_ADD, SDATE, STIME, EDATE, ETIME, TSTEP, NSTEPS)
 
 C Verify input file header consistency with COORD.EXT and run duration
       CALL FLCHECK(SDATE, STIME, TSTEP(1))
@@ -206,6 +213,10 @@ C Get number of advection sub-steps per sync step, NADVSS(L)
 
          CALL ADVSTEP(SDATE, STIME, TSTEP, NADVSS)
 
+         ! Insert call to RD_ADJ_FILE here (9.2013.slc)
+         CALL RD_ADJ_FILE(LGRID_ADD, SDATE, STIME, FRCFILENAME)
+         LGRID = LGRID + LGRID_ADD
+         
          DO IREP = NREPS, 1, -1
             CALL SCIPROC_BWD(LGRID, JDATE, JTIME, TSTEP, NADVSS, XFIRST) ! science processes
             CALL WR_ADJ_FILE(LGRID, JDATE, JTIME, ADJ_LGRID)
