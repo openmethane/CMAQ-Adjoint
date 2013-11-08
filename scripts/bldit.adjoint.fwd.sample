@@ -13,8 +13,8 @@
 #             http://www.cmascenter.org/help_desk.cfm                 #
 # =================================================================== #
 
-# setenv M3HOME  /home/slc/testcmaq
- setenv M3MODEL /home/slc/cucmaqadj/cmaq_adj
+
+ setenv M3MODEL /work/CLIMSIM/rpe/cmaq_adj
 
 #===============================================================================
 
@@ -244,7 +244,7 @@
  set LINK_FLAGS = "-i-static"
 
 #> Set location of M3Bld executable
- set Blder = "$M3MODEL/BLDMAKE-git/bldmake -verbose"
+ set Blder = "$M3MODEL/BLDMAKE_git/bldmake -verbose"
 
 #> Set location of libraries/include files
 # set IOAPI  = "${M3LIB}/ioapi_3/Linux_64_ifort -lioapi"
