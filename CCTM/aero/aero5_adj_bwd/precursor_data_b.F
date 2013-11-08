@@ -3,7 +3,7 @@
 !
 !:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       MODULE PRECURSOR_DATA_B
-	  use PRECURSOR_DATA
+        use PRECURSOR_DATA
         IMPLICIT NONE
         REAL :: precursor_concb(n_precursor)
         REAL :: so4rateb

@@ -3,7 +3,7 @@
 !
 ! revised by shunliu zhao
       MODULE SOA_DEFN_B
-	use SOA_DEFN
+        use SOA_DEFN
         IMPLICIT NONE
         REAL :: vapor_concb(n_vapor)
         REAL :: orgprod_concb(n_orgprod)
