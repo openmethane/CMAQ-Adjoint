@@ -82,10 +82,6 @@ C Local Variables:
       INTEGER :: IUNIT
       LOGICAL :: XFIRST
 
-      CHARACTER(16) :: FRCFILENAME = 'ADJ_FORC_FILE'
-                                   ! Name of forcing file 
-                                   ! Contains forcing at each output time step
-
       INTEGER :: STEP_NUM       ! current output time step number
       INTEGER :: IREP           ! model step number within this output step
 
@@ -166,7 +162,6 @@ C initialize the LGRID array.
       LGRID(:, :, :, :) = 0.0
       LGRID_ADD(:, :, :, :) = 0.0
       CALL INIT_LGRID(LGRID, SDATE, STIME, EDATE, ETIME, TSTEP, NSTEPS)
-      CALL INIT_LGRID(LGRID_ADD, SDATE, STIME, EDATE, ETIME, TSTEP, NSTEPS)
 
 C Verify input file header consistency with COORD.EXT and run duration
       CALL FLCHECK(SDATE, STIME, TSTEP(1))
@@ -213,8 +208,15 @@ C Get number of advection sub-steps per sync step, NADVSS(L)
 
          CALL ADVSTEP(SDATE, STIME, TSTEP, NADVSS)
 
-         ! Insert call to RD_ADJ_FILE here (9.2013.slc)
-         CALL RD_ADJ_FILE(LGRID_ADD, SDATE, STIME, FRCFILENAME)
+C Read adjoint forcing from file
+         IF ( .NOT. OPEN3(ADJ_FORCE, FSREAD3, PNAME) ) THEN
+            XMSG = 'Could not open ' // TRIM(ADJ_FORCE) // 
+     &             ' file; exiting'
+            CALL M3EXIT(PNAME, SDATE, STIME, XMSG, XSTAT1)
+         ELSE
+            CALL RD_ADJ_FILE(LGRID_ADD, SDATE, STIME, ADJ_FORCE)
+         END IF
+
          LGRID = LGRID + LGRID_ADD
          
          DO IREP = NREPS, 1, -1
