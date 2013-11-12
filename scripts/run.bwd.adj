@@ -99,7 +99,8 @@ set M3DATA = /nobackup/mdturne1
  set BASE2   = /nobackupp8/slcapps/cmaqadj/output
 # Formerly BASE2 = $PTMP/../code/debug # BLD_N4a also
 # set EXEC    = ADJOINT_FWD
- set OUTDIR  = /nobackupp8/slcapps/cmaqadj/output  #$PTMPOUT
+ set FRCDIR  = /nobackup/slcapps/cmaqadj/forcing
+ set OUTDIR  = /nobackup/slcapps/cmaqadj/output  #$PTMPOUT
  #if ( ! -d "$OUTDIR" ) mkdir -p $OUTDIR
  set OUTDIR2  = $OUTDIR
 
@@ -269,17 +270,17 @@ set i = $DAY1
 #> the other species.
 
 #> Receptor species
-# setenv RECPTR_SPC AECJ
+ setenv RECPTR_SPC O3
 
 #> Column, row and level ranges for receptor
 #>>> user must check GRIDDESC for validity!
 # Define receptor location definition file
 # setenv RECPTR_FILENAME "/nobackup/mdturne1/Continental_US_definition.txt"
 # setenv RECPTR_BCOL_ECOL "130 130"
-# setenv RECPTR_BCOL_ECOL "1 396"
+ setenv RECPTR_BCOL_ECOL "1 396"
 # setenv RECPTR_BROW_EROW "68 68"
-# setenv RECPTR_BROW_EROW "1 246"
-# setenv RECPTR_BLEV_ELEV "1 1"
+ setenv RECPTR_BROW_EROW "1 246"
+ setenv RECPTR_BLEV_ELEV "1 1"
 
 #> timestep run parameters for multi-day run
 set begin = 1
@@ -411,6 +412,8 @@ endif
  set EMISpath = /nobackup/slcapps/emis
 # set EMISpath  = /nobackupp2/mdturne1/cctm/2006356/gen_emis
  set EMISfile  = PT3D.V5g_test.${YEAR}${md1[$i]} 
+
+ setenv ADJ_FORCE "$FRCDIR/forc_mort_07.ncf"
 
  set GC_BCpath = $M3DATA/bcon
  set GC_BCfile = BCON_AE6_12US2_${YEAR}${md1[$i]}.ncf
