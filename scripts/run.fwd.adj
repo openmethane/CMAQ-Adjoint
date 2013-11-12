@@ -1,0 +1,441 @@
+#! /bin/csh -f
+
+#PBS -N aero_adj_fwd
+#PBS -l walltime=1:00:00
+# BS -l nodes=4:ppn=6
+# BS -l nodes=8:ppn=8
+# BS -l nodes=2:ppn=4
+#PBS -lselect=6:ncpus=6:model=wes
+#PBS -W group_list=s1143
+# BS -q batch
+#PBS -q devel
+#PBS -V
+#PBS -j oe
+
+# ======================= CCTMv4.7.1 Run Script ===================== #
+# Usage: run.cctm >&! run.cctm.log &                                  #
+# The following environment variables must be set for this script to  #
+# execute properly:                                                   #
+#   setenv M3DATA =  input/output data directory                      #
+# To report problems or request help with this script/program:        #
+#             http://www.cmascenter.org/help_desk.cfm                 #
+# =================================================================== #
+
+# source ./setcase_12km_test
+ set APPL   = aero
+ set M3DATA = /nobackup/mdturne1
+
+#> Check that M3DATA is set:
+ if ( ! -e $M3DATA ) then
+    echo "   $M3DATA path does not exist"
+    exit 1
+    endif
+ echo " "; echo " Input data path, M3DATA set to $M3DATA"; echo " "
+
+#> Set the working directory:
+ set BASE     = /home1/slcapps/cmaq_adj
+
+#> Application name (no default)
+ if ( ! $?APPL ) then
+    echo 'Must set environment variable APPL (application name)'
+    exit 1
+ endif
+
+#> Run mode: "ser" or "par" (default is par)
+# set RM = 'ser'
+ if ( ! $?RM ) then
+    echo 'RM (run mode) was not set; this will be a parallel run'
+    set RM = par
+ else if ( $RM != 'ser' && $RM != 'par' ) then
+    echo 'RM (run mode) was set incorrectly; value must be either ser or par'
+    exit 1
+ endif
+
+ set YR = 7
+ set YER = 07
+ set YEAR = 2007
+ set MONTH = 05             # does not cross months yet
+ set FIRSTDAY  = 20070501   # first day YYYYMMDD
+ set DAY1 = 1 #9              # first day
+ set EDAY = 1 #19 #25              # end day
+ set IDAY = 1              # day for initial conditions
+
+ set APPL_CASE = ${APPL}_fwd
+ set CFG  = $BASE/BLD_${APPL_CASE}/cfg.fwd
+ set EXEC = $BASE/BLD_${APPL_CASE}/ADJOINT_FWD
+
+ cd $BASE; date; cat ${CFG}; echo "    "; set echo
+
+#> horizontal domain decomposition
+ if ( $RM == 'ser' ) then
+    setenv NPCOL_NPROW "1 1"; set NPROCS   = 1 # single processor setting
+ else
+    setenv NPCOL_NPROW "6 6"; set NPROCS   = 36
+#    setenv NPCOL_NPROW "12 16"; set NPROCS   = 192
+#    setenv NPCOL_NPROW "4 6"; set NPROCS   = 24
+ endif
+
+#> Switch to the qsub directory; default launch location
+ if ( $?PBS_JOBID ) then
+    echo Job ID is $PBS_JOBID
+    echo Queue is $PBS_O_QUEUE
+    echo Working directory is $PBS_O_WORKDIR
+    cd $PBS_O_WORKDIR
+ endif
+ echo '>>>>>> start model run at ' `date`
+ set echo # Display each line after variables have been substituted
+
+# Directories
+ #set PTMP    = $PBS_O_WORKDIR
+ set PTMP    = /nobackupp8/slcapps/cmaqadj/output
+ #set PTMP    = /work/MOD3EVAL/has/omi/co_20110224/run
+ set PTMPOUT = $PTMP
+ set BASE    = $PTMP
+ set BASE2   = /nobackupp8/slcapps/cmaqadj/output  
+# Formerly BASE2 = $PTMP/../code/debug # BLD_N4a also
+# set EXEC    = ADJOINT_FWD
+ set OUTDIR  = /nobackupp8/slcapps/cmaqadj/output  #$PTMPOUT
+ #if ( ! -d "$OUTDIR" ) mkdir -p $OUTDIR
+ set OUTDIR2  = $OUTDIR
+
+# Set up
+limit stacksize 100000
+limit stacksize unlimited
+
+#> set log file [ default = unit 6 ]; uncomment to write standard output to a log
+#setenv LOGFILE $BASE/$APPL_CASE.log
+
+#> turn off excess WRITE3 logging
+ setenv IOAPI_LOG_WRITE F
+
+#> max sync time step (sec) (default is 720)
+#setenv CTM_MAXSYNC 720
+setenv CTM_MAXSYNC 400 
+
+#> min sync time step (sec) (default is 60)
+#setenv CTM_MINSYNC 720
+setenv CTM_MINSYNC 400
+
+#> sync time step (sec) (default is 600)
+#setenv CTM_SYNC_STEP 600
+
+#> top sigma level thru which sync step determined (default is 0.7)
+#setenv SIGMA_SYNC_TOP 0.7
+
+#> maximum allowable horizontal divergence for an advection step (default is 1.0)
+#setenv ADV_HDIV_LIM 1.0
+
+#> aerosol diagnostic file [ T | Y | F | N ] (default is F|N)
+#setenv CTM_AERDIAG Y
+
+#> sea-salt emissions diagnostic file [ T | Y | F | N ] (default is F|N)
+#setenv CTM_SSEMDIAG Y
+
+#> flag for in-line deposition velocities [ T | Y | F | N ] (default is T|Y)
+#setenv CTM_ILDEPV F
+
+#> use in-line plume rise emissions [ N|F ]
+ setenv CTM_PT3DEMIS F
+
+ if ( $?CTM_PT3DEMIS ) then   # $CTM_PT3DEMIS is defined
+    if ( $CTM_PT3DEMIS == 'Y' || $CTM_PT3DEMIS == 'T' ) then
+       set pt3don = 1
+       setenv PT3DDIAG Y  # optional 3d point source emissions diagnostic file [N]
+    else
+       set pt3don = 0
+    endif
+ else   # $CTM_PT3DEMIS is not defined => $CTM_PT3DEMIS == 'N
+    set pt3don = 0
+ endif
+
+#> Kz min on flag [ T | Y | F | N ]
+ setenv KZMIN N
+
+#> stop on inconsistent input file [ T | Y | F | N ]
+ setenv FL_ERR_STOP F
+
+#> turn off I/O-API PROMPT*FILE interactive mode
+setenv PROMPTFLAG F
+
+#> set ancillary log file name extensions
+ setenv CTM_APPL $APPL_CASE
+
+#> horizontal grid defn; check GRIDDESC file for GRID_NAME options
+# setenv GRIDDESC /home/mturner/CMAQ/scripts/GRIDDESC2
+# setenv GRID_NAME M_36_2001
+# setenv GRIDDESC /home/mturner/CMAQ/scripts/GRIDDESC3
+ setenv GRIDDESC /nobackup/mdturne1/GRIDDESC12
+ setenv GRID_NAME 12US2
+
+##> species for standard conc
+#setenv CONC_SPCS "O3 AECJ NO CO NO2 NH3 A25J ASO4J ANH4J ANO3J"
+
+##> layer range for standard conc
+#setenv CONC_BLEV_ELEV " 1 4"
+
+#> species for integral average conc
+setenv AVG_CONC_SPCS "O3 AECJ NO CO NO2 NH3 A25J ASO4J ANH4J ANO3J"
+#setenv AVG_CONC_SPCS "ALL"
+#setenv AVG_CONC_SPCS "O3 NO CO NO2"
+# setenv AVG_CONC_SPCS ""
+
+#> layer range for integral average conc
+ setenv ACONC_BLEV_ELEV " 1 1"
+
+#> input files and directories
+
+# setenv CTM_XFIRST_IN 
+
+# set OCEANpath = /data/mturner/data/emis/2001
+# set OCEANfile = us36_surf.40x44.ncf
+ set OCEANpath = $M3DATA/emis/2007
+ set OCEANfile = 12US2_surf.ncf
+
+#set TR_EMpath =
+#set TR_EMfile =
+
+# Julian day adjustment (non-leap year is commented out)
+if ( $MONTH == 01 ) then
+ set juladd = 0
+else if ( $MONTH == 02 ) then
+ set juladd = 31
+else if ( $MONTH == 03 ) then
+ set juladd = 59  #60
+else if ( $MONTH == 04 ) then
+ set juladd = 90  #91
+else if ( $MONTH == 05 ) then
+ set juladd = 120 #121
+else if ( $MONTH == 06 ) then
+ set juladd = 151 #152
+else if ( $MONTH == 07 ) then
+ set juladd = 181 #182
+else if ( $MONTH == 08 ) then
+ set juladd = 212 #213
+else if ( $MONTH == 09 ) then
+ set juladd = 243 #244
+else if ( $MONTH == 10 ) then
+ set juladd = 273 #274
+else if ( $MONTH == 11 ) then
+ set juladd = 304 #305
+else if ( $MONTH == 12 ) then
+ set juladd = 334 #335
+else
+ echo " MONTH MUST BE BETWEEN 1-12 "
+ exit (1)
+endif
+
+set dd1 = `seq $DAY1 $EDAY`
+set i = $DAY1
+ while ( $i <= $EDAY )
+   @ jd = $juladd + $i
+   if ( $i == $DAY1 ) then
+     set md1 = ( ${MONTH}0$i )
+     if ( $jd < 10 ) then
+       set jd1 = ( 00$jd )
+     else
+       if ( $jd < 100 ) then
+         set jd1 = ( 0$jd )
+       else
+         set jd1 = ( $jd )
+       endif
+     endif
+   else
+     if ( $i < 10 ) then
+        set md1 = ( $md1 ${MONTH}0$i )
+     else
+        set md1 = ( $md1 ${MONTH}$i )
+     endif
+     if ( $jd < 10 ) then
+       set jd1 = ( $jd1 00$jd )
+     else
+       if ( $jd < 100 ) then
+         set jd1 = ( $jd1 0$jd )
+       else
+         set jd1 = ( $jd1 $jd )
+       endif
+     endif
+   endif
+   @ i ++
+ end
+
+
+# Set start and end days
+ @ day  = $DAY1
+ @ eday = $EDAY
+ set i = $DAY1
+#foreach day ($days)#################################################
+while ( $day <= $eday )
+
+ date; echo " "
+
+ echo $day
+ set STDAT  = `echo $day | awk '{printf("%2.2d",$1)}'`
+ @ STDATE   = $day + $juladd + $YR * 1000 + 2000000
+ set APPL   = $YEAR$MONTH$STDAT
+# set EMISDATE   = $YEAR$MONTH$day
+ echo $STDAT
+
+ set STTIME   = 000000        # beginning hour (GMT)
+ set NSTEPS   = 050000 # test only - usually  240000        # time duration (HHMMSS) for this run
+ set TSTEP    = 010000        # output time step interval (HHMMSS)
+
+ set yest = `echo $day | awk '{printf("%2.2d",$1-1)}'`
+ set yesterday = $YEAR$MONTH$yest
+
+ cd $BASE; date; set timestamp;
+
+#> set floor file (neg concs)
+ setenv FLOOR_FILE $BASE2/FLOOR_${APPL_CASE}_${STDATE}
+
+#> remove existing output files?
+#set DISP = delete
+ set DISP = update
+#set DISP = keep
+
+#> output files and directories
+ set OUTDIR   = /nobackupp8/slcapps/cmaqadj/output  #$BASE/output # mdt
+ if ( ! -d "$OUTDIR" ) mkdir -p $OUTDIR
+ set CONCfile  = CONC.${APPL}.238    # CTM_CONC_1
+ set ACONCfile = ACONC.${APPL}.238   # CTM_ACONC_1
+ set CGRIDfile = CGRID.${APPL}.238   # CTM_CGRID_1
+ set DD1file   = DRYDEP.${APPL}.238  # CTM_DRY_DEP_1
+ set WD1file   = WETDEP1.${APPL}.238 # CTM_WET_DEP_1
+ set WD2file   = WETDEP2.${APPL}.238 # CTM_WET_DEP_2
+ set SS1file   = SSEMIS1.${APPL}.238 # CTM_SSEMIS_1
+ set AV1file   = AEROVIS.${APPL}.238 # CTM_VIS_1
+ set AD1file   = AERODIAM.${APPL}.238 # CTM_DIAM_1
+ set PA1file   = PA_1.${APPL}.238    # CTM_IPR_1
+ set PA2file   = PA_2.${APPL}.238    # CTM_IPR_2
+ set PA3file   = PA_3.${APPL}.238    # CTM_IPR_3
+ set IRR1file  = IRR_1.${APPL}.238   # CTM_IRR_1
+ set IRR2file  = IRR_2.${APPL}.238   # CTM_IRR_2
+ set IRR3file  = IRR_3.${APPL}.238   # CTM_IRR_3
+ set RJ1file   = RJ_1.${APPL}.238    # CTM_RJ_1
+ set RJ2file   = RJ_2.${APPL}.238    # CTM_RJ_2
+
+ setenv ADJ_CHEM_CHK "$OUTDIR/CHEM_CHK.${APPL}.238 -v"
+ setenv ADJ_VDIFF_CHK "$OUTDIR/VDIFF_CHK.${APPL}.238 -v"
+ setenv ADJ_AERO_CHK "$OUTDIR/AERO_CHK.${APPL}.238 -v"
+ setenv ADJ_RHOJ_CHK "$OUTDIR/RHOJ_CHK.${APPL}.238 -v"
+ setenv ADJ_XADV_CHK "$OUTDIR/XADV_CHK.${APPL}.238 -v"
+ setenv ADJ_YADV_CHK "$OUTDIR/YADV_CHK.${APPL}.238 -v"
+ setenv ADJ_ZADV_CHK "$OUTDIR/ZADV_CHK.${APPL}.238 -v"
+
+ setenv CTM_XFIRST_OUT $OUTDIR/XFIRST.${APPL}.238
+
+ setenv EMISDATE ${YEAR}${md1[$i]}
+# Emissions without the stacks in 3D
+# set EMISpath  = /nobackup/mdturne1/emis/2007
+# Emissions with stacks in 3D
+ set EMISpath = /nobackup/slcapps/emis
+# set EMISfile  = e3d.${EMISDATE}.12EUS1_279X240.cb05soa.24.ncf
+ set EMISfile = PT3D.V5g_test.${EMISDATE}
+
+ if ( $APPL == $FIRSTDAY ) then
+   set GC_ICpath = /nobackup/mdturne1/icon
+   set GC_ICfile = ICON_2007aq_07c_AERO6_inline_20061222.396_246
+   setenv CTM_XFIRST_IN
+ else
+   set GC_ICpath = $OUTDIR
+   set GC_ICfile = CGRID.${yesterday}.238
+   setenv CTM_XFIRST_IN $OUTDIR/XFIRST.${yesterday}
+ endif
+
+ set METpath   = $M3DATA/met/M_2007 
+ set extn      = $YER${md1[$i]}.w
+ set GC2file = GRIDCRO2D_${extn}
+ set GD2file = GRIDDOT2D_${extn}
+ set MC2file = METCRO2D_${extn}
+ set MD3file = METDOT3D_${extn}
+ set MC3file = METCRO3D_${extn}
+ set MB3file = METCRO3D.bdy_${extn}
+
+ set TR_DVpath = $METpath
+ set TR_DVfile = $MC2file
+
+ set GC_BCpath = $M3DATA/bcon
+ set GC_BCfile = BCON_AE6_12US2_${YEAR}${md1[$i]}.ncf
+
+#> 7-level photolysis data w/ file header
+ set JVALpath  = $M3DATA/jproc
+# set JVALfile  = JTABLE_${year}${jd1[$i]}
+ set JVALfile  = JTABLE_2007152
+
+ set AE_ICpath = $GC_ICpath
+ set NR_ICpath = $GC_ICpath
+ set TR_ICpath = $GC_ICpath
+ set AE_ICfile = $GC_ICfile
+ set NR_ICfile = $GC_ICfile
+ set TR_ICfile = $GC_ICfile
+
+ set AE_BCpath = $GC_BCpath
+ set NR_BCpath = $GC_BCpath
+ set TR_BCpath = $GC_BCpath
+ set AE_BCfile = $GC_BCfile
+ set NR_BCfile = $GC_BCfile
+ set TR_BCfile = $GC_BCfile
+
+#> input and output files and directories (boilerplate)
+# source $BASE/in_out.q
+ source /home1/slcapps/cmaq_adj/scripts/in_out.q
+ if ( $status ) exit 1
+
+#> for the run control ...
+
+ setenv CTM_STDATE      $STDATE
+ setenv CTM_STTIME      $STTIME
+ setenv CTM_RUNLEN      $NSTEPS
+ setenv CTM_TSTEP       $TSTEP
+ setenv CTM_PROGNAME    $EXEC
+
+#> look for existing log files
+# set test = `ls CTM_LOG_???.${APPL_CASE}`
+# if ( "$test" != "" ) then
+    if ( $DISP == 'delete' ) then
+       echo " ancillary log files being deleted"
+#       foreach file ( $test )
+#          echo " deleting $file"
+#          rm $file
+#       end
+       ls CTM_LOG_???.${APPL_CASE} | xargs rm
+    else if ( $DISP == 'update' ) then
+       echo " ancillary log files being deleted"
+#       foreach file ( $test )
+#          echo " deleting $file"
+#          rm $file
+#       end
+       ls CTM_LOG_???.${APPL_CASE} | xargs rm
+    else
+       echo "*** Logs exist - run ABORTED ***"
+       exit 1
+    endif
+# endif
+
+#> - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ env
+
+ ls -l $EXEC; size $EXEC
+
+ if ( $RM == 'ser' ) then
+#> Executable call for single PE
+    /usr/bin/time $EXEC
+ else
+#> Executable call for multiple PE, set location of MPIRUN script
+#    set MPIRUN = /opt/mpich/bin/mpirun
+#    set TASKMAP = $HOME/loc/machines
+#    cat $TASKMAP
+#    set MPIRUN = /nasa/intel/impi/4.0.0.028/bin64/mpirun
+    set MPIRUN = /nasa/sgi/mpt/2.06rp16/bin/mpiexec
+    time $MPIRUN -np $NPROCS $EXEC
+ endif
+
+# date
+
+ @ day++  # increment day
+
+ end
+
+ echo 'end model run at ' `date`
+
+ exit
