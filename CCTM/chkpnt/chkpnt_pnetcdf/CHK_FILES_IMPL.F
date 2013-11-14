@@ -54,20 +54,21 @@
 !                               partialy inspired by CRTFIL3 from IOAPI3
 !   Oct  2010 by J.Resler, ICS: Adapted for integration into the new
 !                               CMAQ adjoint version
+!   July 2013 by J.Resler, ICS: Long data file format, cleaning
 !-----------------------------------------------------------------------
 
-        USE GRID_CONF             ! horizontal & vertical domain specifications
-		USE CHK_FILES_DEFS
-		USE PNETCDF
-	    IMPLICIT NONE
+      USE GRID_CONF             ! horizontal & vertical domain specifications
+      USE CHK_FILES_DEFS
+      USE PNETCDF
+      IMPLICIT NONE
 
 !...........   INCLUDES:
 
-        INCLUDE SUBST_IOPARMS
-        INCLUDE SUBST_STATE
-        INCLUDE SUBST_IOFDESC
-!        INCLUDE SUBST_NETCDF
-        INCLUDE SUBST_MPICH       ! MPI definitions and parameters
+      INCLUDE SUBST_IOPARMS     ! I/O parameters definitions
+      INCLUDE SUBST_IODECL      ! I/O definitions and declarations
+      INCLUDE SUBST_IOFDESC
+      INCLUDE SUBST_STATE
+      INCLUDE SUBST_MPICH       ! MPI definitions and parameters
 
 !  EXTERNAL function
         INTEGER, EXTERNAL         :: TRIMLEN
@@ -80,22 +81,22 @@
 !  LOCAL VARIABLES and their descriptions:
 !
         CHARACTER(NAMLEN_ADJ)    :: PNAME = 'FDV_FILE_CREATE'
-		INTEGER                  :: ISCR
-		INTEGER                  :: IERR            !  netCDF error status return
-		INTEGER                  :: VAR             !  loop counter for file variables
-!		INTEGER                  :: TSIZE           !  time-step mode
-		INTEGER                  :: DSIZE           !  D/T width
-		INTEGER                  :: CDIM            !  col/level     dim #
-		INTEGER                  :: RDIM            !  row/site      dim #
-		INTEGER                  :: LDIM            !  layer         dim #
-		INTEGER                  :: DDIM            !  timestamp date-and-time dimension #
-		INTEGER                  :: TDIM            !  timestamp date-and-time dimension #
-		INTEGER                  :: VDIM            !  variable-flag dim #
-		INTEGER                  :: NDIMS           !  number of dims for NCVDEF()
-		INTEGER                  :: DIMS( 4 )  !  array of dims for NCVDEF()
-		INTEGER                  :: DELS( 4 )  !  array of dims for NCVPT()
-		CHARACTER(NAMLEN_ADJ)    :: DSCBUF          !  scratch buffer for descriptions
-		CHARACTER(MXDLEN_ADJ)    :: DSCBU2          !  scratch buffer for descriptions
+        INTEGER                  :: ISCR
+        INTEGER                  :: IERR            !  netCDF error status return
+        INTEGER                  :: VAR             !  loop counter for file variables
+!        INTEGER                  :: TSIZE           !  time-step mode
+        INTEGER                  :: DSIZE           !  D/T width
+        INTEGER                  :: CDIM            !  col/level     dim #
+        INTEGER                  :: RDIM            !  row/site      dim #
+        INTEGER                  :: LDIM            !  layer         dim #
+        INTEGER                  :: DDIM            !  timestamp date-and-time dimension #
+        INTEGER                  :: TDIM            !  timestamp date-and-time dimension #
+        INTEGER                  :: VDIM            !  variable-flag dim #
+        INTEGER                  :: NDIMS           !  number of dims for NCVDEF()
+        INTEGER                  :: DIMS( 4 )  !  array of dims for NCVDEF()
+        INTEGER                  :: DELS( 4 )  !  array of dims for NCVPT()
+        CHARACTER(NAMLEN_ADJ)    :: DSCBUF          !  scratch buffer for descriptions
+        CHARACTER(MXDLEN_ADJ)    :: DSCBU2          !  scratch buffer for descriptions
 
         type(CHK_FILE),pointer   :: CHK
         CHARACTER(16)            :: FNAME           ! checkpoint file name
@@ -107,15 +108,14 @@
         INTEGER(KIND=MPI_OFFSET_KIND),parameter :: ONELEN=1
         INTEGER                   :: IVAL(1)
         REAL                      :: RVAL(1)
-        DOUBLE PRECISION         :: DVAL(1)
+        DOUBLE PRECISION          :: DVAL(1)
 
-        REAL*8                     :: XORIG         ! xorig of the local patch (REAL*8 in accordance with IOAPI-3)
-        REAL*8                     :: YORIG         ! yorig of the local patch
+        REAL*8                    :: XORIG         ! xorig of the local patch (REAL*8 in accordance with IOAPI-3)
+        REAL*8                    :: YORIG         ! yorig of the local patch
 
         CHARACTER(MXVARS3*NAMLEN3):: CHARVARS
-        CHARACTER(2*MXDLEN3)      :: CHARDESC
         CHARACTER(MXDLEN3*MXDESC3):: CHARSCNDSC
-        INTEGER                  :: I
+        INTEGER                   :: I
 
 !.............................................................................
 !   begin body of subroutine  CHK_CREATE_FILE
@@ -141,7 +141,7 @@
 
 
 !...........  Create netCDF file and proceed...
-      FMODE = NF_CLOBBER
+      FMODE = NF_CLOBBER + NF_64BIT_DATA
       IERR = NFMPI_CREATE( MPI_COMM_WORLD, FULLNAME, FMODE, MPI_INFO_NULL, FNUM )
       IF ( IERR .NE. NF_NOERR ) THEN
           CALL M3ABORT( FNAME, FNUM, IERR, 'Error creating netCDF file' )
@@ -150,7 +150,6 @@
           GO TO 999
       END IF          !  ierr nonzero:  NCCRE() failed
       CHK%FNUM = FNUM
-      write(logdev,*) 'po create'
 !
 !...........   Set attributes valid for all file types:
 !.......   IOAPI_VERSION:  I/O API version and date
@@ -419,6 +418,9 @@
 
 !.......   Variables-list for the file:
       IF( CHK%NVARS .GT. 0 ) THEN
+          DO I = 1, CHK%NVARS*NAMLEN3
+              CHARVARS(I:I) = ' '
+          ENDDO
           DO I = 1, CHK%NVARS
               CHARVARS(1+(I-1)*NAMLEN3:I*NAMLEN3) = CHK%VNAME(I)
           ENDDO
@@ -432,10 +434,8 @@
       END IF
 
 !.......   FILEDESC:  file description
-      CHARDESC(1:MXDLEN3) = CHK%FDESC(1)
-      CHARDESC(MXDLEN3+1:2*MXDLEN3) = CHK%FDESC(2)
-      VLEN = 2*MXDLEN3
-      IERR = NFMPI_PUT_ATT_TEXT(FNUM, NF_GLOBAL, 'FILEDESC', VLEN, CHARDESC)
+      VLEN = TRIMLEN( CHK%FDESC(1) )
+      IERR = NFMPI_PUT_ATT_TEXT(FNUM, NF_GLOBAL, 'FILEDESC', VLEN, CHK%FDESC(1))
       IF ( IERR .NE. 0 ) THEN
           CALL M3ABORT( FNAME, FNUM, IERR,
      &        'Error creating netCDF file attribute FILEDESC ' )
@@ -444,7 +444,7 @@
 
 !...............   Now define dimensions for the file:
 !...........   First:  time-step and layer-number dimensions
-      VLEN = NF_UNLIMITED
+      VLEN = NFMPI_UNLIMITED
       DSIZE = 2               !  for ddim
       IERR = NFMPI_DEF_DIM(FNUM, 'TSTEP', VLEN, TDIM)
       IF ( IERR .NE. 0 ) THEN
@@ -481,9 +481,6 @@
       DIMS( 1 ) = DDIM        !  date field or time field
       DIMS( 2 ) = VDIM        !  variable number
       DIMS( 3 ) = TDIM        !  time step dimension
-      DSCBUF = '<YYYYDDD,HHMMSS>'
-      DSCBU2 = 'Timestep-valid flags:  (1) YYYYDDD or (2) HHMMSS'
-
 
 !...........   Create timestep-available-flag variable:
       IERR = NFMPI_DEF_VAR(FNUM, 'TFLAG', NF_INT, NDIMS, DIMS(1:NDIMS), CHK%TINDX)
@@ -493,7 +490,8 @@
           GO TO 999
       END IF
 
-      VLEN = NAMLEN_ADJ
+      DSCBUF = '<YYYYDDD,HHMMSS>'
+      VLEN = TRIMLEN( DSCBUF )
       IERR = NFMPI_PUT_ATT_TEXT(FNUM, CHK%TINDX, 'units', VLEN, DSCBUF)
       IF ( IERR .NE. 0 ) THEN
           CALL M3ABORT( FNAME, FNUM, IERR,
@@ -502,7 +500,7 @@
       END IF
 
       DSCBUF = 'TFLAG'
-      VLEN = NAMLEN_ADJ
+      VLEN = TRIMLEN( DSCBUF )
       IERR = NFMPI_PUT_ATT_TEXT(FNUM, CHK%TINDX, 'long_name', VLEN, DSCBUF)
       IF ( IERR .NE. 0 ) THEN
           CALL M3ABORT( FNAME, FNUM, IERR,
@@ -510,14 +508,14 @@
           GO TO 999
       END IF
 
-      VLEN = MXDLEN_ADJ
+      DSCBU2 = 'Timestep-valid flags:  (1) YYYYDDD or (2) HHMMSS'
+      VLEN = TRIMLEN( DSCBU2 )
       IERR = NFMPI_PUT_ATT_TEXT(FNUM, CHK%TINDX, 'var_desc', VLEN, DSCBU2)
       IF ( IERR .NE. 0 ) THEN
           CALL M3ABORT( FNAME, FNUM, IERR,
      &        'Error creating FLAG attribute VAR_DESC ')
           GO TO 999
       END IF
-
 
 !...........   Now, other dimensions (depend upon file type):
       VLEN = GL_NROWS
@@ -570,7 +568,7 @@
 
 !...............   Now define attributes for the variables:
 !...........   Note:  "long_name" and "units" are standard netCDF attributes.
-            VLEN = NAMLEN_ADJ
+            VLEN = TRIMLEN( CHK%VNAME(VAR) )
             IERR = NFMPI_PUT_ATT_TEXT(FNUM, CHK%VINDX(VAR), 'long_name', VLEN, CHK%VNAME(VAR))
             IF ( IERR .NE. 0 ) THEN
                 DSCBU2 =
@@ -579,7 +577,7 @@
                 GO TO 999
             END IF
 
-            VLEN = NAMLEN_ADJ
+            VLEN = TRIMLEN( CHK%UNITS(VAR) )
             IERR = NFMPI_PUT_ATT_TEXT(FNUM, CHK%VINDX(VAR), 'units', VLEN, CHK%UNITS(VAR))
             IF ( IERR .NE. 0 ) THEN
                 WRITE( LOGDEV,91010 )
@@ -590,7 +588,7 @@
                 GO TO 999
             END IF
 
-            VLEN = MXDLEN_ADJ
+            VLEN = TRIMLEN( CHK%VDESC(VAR) )
             IERR = NFMPI_PUT_ATT_TEXT(FNUM, CHK%VINDX(VAR), 'var_desc', VLEN, CHK%VDESC(VAR))
             IF ( IERR .NE. 0 ) THEN
                 DSCBU2 =
@@ -599,7 +597,6 @@
                 CALL M3ABORT( FNAME, FNUM, IERR, DSCBU2 )
                 GO TO 999
             END IF
-
 
       END DO        ! end loop on VAR, defining variables & attributes
 
@@ -1050,7 +1047,7 @@ C...........   EXTERNAL FUNCTIONS and their descriptions:
       DIMTS( 3 ) = STEP       !  time start
       DELTS( 3 ) = 1          !  time extent:  1
 
-      write(logdev,*) 'Writing chk_file: ', CHK%FNUM, FNAME, JDATE, JTIME, STEP
+      write(logdev,*) 'Writing chk_file: ', CHK%FNUM, trim(FNAME), JDATE, JTIME, STEP
 !...............   Write contents of the buffer for each variable
 
       ALLOCATE(BUFFER(NCOLS*NROWS*NLAYS))
@@ -1159,11 +1156,11 @@ C...........   EXTERNAL FUNCTIONS and their descriptions:
 
 !   Create the real file name
       IF ( TRIM(FULLNAME) .EQ. '' ) THEN
-         WRITE(LOGDEV,92001) TRIM(FNAME),CHK%SDATE
+!         WRITE(LOGDEV,92001) TRIM(FNAME),CHK%SDATE
          WRITE(FULLNAME,92001) TRIM(FNAME),CHK%SDATE
 92001    FORMAT (  A , "_", I7 )
       ELSE
-         WRITE(LOGDEV,92002) TRIM(FULLNAME),TRIM(FNAME),CHK%SDATE
+!         WRITE(LOGDEV,92002) TRIM(FULLNAME),TRIM(FNAME),CHK%SDATE
          WRITE(FULLNAME,92002) TRIM(FULLNAME),TRIM(FNAME),CHK%SDATE
 92002    FORMAT (  A , "/", A , "_", I7 )
       END IF

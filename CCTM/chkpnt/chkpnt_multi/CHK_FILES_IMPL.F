@@ -57,9 +57,9 @@
 !-----------------------------------------------------------------------
 
         USE GRID_CONF             ! horizontal & vertical domain specifications
-		USE CHK_FILES_DEFS
-		USE NETCDF
-	    IMPLICIT NONE
+        USE CHK_FILES_DEFS
+        USE NETCDF
+        IMPLICIT NONE
 
 !...........   INCLUDES:
         INCLUDE SUBST_IOPARMS
@@ -74,23 +74,23 @@
 
 !  LOCAL VARIABLES and their descriptions:
 !
-        CHARACTER(NAMLEN_ADJ)    :: PNAME = 'FDV_FILE_CREATE'
-		INTEGER                  :: ISCR
-		INTEGER                  :: IERR            !  netCDF error status return
-		INTEGER                  :: VAR             !  loop counter for file variables
-		INTEGER                  :: TSIZE           !  time-step mode
-		INTEGER                  :: DSIZE           !  D/T width
-		INTEGER                  :: CDIM            !  col/level     dim #
-		INTEGER                  :: RDIM            !  row/site      dim #
-		INTEGER                  :: LDIM            !  layer         dim #
-		INTEGER                  :: DDIM            !  timestamp date-and-time dimension #
-		INTEGER                  :: TDIM            !  timestamp date-and-time dimension #
-		INTEGER                  :: VDIM            !  variable-flag dim #
-		INTEGER                  :: NDIMS           !  number of dims for NCVDEF()
-		INTEGER                  :: DIMS( 4 )       !  array of dims for NCVDEF()
-		INTEGER                  :: DELS( 4 )       !  array of dims for NCVPT()
-		CHARACTER(NAMLEN_ADJ)    :: DSCBUF          !  scratch buffer for descriptions
-		CHARACTER(MXDLEN_ADJ)    :: DSCBU2          !  scratch buffer for descriptions
+        CHARACTER(NAMLEN_ADJ)    :: PNAME = 'CHK_FILE_CREATE_IMPL'
+        INTEGER                  :: ISCR
+        INTEGER                  :: IERR            !  netCDF error status return
+        INTEGER                  :: VAR             !  loop counter for file variables
+        INTEGER                  :: TSIZE           !  time-step mode
+        INTEGER                  :: DSIZE           !  D/T width
+        INTEGER                  :: CDIM            !  col/level     dim #
+        INTEGER                  :: RDIM            !  row/site      dim #
+        INTEGER                  :: LDIM            !  layer         dim #
+        INTEGER                  :: DDIM            !  timestamp date-and-time dimension #
+        INTEGER                  :: TDIM            !  timestamp date-and-time dimension #
+        INTEGER                  :: VDIM            !  variable-flag dim #
+        INTEGER                  :: NDIMS           !  number of dims for NCVDEF()
+        INTEGER                  :: DIMS( 4 )       !  array of dims for NCVDEF()
+        INTEGER                  :: DELS( 4 )       !  array of dims for NCVPT()
+        CHARACTER(NAMLEN_ADJ)    :: DSCBUF          !  scratch buffer for descriptions
+        CHARACTER(MXDLEN_ADJ)    :: DSCBU2          !  scratch buffer for descriptions
 
         type(CHK_FILE),pointer   :: CHK
         CHARACTER(16)            :: FNAME           ! checkpoint file name
