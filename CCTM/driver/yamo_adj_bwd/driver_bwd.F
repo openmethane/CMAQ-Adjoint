@@ -58,8 +58,9 @@ C Local Variables:
       CHARACTER(2) :: COLROW = 'CR' ! col/row arg list order
 
       INTEGER, ALLOCATABLE :: NADVSS(:) ! number of advection sub-steps per sync step
-      REAL, POINTER :: LGRID(:, :, :, :)
-      REAL, POINTER :: LGRID_ADD(:, :, :, :)
+      REAL, POINTER :: LGRID(:, :, :, :)  ! adjoint accumulation variable
+      REAL, POINTER :: LGRID_ADD(:, :, :, :)   ! adjoint forcing at sync step
+      REAL, POINTER :: LGRID_ADD_TOT(:, :, :, :)   ! adjoint forcing at output step from file
       INTEGER :: ALLOCSTAT
 
       REAL :: CLOCK             ! Wall-clock time (sec) at initialization.
@@ -102,9 +103,10 @@ C Local Variables:
             INTEGER, INTENT(IN)  :: TSTEP(2)
             INTEGER, INTENT(OUT) :: NADVSS(:)
          END SUBROUTINE ADVSTEP
-         SUBROUTINE SCIPROC_BWD(LGRID, JDATE, JTIME, TSTEP, NADVSS, XFIRST)
+         SUBROUTINE SCIPROC_BWD(LGRID, LGRID_ADD, JDATE, JTIME, TSTEP, NADVSS, XFIRST)
             IMPLICIT NONE
             REAL, POINTER          :: LGRID(:, :, :, :)
+            REAL, POINTER          :: LGRID_FRC(:, :, :, :)
             INTEGER, INTENT(INOUT) :: JDATE, JTIME
             INTEGER, INTENT(IN)    :: TSTEP(2)
             INTEGER, INTENT(IN)    :: NADVSS(:)
@@ -160,7 +162,8 @@ C Allocate memory
 C Determine the simulation time period and time stepping constants;
 C initialize the LGRID array.
       LGRID(:, :, :, :) = 0.0
-      LGRID_ADD(:, :, :, :) = 0.0
+      LGRID_FRC(:, :, :, :) = 0.0
+      LGRID_FRC_TOT(:, :, :, :) = 0.0
       CALL INIT_LGRID(LGRID, SDATE, STIME, EDATE, ETIME, TSTEP, NSTEPS)
 
 C Verify input file header consistency with COORD.EXT and run duration
@@ -214,15 +217,20 @@ C Read adjoint forcing from file
      &             ' file; exiting'
             CALL M3EXIT(PNAME, SDATE, STIME, XMSG, XSTAT1)
          ELSE
-            CALL RD_ADJ_FILE(LGRID_ADD, SDATE, STIME, ADJ_FORCE)
+            CALL RD_ADJ_FILE(LGRID_FRC_TOT, SDATE, STIME, ADJ_FORCE)
          END IF
 
-         LGRID = LGRID + LGRID_ADD
+C Since offline forcing is based on concentrations averaged over the output time step,
+C   the forcing can simply be allocated evenly to each synchronization time step. 11.2013.slc
+         LGRID_FRC = LGRID_FRC_TOT / NSTEPS
          
          DO IREP = NREPS, 1, -1
-            CALL SCIPROC_BWD(LGRID, JDATE, JTIME, TSTEP, NADVSS, XFIRST) ! science processes
-            CALL WR_ADJ_FILE(LGRID, JDATE, JTIME, ADJ_LGRID)
+            CALL SCIPROC_BWD(LGRID, LGRID_FRC, JDATE, JTIME, TSTEP, 
+     &                       NADVSS, XFIRST)                     ! science processes
          END DO
+         
+         CALL WR_ADJ_FILE(LGRID, JDATE, JTIME, ADJ_LGRID)
+     
       END DO
 
 C Write the final value of XFIRST to the file CTM_XFIRST_OUT
