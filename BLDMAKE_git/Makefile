@@ -28,6 +28,6 @@ $(EXEC): $(OBJS)
 	$(FC) -c $(F_FLAGS) $<
 
 clean:
-	rm *.o *.mod bldmake
+	rm -f *.o *.mod bldmake
 # make file to build bldmake program
 

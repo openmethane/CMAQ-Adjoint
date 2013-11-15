@@ -537,9 +537,9 @@
       Character( EXT_LEN ) :: mech_inc
       Character( EXT_LEN ) :: pa_inc
 
-      Character( EXT_LEN ) :: pathName(3) = (/'BASE_INC', 'MECH_INC', 'PA_INC'/)
+      Character( EXT_LEN ) :: pathName(3) = (/'BASE_INC', 'MECH_INC', 'PA_INC  '/)
       Character( EXT_LEN ) :: pathChk(3) =
-     &                     (/'SUBST_CONST', 'SUBST_RXCMMN', 'SUBST_PACTL_ID'/)
+     &                     (/'SUBST_CONST   ', 'SUBST_RXCMMN  ', 'SUBST_PACTL_ID'/)
       Integer              :: pathInd(3) = (/ 2, 1, 1 /)
       Character( EXT_LEN ) :: pathStr(3)
       Logical              :: hasPaths

@@ -1012,7 +1012,8 @@ TimeLoop: DO WHILE ( (Direction > 0).AND.((T-Tend)+Roundoff <= ZERO) &
 !~~~>  Compute the function derivative with respect to T
    IF (.NOT.Autonomous) THEN
       CALL ros_FunTimeDerivative ( T, Roundoff, Y, &
-                Fcn0, dFdT )
+                Fcn0, dFdT, RKI )
+!JR                Fcn0, dFdT )
    END IF
   
 !~~~>   Compute the Jacobian at current time
@@ -1151,7 +1152,8 @@ Stage: DO istage = 1, ros_S
 #endif       
        IF (.NOT. Autonomous) THEN
            CALL ros_FunTimeDerivative ( T, Roundoff, Y, &
-                Fcn0, dFdT )
+                Fcn0, dFdT, RKI )
+!JR                Fcn0, dFdT )
            CALL WAXPY(NVAR,ONE,dFdT,1,K(1),1)
        END IF   
        CALL ros_CPush( T, H, Y, Fcn0, K(1) )
@@ -1293,7 +1295,8 @@ Stage: DO istage = ros_S, 1, -1
    IF (.NOT.Autonomous) THEN
 !~~~>  Compute the Jacobian derivative with respect to T. 
 !      Last "Jac" computed for stage 1
-      CALL ros_JacTimeDerivative ( T, Roundoff, Ystage(1), Jac, dJdT )
+!JR      CALL ros_JacTimeDerivative ( T, Roundoff, Ystage(1), Jac, dJdT )
+      CALL ros_JacTimeDerivative ( T, Roundoff, Ystage(1), Jac, dJdT, RKI )
    END IF
 
 !~~~>  Compute the new solution 
@@ -1432,7 +1435,8 @@ TimeLoop: DO WHILE ( (Direction > 0).AND.((T-Tend)+Roundoff <= ZERO) &
 !~~~>  Compute the function derivative with respect to T
    IF (.NOT.Autonomous) THEN
       CALL ros_JacTimeDerivative ( T, Roundoff, Y0, &
-                Jac0, dJdT )
+                Jac0, dJdT, RKI )
+!JR                Jac0, dJdT )
       DO iadj = 1, NADJ
 #ifdef FULL_ALGEBRA
         dFdT(1:NVAR,iadj) = MATMUL(TRANSPOSE(dJdT),Y(1:NVAR,iadj))
@@ -1664,7 +1668,8 @@ TimeLoop: DO istack = stack_ptr,2,-1
 !~~~>  Compute the function derivative with respect to T
    IF (.NOT.Autonomous) THEN
       CALL ros_JacTimeDerivative ( T, Roundoff, Y0, &
-                Jac0, dJdT )
+                Jac0, dJdT, RKI )
+!JR                Jac0, dJdT )
       DO iadj = 1, NADJ
 #ifdef FULL_ALGEBRA
         dFdT(1:NVAR,iadj) = MATMUL(TRANSPOSE(dJdT),Y(1:NVAR,iadj))
@@ -1822,7 +1827,8 @@ Stage: DO istage = 1, ros_S
 
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  SUBROUTINE ros_FunTimeDerivative ( T, Roundoff, Y, Fcn0, dFdT )
+!JR  SUBROUTINE ros_FunTimeDerivative ( T, Roundoff, Y, Fcn0, dFdT )
+  SUBROUTINE ros_FunTimeDerivative ( T, Roundoff, Y, Fcn0, dFdT, RKI )
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !~~~> The time partial derivative of the function by finite differences
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1835,9 +1841,13 @@ Stage: DO istage = 1, ros_S
 !~~~> Local variables     
    REAL(kind=dp) :: Delta  
    REAL(kind=dp), PARAMETER :: ONE = 1.0d0, DeltaMin = 1.0d-6
+
+   REAL(kind=dp) :: RKI(KNREACT)
    
    Delta = SQRT(Roundoff)*MAX(DeltaMin,ABS(T))
-   CALL FunTemplate(T+Delta,Y,dFdT)
+!slz   CALL FunTemplate(T+Delta,Y,dFdT)
+   CALL FunTemplate(RKI,Y,dFdT)
+!JR
    ISTATUS(Nfun) = ISTATUS(Nfun) + 1
    CALL WAXPY(NVAR,(-ONE),Fcn0,1,dFdT,1)
    CALL WSCAL(NVAR,(ONE/Delta),dFdT,1)
@@ -1847,7 +1857,8 @@ Stage: DO istage = 1, ros_S
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   SUBROUTINE ros_JacTimeDerivative ( T, Roundoff, Y, &
-                Jac0, dJdT )
+                Jac0, dJdT, RKI )
+!                Jac0, dJdT )
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !~~~> The time partial derivative of the Jacobian by finite differences
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1863,10 +1874,12 @@ Stage: DO istage = 1, ros_S
    REAL(kind=dp), INTENT(OUT) :: dJdT(LU_NONZERO)   
 #endif   
 !~~~> Local variables     
-   REAL(kind=dp) :: Delta  
+   REAL(kind=dp) :: Delta
+   
+   REAL(kind=dp) :: RKI(KNREACT)
    
    Delta = SQRT(Roundoff)*MAX(DeltaMin,ABS(T))
-   CALL JacTemplate(T+Delta,Y,dJdT)
+   CALL JacTemplate(RKI,Y,dJdT)
    ISTATUS(Njac) = ISTATUS(Njac) + 1
 #ifdef FULL_ALGEBRA    
    CALL WAXPY(NVAR*NVAR,(-ONE),Jac0,1,dJdT,1)

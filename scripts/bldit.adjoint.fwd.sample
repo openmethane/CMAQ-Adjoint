@@ -13,8 +13,8 @@
 #             http://www.cmascenter.org/help_desk.cfm                 #
 # =================================================================== #
 
-# setenv M3HOME  /home/slc/testcmaq
- setenv M3MODEL /home/slc/cucmaqadj/cmaq_adj
+# CHANGE: put root repository directory here
+ setenv M3MODEL /work/CLIMSIM/rpe/cmaq_adj
 
 #===============================================================================
 
@@ -22,16 +22,13 @@
 #-------------------------------------------------------------------------------
  setenv system "`/bin/uname -i`"
  setenv BLD_OS "`/bin/uname -s``/bin/uname -r | cut -d. -f1`"
-#setenv lib_basedir $M3HOME/lib
+
+# CHANGE: set M3LIB to base directory for MPI, netCDF, IOAPI, STENEX libraries
  setenv lib_basedir /home/wdx/lib
  setenv COMPILER intel
  setenv compiler_ext ifort
-
-#> generate library locations
  setenv M3LIB ${lib_basedir}/${system}/{$COMPILER}
  setenv MPI_INC $M3LIB/mpich/include
-
-# setenv M3LIB   /disk1/Models_3_CMAQ_4.5/libs
 
 ## Check for M3MODEL and M3LIB settings:
  if ( ! -e $M3MODEL || ! -e $M3LIB ) then
@@ -78,7 +75,7 @@
                     # comment out to also compile the model (default if not set)
 
 #> user choices:  single or multiple processors
-#set ParOpt             # set for multiple PE's; comment out for single PE
+set ParOpt             # set for multiple PE's; comment out for single PE
 
 #> user choices: various modules
 
@@ -224,38 +221,35 @@
  if ( -d "$MODLOC" ) /bin/rm -Rf $MODLOC
  mkdir -p $MODLOC
 
-#> Set full path of Fortran 90 compiler
+# CHANGE: Set full path of Fortran 90 and c compilers
  set FC = /usr/local/intel/ictce/3.2.2.013/fc/bin/intel64/ifort
  set CC = /usr/local/intel/ictce/3.2.2.013/fc/bin/intel64/icc
-# set CPLUS = /usr/bin/c++
  set FP = $FC
 
-#> Set location of MPICH if using multiple processors
+# CHANGE: Set location of MPICH if using multiple processors
  set MPICH  =  "{$M3LIB}/mpich/include -lmpi"
 
-#> Set location for stenex library/include/and mod files
+# CHANGE: Set location for stenex library/include/and mod files
  set STENEX = $M3LIB/se_noop
 
-#> Set compiler flags
+# CHANGE: Set compiler flags
  set FSTD       = "-extend_source 132 -vec-report0 -nodefines -cm -w95 -traceback -CB -c -g"
  set F_FLAGS    = "${FSTD} -O2 -module ${MODLOC} -I."
  set CPP_FLAGS  = ""
  set C_FLAGS    = "-v -g -I${MPICH}/intel64/include -module ${MODLOC} -I."
  set LINK_FLAGS = "-i-static"
 
-#> Set location of M3Bld executable
- set Blder = "$M3MODEL/BLDMAKE-git/bldmake -verbose"
+# Set location of M3Bld executable
+ set Blder = "$M3MODEL/BLDMAKE_git/bldmake -verbose"
 
-#> Set location of libraries/include files
-# set IOAPI  = "${M3LIB}/ioapi_3/Linux_64_ifort -lioapi"
+# CHANGE: Set location of libraries/include files
  set IOAPI = "${M3LIB}/ioapi_3.1/Linux2_${system}${compiler_ext} -lioapi"
  set ICL_IOAPI = ${M3LIB}/ioapi_3.1/ioapi/fixed_src
  set NETCDF = "${M3LIB}/netcdf/lib -lnetcdf"
-# set NETCDF = "${M3LIB}/netCDF/${BLD_OS} -lnetcdf"
-# set NETCDF = "/data/libraries/netcdf/parallel/lib -lnetcdf"
-# set PARIO = "${M3LIB}/pario/Linux_64 -lpario"
 
 #:#:#:#:#:#:#:#:#:#:#:# End of User Input Section :#:#:#:#:#:#:#:#:#:#:#:#:#
+
+
 
 #> Append O/S, machine, and compiler information to executable name
 #set EXEID = ${BLD_OS}_${MACH}${COMP}
@@ -300,8 +294,6 @@
  set LIB1 = "-L${STENEX} -l${seL}"
  set LIB5 = "-L${IOAPI}"
  set LIB6 = "-L${NETCDF}"
-# set LIB7 = "-L/usr/local/lib -lhdf5_hl -lhdf5 -L/usr/local/lib -lz -lm -L/usr/lib64 -lcurl -ldl -lgssapi_krb5 -lkrb5 -lk5crypto -lkrb5support -lcom_err -lidn -lssl -lcrypto -lz -lresolv -lselinux -lsepol -lkeyutils -I/usr/local/include"
-# set LIB7 = "-L/data/libraries/pnetcdf/lib -lpnetcdf -L/data/libraries/hdf5/parallel/lib -lhdf5_hl -lhdf5 -L/data/libraries/zlib/parallel/lib -lz -lm -L/usr/lib64 -lcurl -ldl -lgssapi_krb5 -lkrb5 -lk5crypto -lkrb5support -lcom_err -lidn -lssl -lcrypto -lz -lresolv -lselinux -lsepol -lkeyutils"
  set LIBS = "$LIB1 $LIB2 $LIB3 $LIB4 $LIB5 $LIB6"
 
 #source $Base/relinc3.cctm_adj
@@ -361,8 +353,6 @@
               -DSUBST_DATA_COPY=${Popt}_DATA_COPY \
               -DSUBST_IN_SYN=${Popt}_IN_SYN )
 
-# setenv CVSROOT :pserver:mturner:shannon@adjoint.colorado.edu:/Volumes/Data/CVS/CMAQ_CVSrepos/CCTM
-# setenv CVSROOT :ext:shannon@adjoint.colorado.edu:/Volumes/Data/CVS/CMAQ_CVSrepos/CCTM
 
 #> make the config file   
 
