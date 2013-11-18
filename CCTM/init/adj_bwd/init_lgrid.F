@@ -27,9 +27,12 @@ C   initialize the LGRID array.
 
 C Revision History:
 C   Aug 2010 by Peter Percell at UH-IMAQS: created for adjoint/4dvar
+C   Nov 2013 by S.Capps (US EPA): added initialization of additional 
+C            sensitivity arrays, which are in ADJ_ARRAY_MOD
 C-----------------------------------------------------------------------
 
       USE ADJOINT_FILES         ! adjoint file data and functions
+      USE ADJ_ARRAY_MOD         ! adjoint sensitivity arrays
 
       IMPLICIT NONE
 
@@ -59,13 +62,6 @@ C Local Variables:
 
       INTEGER :: JDATE          ! current model date, coded YYYYDDD
       INTEGER :: JTIME          ! current model time, coded HHMMSS
-
-      INTERFACE
-         SUBROUTINE DEFINE_RECEPTOR(LGRID)
-            IMPLICIT NONE
-            REAL, POINTER :: LGRID(:, :, :, :)
-         END SUBROUTINE DEFINE_RECEPTOR
-      END INTERFACE
 
 C-----------------------------------------------------------------------
 
@@ -104,13 +100,13 @@ C Set start date and time and end date and time
 
 C Initialize LGRID
       IF ( .NOT. OPEN3(INIT_LGRID_1, FSREAD3, PNAME) ) THEN
-         XMSG = 'Could not open ' // TRIM(INIT_LGRID_1) //
-     &        '; initializing LGRID using DEFINE_RECEPTOR'
-         CALL M3WARN(PNAME, EDATE, ETIME, XMSG)
-
-         CALL DEFINE_RECEPTOR(LGRID)
+         XMSG = 'Could not open ' // TRIM(INIT_LGRID_1) // '.'
+         CALL M3EXIT(PNAME, EDATE, ETIME, XMSG, XSTAT1)
       ELSE
          CALL RD_ADJ_FILE(LGRID, EDATE, ETIME, INIT_LGRID_1)
+         CALL RD_ADJ_FILE(LGRID_EM, EDATE, ETIME, INIT_LGRID_1)
+         CALL RD_ADJ_FILE(LGRID_EM_SF, EDATE, ETIME, INIT_LGRID_1)
+         CALL RD_ADJ_FILE(LGRID_EM_NRM, EDATE, ETIME, INIT_LGRID_1)
       END IF
 
       END SUBROUTINE INIT_LGRID

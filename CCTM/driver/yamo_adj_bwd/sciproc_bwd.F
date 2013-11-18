@@ -18,8 +18,7 @@ C   permissions subject to the above restrictions.                     *
 C***********************************************************************
 
 C:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      SUBROUTINE SCIPROC_BWD(LGRID, LGRID_ADD, JDATE, JTIME, TSTEP, 
-     &                       NADVSS, XFIRST)
+      SUBROUTINE SCIPROC_BWD(LGRID, JDATE, JTIME, TSTEP, NADVSS, XFIRST)
 
 C-----------------------------------------------------------------------
 C Function:
@@ -37,7 +36,6 @@ C Include files:
 
 C Arguments:
       REAL, POINTER :: LGRID(:,:,:,:) ! adjoint variable
-      REAL, POINTER :: LGRID_FRC(:,:,:,:) ! adjoint forcing variable
       INTEGER, INTENT(INOUT) :: JDATE ! current model date, coded YYYYDDD
       INTEGER, INTENT(INOUT) :: JTIME ! current model time, coded HHMMSS
       INTEGER, INTENT(IN) :: TSTEP(2) ! time step vector (HHMMSS)

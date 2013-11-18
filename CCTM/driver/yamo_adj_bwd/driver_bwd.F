@@ -27,13 +27,16 @@ C   Do backward run to compute adjoint sensitivities
 C Revision History:
 C   Apr 2007 Kumaresh Singh and Adrian Sandu at Virginia Tech: created
 C   Aug 2010 by Peter Percell at UH-IMAQS: rewrote for adjoint/4dvar
+C   Nov 2013 S.Capps (US EPA): shifted emissions-related sensitivity
+C            arrays to module
 C-----------------------------------------------------------------------
 
       USE PCGRID_DEFN           ! inherits HGRD_DEFN and CGRID_SPCS
       USE VGRD_DEFN             ! vertical layer specifications
       USE CGRID_SPCS            ! CGRID species number and offsets
       USE ADJOINT_FILES         ! adjoint file data and functions
-      USE CHK_FILES
+      USE CHK_FILES             ! adjoint checkpoint files routines
+      USE ADJ_ARRAY_MOD         ! adjoint sensitivity arrays
 
       IMPLICIT NONE
 
@@ -58,9 +61,6 @@ C Local Variables:
       CHARACTER(2) :: COLROW = 'CR' ! col/row arg list order
 
       INTEGER, ALLOCATABLE :: NADVSS(:) ! number of advection sub-steps per sync step
-      REAL, POINTER :: LGRID(:, :, :, :)  ! adjoint accumulation variable
-      REAL, POINTER :: LGRID_ADD(:, :, :, :)   ! adjoint forcing at sync step
-      REAL, POINTER :: LGRID_ADD_TOT(:, :, :, :)   ! adjoint forcing at output step from file
       INTEGER :: ALLOCSTAT
 
       REAL :: CLOCK             ! Wall-clock time (sec) at initialization.
@@ -103,10 +103,9 @@ C Local Variables:
             INTEGER, INTENT(IN)  :: TSTEP(2)
             INTEGER, INTENT(OUT) :: NADVSS(:)
          END SUBROUTINE ADVSTEP
-         SUBROUTINE SCIPROC_BWD(LGRID, LGRID_ADD, JDATE, JTIME, TSTEP, NADVSS, XFIRST)
+         SUBROUTINE SCIPROC_BWD(LGRID, JDATE, JTIME, TSTEP, NADVSS, XFIRST)
             IMPLICIT NONE
             REAL, POINTER          :: LGRID(:, :, :, :)
-            REAL, POINTER          :: LGRID_FRC(:, :, :, :)
             INTEGER, INTENT(INOUT) :: JDATE, JTIME
             INTEGER, INTENT(IN)    :: TSTEP(2)
             INTEGER, INTENT(IN)    :: NADVSS(:)
@@ -177,6 +176,10 @@ C written every sync step and the IOAPI requires a constant output time step.)
 
 C Create new adjoint output files and open for update
       CALL OP_ADJ_FILE(SDATE, STIME, TSTEP, ADJ_LGRID)
+! Also for emissions related sensitivity output (mdt|slc.11.2013)
+      CALL OP_ADJ_FILE(SDATE, STIME, TSTEP, ADJ_LGRID_EM)
+      CALL OP_ADJ_FILE(SDATE, STIME, TSTEP, ADJ_LGRID_EM_SF)
+      CALL OP_ADJ_FILE(SDATE, STIME, TSTEP, ADJ_LGRID_EM_NRM)
 
       CALL WR_ADJ_FILE(LGRID, EDATE, ETIME, ADJ_LGRID)
 
@@ -230,6 +233,9 @@ C   the forcing can simply be allocated evenly to each synchronization time step
          END DO
          
          CALL WR_ADJ_FILE(LGRID, JDATE, JTIME, ADJ_LGRID)
+         CALL WR_ADJ_FILE(LGRID_EM, JDATE, JTIME, ADJ_LGRID_EM)
+         CALL WR_ADJ_FILE(LGRID_EM_SF, JDATE, JTIME, ADJ_LGRID_EM_SF)
+         CALL WR_ADJ_FILE(LGRID_EM_NRM, JDATE, JTIME, ADJ_LGRID_EM_NRM)
      
       END DO
 

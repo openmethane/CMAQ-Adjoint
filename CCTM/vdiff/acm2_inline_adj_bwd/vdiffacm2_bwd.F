@@ -25,12 +25,16 @@ C***************************************************************
 
 C Revision History:
 C   Oct 2010 by Peter Percell at UH-IMAQS: created for adjoint/4dvar
+C   Nov 2013 S.Capps (US EPA): shifted emissions-related sensitivity
+C            arrays to module; incorporated M.Turner (CU-Boulder) 
+C            emissions-related sensitivity calculations
 
       USE GRID_CONF             ! horizontal & vertical domain specifications
       USE DEPV_DEFN
       USE VDIFF_MAP
       USE CHK_FILES_DEFS        ! adjoint checkpoint files definition
       USE CHK_FILES             ! adjoint checkpoint files routines
+      USE ADJ_ARRAY_MOD         ! adjoint sensitivity arrays
 
 C==============================================
 C all entries are defined explicitly

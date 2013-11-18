@@ -25,9 +25,13 @@ C Parameters
 
       CHARACTER(16), PARAMETER :: CTM_CONC_FWD    = 'CTM_CONC_FWD'
       CHARACTER(16), PARAMETER :: INIT_LGRID_1    = 'INIT_LGRID_1'
+      CHARACTER(16), PARAMETER :: INIT_EM_1       = 'INIT_EM_1'
+      CHARACTER(16), PARAMETER :: INIT_EM_SF_1    = 'INIT_EM_SF_1'
       CHARACTER(16), PARAMETER :: ADJ_LGRID       = 'ADJ_LGRID'
       CHARACTER(16), PARAMETER :: ADJ_FORCE       = 'ADJ_FORCE'
-
+      CHARACTER(16), PARAMETER :: ADJ_LGRID_EM_SF = 'ADJ_LGRID_EM_SF'
+      CHARACTER(16), PARAMETER :: ADJ_LGRID_EM    = 'ADJ_LGRID_EM'
+      CHARACTER(16), PARAMETER :: ADJ_LGRID_EM_NRM= 'ADJ_LGRID_EM_NRM'
 C$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
       CONTAINS
@@ -46,6 +50,10 @@ C Include Files:
       INCLUDE SUBST_AE_SPC      ! aerosol species table
       INCLUDE SUBST_NR_SPC      ! non-reactive species table
       INCLUDE SUBST_TR_SPC      ! tracer species table
+      INCLUDE SUBST_GC_DIFF     ! gas chem diffusion species and map table
+      INCLUDE SUBST_AE_DIFF     ! aerosol diffusion species and map table
+      INCLUDE SUBST_NR_DIFF     ! non-react diffusion species and map table
+      INCLUDE SUBST_TR_DIFF     ! tracer diffusion species and map table
       INCLUDE SUBST_IOPARMS     ! I/O parameters definitions
       INCLUDE SUBST_IODECL      ! I/O definitions and declarations
       INCLUDE SUBST_IOFDESC     ! file header data structure
@@ -117,7 +125,7 @@ C CTM_CONC_1
 
          CASE ( ADJ_LGRID )
 
-            TSTEP3D = TSTEP(2)  ! sync step
+            TSTEP3D = TSTEP(1)  ! output step
 
             FDESC3D(1) = 'Sensitivity output'
             FDESC3D(2) = 'From CMAQ model dyn alloc version CTM'
@@ -173,6 +181,173 @@ C Note: "CF" stands for "cost function units"
                VTYPE3D(NVARS3D) = M3REAL
                VNAME3D(NVARS3D) = TR_SPC(S)
                UNITS3D(NVARS3D) = 'CF/ppmV'
+               VDESC3D(NVARS3D) = 'Sensitivity of cost function to ' //
+     &              TRIM(VNAME3D(NVARS3D))
+            END DO
+
+         CASE ( ADJ_LGRID_EM )
+
+            TSTEP3D = TSTEP(1)  ! output step
+
+            FDESC3D(1) = 'Sensitivity output wrt emissions'
+            FDESC3D(2) = 'From CMAQ model dyn alloc version CTM'
+            DO K = 3, MXDESC3
+               FDESC3D(K) = ' '
+            END DO
+
+            NVARS3D = 0
+
+C Note: "CF" stands for "cost function units"
+            DO S = 1, N_GC_DIFF
+               NVARS3D = NVARS3D + 1
+               VTYPE3D(NVARS3D) = M3REAL
+               VNAME3D(NVARS3D) = GC_DIFF(S)
+               UNITS3D(NVARS3D) = 'mol/s'
+               VDESC3D(NVARS3D) = 'Sensitivity of cost function to ' //
+     &              TRIM(VNAME3D(NVARS3D))
+            END DO
+
+            DO S = 1, N_AE_DIFF
+               NVARS3D = NVARS3D + 1
+               VTYPE3D(NVARS3D) = M3REAL
+               VNAME3D(NVARS3D) = AE_DIFF(S)
+               IF ( VNAME3D(NVARS3D)(1:3) == 'NUM' ) THEN
+                  UNITS3D(NVARS3D) = 'g/s'
+               ELSE IF ( VNAME3D(NVARS3D)(1:3) == 'SRF' ) THEN
+                  UNITS3D(NVARS3D) = 'g/s'
+               ELSE
+                  UNITS3D(NVARS3D) = 'g/s'
+               END IF
+               VDESC3D(NVARS3D) = 'Sensitivity of cost function to ' //
+     &              TRIM(VNAME3D(NVARS3D))
+            END DO
+
+            DO S = 1, N_NR_DIFF
+               NVARS3D = NVARS3D + 1
+               VTYPE3D(NVARS3D) = M3REAL
+               VNAME3D(NVARS3D) = NR_DIFF(S)
+               UNITS3D(NVARS3D) = 'mol/s'
+               VDESC3D(NVARS3D) = 'Sensitivity of cost function to ' //
+     &              TRIM(VNAME3D(NVARS3D))
+            END DO
+
+            DO S = 1, N_TR_DIFF
+               NVARS3D = NVARS3D + 1
+               VTYPE3D(NVARS3D) = M3REAL
+               VNAME3D(NVARS3D) = TR_DIFF(S)
+               UNITS3D(NVARS3D) = 'mol/s'
+               VDESC3D(NVARS3D) = 'Sensitivity of cost function to ' //
+     &              TRIM(VNAME3D(NVARS3D))
+            END DO
+
+         CASE ( ADJ_LGRID_EM_SF )
+
+            TSTEP3D = TSTEP(1)  ! output step
+
+            FDESC3D(1) = 'Sensitivity output wrt emissions scaling  ' //
+     &                    ' factor'
+            FDESC3D(2) = 'From CMAQ model dyn alloc version CTM'
+            DO K = 3, MXDESC3
+               FDESC3D(K) = ' '
+            END DO
+
+            NVARS3D = 0
+
+C Note: "CF" stands for "cost function units"
+            DO S = 1, N_GC_DIFF
+               NVARS3D = NVARS3D + 1
+               VTYPE3D(NVARS3D) = M3REAL
+               VNAME3D(NVARS3D) = GC_DIFF(S)
+               UNITS3D(NVARS3D) = 'ppmV'
+               VDESC3D(NVARS3D) = 'Sensitivity of cost function to ' //
+     &              TRIM(VNAME3D(NVARS3D))
+            END DO
+
+            DO S = 1, N_AE_DIFF
+               NVARS3D = NVARS3D + 1
+               VTYPE3D(NVARS3D) = M3REAL
+               VNAME3D(NVARS3D) = AE_DIFF(S)
+               IF ( VNAME3D(NVARS3D)(1:3) == 'NUM' ) THEN
+                  UNITS3D(NVARS3D) = 'number/m**3'
+               ELSE IF ( VNAME3D(NVARS3D)(1:3) == 'SRF' ) THEN
+                  UNITS3D(NVARS3D) = 'm**2/m**3'
+               ELSE
+                  UNITS3D(NVARS3D) = 'microg/m**3'
+               END IF
+               VDESC3D(NVARS3D) = 'Sensitivity of cost function to ' //
+     &              TRIM(VNAME3D(NVARS3D))
+            END DO
+
+            DO S = 1, N_NR_DIFF
+               NVARS3D = NVARS3D + 1
+               VTYPE3D(NVARS3D) = M3REAL
+               VNAME3D(NVARS3D) = NR_DIFF(S)
+               UNITS3D(NVARS3D) = 'ppmV'
+               VDESC3D(NVARS3D) = 'Sensitivity of cost function to ' //
+     &              TRIM(VNAME3D(NVARS3D))
+            END DO
+
+            DO S = 1, N_TR_DIFF
+               NVARS3D = NVARS3D + 1
+               VTYPE3D(NVARS3D) = M3REAL
+               VNAME3D(NVARS3D) = TR_DIFF(S)
+               UNITS3D(NVARS3D) = 'ppmV'
+               VDESC3D(NVARS3D) = 'Sensitivity of cost function to ' //
+     &              TRIM(VNAME3D(NVARS3D))
+            END DO
+
+         CASE ( ADJ_LGRID_EM_NRM )
+
+            TSTEP3D = TSTEP(1)  ! output step
+
+            FDESC3D(1) = 'Sensitivity output wrt emissions - fully' //
+     &                    ' normalized'
+            FDESC3D(2) = 'From CMAQ model dyn alloc version CTM'
+            DO K = 3, MXDESC3
+               FDESC3D(K) = ' '
+            END DO
+
+            NVARS3D = 0
+
+C Note: "CF" stands for "cost function units"
+            DO S = 1, N_GC_DIFF
+               NVARS3D = NVARS3D + 1
+               VTYPE3D(NVARS3D) = M3REAL
+               VNAME3D(NVARS3D) = GC_DIFF(S)
+               UNITS3D(NVARS3D) = 'unitless'
+               VDESC3D(NVARS3D) = 'Sensitivity of cost function to ' //
+     &              TRIM(VNAME3D(NVARS3D))
+            END DO
+
+            DO S = 1, N_AE_DIFF
+               NVARS3D = NVARS3D + 1
+               VTYPE3D(NVARS3D) = M3REAL
+               VNAME3D(NVARS3D) = AE_DIFF(S)
+               IF ( VNAME3D(NVARS3D)(1:3) == 'NUM' ) THEN
+                  UNITS3D(NVARS3D) = 'unitless'
+               ELSE IF ( VNAME3D(NVARS3D)(1:3) == 'SRF' ) THEN
+                  UNITS3D(NVARS3D) = 'unitless'
+               ELSE
+                  UNITS3D(NVARS3D) = 'unitless'
+               END IF
+               VDESC3D(NVARS3D) = 'Sensitivity of cost function to ' //
+     &              TRIM(VNAME3D(NVARS3D))
+            END DO
+
+            DO S = 1, N_NR_DIFF
+               NVARS3D = NVARS3D + 1
+               VTYPE3D(NVARS3D) = M3REAL
+               VNAME3D(NVARS3D) = NR_DIFF(S)
+               UNITS3D(NVARS3D) = 'unitless'
+               VDESC3D(NVARS3D) = 'Sensitivity of cost function to ' //
+     &              TRIM(VNAME3D(NVARS3D))
+            END DO
+
+            DO S = 1, N_TR_DIFF
+               NVARS3D = NVARS3D + 1
+               VTYPE3D(NVARS3D) = M3REAL
+               VNAME3D(NVARS3D) = TR_DIFF(S)
+               UNITS3D(NVARS3D) = 'unitless'
                VDESC3D(NVARS3D) = 'Sensitivity of cost function to ' //
      &              TRIM(VNAME3D(NVARS3D))
             END DO
