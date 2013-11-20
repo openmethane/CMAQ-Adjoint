@@ -54,6 +54,8 @@ C    Sep 2010 by Peter Percell at UH-IMAQS:
 C    -- improved robustness when there are no emissions for some or all classes
 C       of species
 C    -- revised for use with adjoint/4dvar code
+C    Aug 2013 by Peter Percell at UH-IMAQS:
+C    -- reduced vdiff checkpoint file to just layer 1 of cgrid
 C-----------------------------------------------------------------------
 
       USE EMIS_DEFN           ! inherits GRID_CONF
@@ -149,6 +151,8 @@ C Local Variables:
       REAL         DELT                         ! DT
       REAL         DTDENS1                      ! DT * layer 1 air density
       REAL         DTSEC                        ! model time step in seconds
+
+      REAL, POINTER :: L1_CGRID( :,:,:,: )      ! layer 1 concentrations
 
 C ACM Local Variables
       REAL        MBAR                          ! ACM2 mixing rate (S-1)
@@ -371,7 +375,8 @@ C Create new adjoint file and open for update
       END IF          !  if Firstime
 
 C Write vertical diffusion checkpoint at sync step
-      CALL CHK_FILE_WRITE ( ADJ_VDIFF_CHK, JDATE, JTIME, CGRID )
+      L1_CGRID => CGRID(:, :, 1:1, :)
+      CALL CHK_FILE_WRITE ( ADJ_VDIFF_CHK, JDATE, JTIME, L1_CGRID )
 
       MDATE = JDATE
       MTIME = JTIME
@@ -385,7 +390,7 @@ C read & interpolate met data
 
 C read & interpolate deposition velocities
 
-      IF ( NDEPV_SPC > 0 ) CALL GET_DEPV ( MDATE, MTIME, TSTEP, CGRID )
+      IF ( NDEPV_SPC > 0 ) CALL GET_DEPV ( MDATE, MTIME, TSTEP, L1_CGRID )
 
       IF ( N_SPC_EMIS > 0 ) THEN
 
