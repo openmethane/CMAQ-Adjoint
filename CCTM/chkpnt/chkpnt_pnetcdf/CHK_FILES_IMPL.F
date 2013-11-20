@@ -30,6 +30,8 @@
 !   July 2010 by J.Resler, ICS: Initial version
 !   Oct  2010 by J.Resler, ICS: Adapted for integration into the new
 !                               CMAQ adjoint version
+!   Aug 2013 by Peter Percell at UH-IMAQS:
+!   -- reduced vdiff checkpoint file to just layer 1 of cgrid
 !-----------------------------------------------------------------------
 
       IMPLICIT NONE
@@ -275,7 +277,7 @@
       END IF
 
 !.......   NLAYS:  number of layers
-      IVAL(1) = NLAYS
+      IVAL(1) = CHK%NLAYS
       IERR = NFMPI_PUT_ATT_INT(FNUM, NF_GLOBAL, 'NLAYS', NF_INT, ONELEN, IVAL)
       IF ( IERR .NE. 0 ) THEN
           CALL M3ABORT( FNAME, FNUM, IERR,
@@ -401,7 +403,7 @@
       END IF
 
 !.......   VGLVS( 1, ..., NLAYS3D+1 ):  vertical coordinate values
-      VLEN = NLAYS+1
+      VLEN = CHK%NLAYS+1
       IERR = NFMPI_PUT_ATT_REAL(FNUM, NF_GLOBAL, 'VGLVLS', NF_FLOAT, VLEN, VGLVS_GD)
       IF ( IERR .NE. 0 ) THEN
           CALL M3ABORT( FNAME, FNUM, IERR,
@@ -471,7 +473,7 @@
           GO TO 999
       END IF
 
-      VLEN = NLAYS
+      VLEN = CHK%NLAYS
       IERR = NFMPI_DEF_DIM(FNUM, 'LAY', VLEN, LDIM)
       IF ( IERR .NE. 0 ) THEN
           CALL M3ABORT( FNAME, FNUM, IERR,
@@ -923,10 +925,10 @@
       DIMS( 2 ) = ROWSX_PE(1,MYPE+1)
       DELS( 2 ) = NROWS
       DIMS( 3 ) = 1
-      DELS( 3 ) = NLAYS
+      DELS( 3 ) = CHK%NLAYS
       DIMS( 4 ) = STEP
       DELS ( 4 ) = 1
-      ALLOCATE(BUFFER(NCOLS*NROWS*NLAYS))
+      ALLOCATE(BUFFER(NCOLS*NROWS*CHK%NLAYS))
 
       write(logdev,*) 'Reading chk_file: ', CHK%FNUM, FNAME, JDATE, JTIME, STEP
 
@@ -948,7 +950,7 @@
           END IF
 
           INDX = 0
-          DO L = 1, NLAYS
+          DO L = 1, CHK%NLAYS
             DO R = 1, NROWS
               DO C = 1, NCOLS
                 INDX = INDX + 1
@@ -1047,7 +1049,7 @@ C...........   EXTERNAL FUNCTIONS and their descriptions:
       DIMS( 2 ) = ROWSX_PE(1,MYPE+1)
       DELS( 2 ) = NROWS
       DIMS( 3 ) = 1
-      DELS( 3 ) = NLAYS
+      DELS( 3 ) = CHK%NLAYS
       DIMS( 4 ) = STEP
       DELS( 4 ) = 1
 
@@ -1063,10 +1065,10 @@ C...........   EXTERNAL FUNCTIONS and their descriptions:
       write(logdev,*) 'Writing chk_file: ', CHK%FNUM, FNAME, JDATE, JTIME, STEP
 !...............   Write contents of the buffer for each variable
 
-      ALLOCATE(BUFFER(NCOLS*NROWS*NLAYS))
+      ALLOCATE(BUFFER(NCOLS*NROWS*CHK%NLAYS))
       DO  VAR = 1, CHK%NVARS
           INDX = 0
-          DO L = 1, NLAYS
+          DO L = 1, CHK%NLAYS
             DO R = 1, NROWS
               DO C = 1, NCOLS
                 INDX = INDX + 1

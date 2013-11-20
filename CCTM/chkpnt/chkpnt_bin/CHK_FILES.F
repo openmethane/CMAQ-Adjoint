@@ -59,6 +59,8 @@
 !     - changed ADJ_RHOJ_CHK to ADJ_VA_RHOJ_CHK and added ADJ_HA_RHOJ_CHK
 !     - added TSTEP as an optional calling argument to pass in a computed
 !       sync step
+!   Aug 2013 by Peter Percell at UH-IMAQS:
+!     - reduced vdiff checkpoint file to just layer 1 of cgrid
 !-----------------------------------------------------------------------
 
       USE GRID_CONF             ! horizontal & vertical domain specifications
@@ -132,6 +134,8 @@
 
       CHK%SDATE = SDATE
       CHK%STIME = STIME
+
+      CHK%NLAYS = NLAYS         ! default for almost all checkpoint files
 
 !  Special settings for particular file
       SELECT CASE ( CHK_ID )
@@ -207,6 +211,7 @@
             INDX = INDX + N_TR_SPC
 
          CASE ( ADJ_VDIFF_CHK )
+            CHK%NLAYS = 1
             CHK%FDESC(1) = 'Vertical diffusion checkpoint file'
             CHK%FDESC(2) = 'From CMAQ model dyn alloc version CTM'
             CHK%NVARS = N_GC_SPC + 1 + N_AE_SPC + N_NR_SPC + N_TR_SPC

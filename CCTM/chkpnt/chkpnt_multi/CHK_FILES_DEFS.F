@@ -39,6 +39,8 @@
 !     CTM_MINSYNC to the same value in the run script
 !   - added the logical flag CONST_SYNC_STEP to signal whether or not the
 !     checkpointing implementation requires a constant synchronization step
+!   Aug 2013 by Peter Percell at UH-IMAQS:
+!   - reduced vdiff checkpoint file to just layer 1 of cgrid
 !-----------------------------------------------------------------------
 
       IMPLICIT NONE
@@ -76,15 +78,16 @@
         CHARACTER(MXDLEN_ADJ)                :: FDESC( 2 )       ! file description (MXDLEN_ADJ=80)
         INTEGER                              :: SDATE            ! starting date (YYYYDDD)
         INTEGER                              :: STIME            ! starting time (HHMMSS)
+        INTEGER                              :: NLAYS            ! number of layers
         INTEGER                              :: NVARS            ! number of variables
-        INTEGER,ALLOCATABLE                  :: VTYPE( : )      ! variable type:  M3(INT|REAL|DBLE)
-        CHARACTER(NAMLEN_ADJ),ALLOCATABLE    :: VNAME( : )      ! variable names (length NAMLEN_ADJ=16)
-        CHARACTER(NAMLEN_ADJ),ALLOCATABLE    :: UNITS( : )      ! variable units or 'none' (NAMLEN_ADJ=16)
-        CHARACTER(MXDLEN_ADJ),ALLOCATABLE    :: VDESC( : )      ! variable descriptions (MXDLEN_ADJ=80)
+        INTEGER,ALLOCATABLE                  :: VTYPE( : )       ! variable type:  M3(INT|REAL|DBLE)
+        CHARACTER(NAMLEN_ADJ),ALLOCATABLE    :: VNAME( : )       ! variable names (length NAMLEN_ADJ=16)
+        CHARACTER(NAMLEN_ADJ),ALLOCATABLE    :: UNITS( : )       ! variable units or 'none' (NAMLEN_ADJ=16)
+        CHARACTER(MXDLEN_ADJ),ALLOCATABLE    :: VDESC( : )       ! variable descriptions (MXDLEN_ADJ=80)
 ! Variables initialized in CHK_FILE_CREATE_IMPL
         LOGICAL                              :: ISUSED = .FALSE. ! indicator of used file in particular configuration
         INTEGER                              :: TSTEP            ! time step for checkpoint files (HHMMSS)
-                                                                  ! for implementations where the constant tstep is required
+                                                                 ! for implementations where the constant tstep is required
         INTEGER                              :: FNUM             ! nc file id
         INTEGER                              :: TINDX            ! netCDF var. ID for timestep-flag
         INTEGER,ALLOCATABLE                  :: VINDX( : )       ! netCDF var. IDs

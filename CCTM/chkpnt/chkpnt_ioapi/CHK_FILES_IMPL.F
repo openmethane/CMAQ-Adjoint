@@ -33,6 +33,8 @@
 !                               CMAQ adjoint version
 !   Nov  2011 by M. Turner, CU Boulder:
 !     - Added output of filename when printing "Reading timestep"
+!   Aug 2013 by Peter Percell at UH-IMAQS:
+!   -- reduced vdiff checkpoint file to just layer 1 of cgrid
 !-----------------------------------------------------------------------
 
       IMPLICIT NONE
@@ -127,8 +129,8 @@
       SDATE3D = CHK%SDATE
       STIME3D = CHK%STIME
       TSTEP3D = CHK%TSTEP
-      NLAYS3D = NLAYS
-      DO L = 1, NLAYS + 1
+      NLAYS3D = CHK%NLAYS
+      DO L = 1, CHK%NLAYS + 1
          VGLVS3D( L ) = VGLVS_GD( L )
       END DO
 
@@ -451,7 +453,7 @@ c$$$      END IF
       END IF
 
       DO V = 1, CHK%NVARS
-         IF ( .NOT. XTRACT3 ( FNAME, CHK%VNAME(V), 1, NLAYS,
+         IF ( .NOT. XTRACT3 ( FNAME, CHK%VNAME(V), 1, CHK%NLAYS,
      &                       ROWSX_PE(1,MYPE+1),ROWSX_PE(2,MYPE+1),
      &                       COLSX_PE(1,MYPE+1),COLSX_PE(2,MYPE+1),
      &                       JDATE, JTIME, CHK_GRID(:,:,:,V) ) ) THEN
