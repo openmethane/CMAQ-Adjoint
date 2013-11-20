@@ -118,6 +118,19 @@ C-----------------------------------------------------------------------
 
 C Get the contravariant x1 velocity component
       CALL HCONTVEL(ADATE, ATIME, ASTEP_L, LAYER, UORV, UHAT)
+
+#ifdef parallel
+C swap2d interface ...
+C     swap2d( 1st value of array to be sent,
+C             1st value of array to be received,
+C             number of values to send in 1st dimension of array,
+C             number of values to send in 2nd dimension of array,
+C             size of 1st dimension in arrays,
+C             direction to receive from: NSEW )
+
+      CALL SWAP2D(UHAT(1, 1), UHAT(NCOLS+1, 1), 1, NROWS, NCOLS+1, EAST)
+#endif
+
       XVEL(1:NCOLS+1, 1:NROWS) = UHAT(1:NCOLS+1, 1:NROWS)
 
 C Load the interior concentrations into RHOJ

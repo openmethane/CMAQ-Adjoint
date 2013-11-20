@@ -165,6 +165,18 @@ C Create global map to CGRID
 C Get the contravariant x2 velocity component
       CALL HCONTVEL(ADATE, ATIME, ASTEP_L, LAYER, UORV, VHAT)
 
+#ifdef parallel
+C swap2d interface ...
+C     swap2d( 1st value of array to be sent,
+C             1st value of array to be received,
+C             number of values to send in 1st dimension of array,
+C             number of values to send in 2nd dimension of array,
+C             size of 1st dimension in arrays,
+C             direction to receive from: NSEW )
+
+            CALL SWAP2D(VHAT(1, 1), VHAT(1, NROWS+1), NCOLS, 1, NCOLS+1, NORTH)
+#endif
+
 C Load the interior concentrations into CON
       DO S = 1, N_SPC_ADV
          A2C = ADV_MAP(S)
