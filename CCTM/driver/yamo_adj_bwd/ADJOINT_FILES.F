@@ -13,6 +13,8 @@ C   Feb 2011 by Peter Percell at UH-IMAQS: removed unneeded code
 C   May 2013 by Peter Percell at UH-IMAQS:
 C   - the adjoint file implementation here uses IOAPI3 tools, so a constant
 C     output step is required
+C   Aug 2013 by Peter Percell at UH-IMAQS:
+C   - made the LGRID output frequency selectable by user
 C-----------------------------------------------------------------------
 
       IMPLICIT NONE
@@ -29,6 +31,8 @@ C Parameters
       CHARACTER(16), PARAMETER :: CTM_CONC_FWD    = 'CTM_CONC_FWD'
       CHARACTER(16), PARAMETER :: INIT_LGRID_1    = 'INIT_LGRID_1'
       CHARACTER(16), PARAMETER :: ADJ_LGRID       = 'ADJ_LGRID'
+
+      CHARACTER(16) :: LGRID_OUTPUT_FREQ
 
 C$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
@@ -65,12 +69,53 @@ C Arguments:
       CHARACTER(16), INTENT(IN) :: ADJ_FILE
 
 C Local Variables:
+      INTEGER, SAVE :: LOGDEV   ! FORTRAN unit number for log file
+
       CHARACTER(16) :: PNAME = 'OP_ADJ_FILE'
       CHARACTER(96) :: XMSG = ' '
+
+      CHARACTER(80) :: VARDESC  ! environment variable description
+
+      INTEGER :: STATUS
 
       INTEGER :: K, S           ! loop counters
 
 C-----------------------------------------------------------------------
+
+      LOGDEV = INIT3()
+
+      VARDESC =
+     &     'LGRID output frequency: SYNC_STEP, OUTPUT_STEP or ONCE (at start time)'
+      LGRID_OUTPUT_FREQ = 'OUTPUT_STEP'
+      CALL ENVSTR('ADJ_LGRID_FREQ', VARDESC, LGRID_OUTPUT_FREQ,
+     &     LGRID_OUTPUT_FREQ, STATUS)
+      IF ( STATUS /= 0 ) WRITE(LOGDEV, '(5X, A)') VARDESC
+      IF ( STATUS == 1 ) THEN
+         XMSG = 'Environment variable improperly formatted'
+         CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT3)
+      ELSE IF ( STATUS == -1 ) THEN
+         XMSG = 'Environment variable set, but empty ... Using default'
+         WRITE(LOGDEV, '(5X, A)') XMSG
+      ELSE IF ( STATUS == -2 ) THEN
+         XMSG = 'Environment variable not set ... Using default'
+         WRITE(LOGDEV, '(5X, A)') XMSG
+      END IF
+
+      IF ( TRIM(LGRID_OUTPUT_FREQ) /= 'SYNC_STEP' .AND.
+     &     TRIM(LGRID_OUTPUT_FREQ) /= 'OUTPUT_STEP' .AND.
+     &     TRIM(LGRID_OUTPUT_FREQ) /= 'ONCE' ) THEN
+         WRITE(LOGDEV, '(5X, A)')
+     &        'ADJ_LGRID_FREQ was set to ' // LGRID_OUTPUT_FREQ
+         XMSG = 'It must be SYNC_STEP, OUTPUT_STEP or ONCE'
+         CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT3)
+      END IF
+
+      IF ( .NOT. CONST_SYNC_STEP .AND.
+     &     TRIM(LGRID_OUTPUT_FREQ) == 'SYNC_STEP' ) THEN
+         XMSG = 'ADJ_LGRID_FREQ cannot be SYNC_STEP ... Using OUTPUT_STEP'
+         CALL M3WARN(PNAME, JDATE, JTIME, XMSG)
+         LGRID_OUTPUT_FREQ = 'OUTPUT_STEP'
+      END IF
 
       IF ( MYPE == 0 ) THEN
 
@@ -120,10 +165,12 @@ C CTM_CONC_1
 
          CASE ( ADJ_LGRID )
 
-            IF ( CONST_SYNC_STEP ) THEN
+            IF ( TRIM(LGRID_OUTPUT_FREQ) == 'SYNC_STEP' ) THEN
                TSTEP3D = TSTEP(2) ! sync step
-            ELSE
+            ELSE IF ( TRIM(LGRID_OUTPUT_FREQ) == 'OUTPUT_STEP' ) THEN
                TSTEP3D = TSTEP(1) ! output step
+            ELSE
+               TSTEP3D = 0      ! make it a time-independent file
             END IF
 
             FDESC3D(1) = 'Sensitivity output'

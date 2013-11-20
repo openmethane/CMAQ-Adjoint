@@ -38,6 +38,8 @@ C   - support both constant and variable synchronization steps, depending on
 C     the choice of checkpointing method
 C   - changed the calling argument NADVSS back to the traditional ASTEP
 C   - changed XFIRST to an array indexed by layer
+C   Aug 2013 by Peter Percell at UH-IMAQS:
+C   - made the LGRID output frequency selectable by user
 C-----------------------------------------------------------------------
 
       USE PCGRID_DEFN           ! inherits HGRD_DEFN and CGRID_SPCS
@@ -195,7 +197,8 @@ C constant output time step for files.)
 C Create new adjoint output files and open for update
       CALL OP_ADJ_FILE(EDATE, ETIME, TSTEP, ADJ_LGRID)
 
-      CALL WR_ADJ_FILE(LGRID, EDATE, ETIME, ADJ_LGRID)
+      IF ( TRIM(LGRID_OUTPUT_FREQ) /= 'ONCE' )
+     &     CALL WR_ADJ_FILE(LGRID, EDATE, ETIME, ADJ_LGRID)
 
 C Read XFIRST from the file CTM_XFIRST_IN
       IUNIT = GETEFILE(CTM_XFIRST_IN, .TRUE., .TRUE., PNAME)
@@ -229,9 +232,14 @@ C Get the advection time steps, ASTEP(L)
 
          DO IREP = NREPS, 1, -1
             CALL SCIPROC_BWD(LGRID, JDATE, JTIME, TSTEP, ASTEP, XFIRST) ! science processes
-            CALL WR_ADJ_FILE(LGRID, JDATE, JTIME, ADJ_LGRID)
+            IF ( TRIM(LGRID_OUTPUT_FREQ) == 'SYNC_STEP' )
+     &           CALL WR_ADJ_FILE(LGRID, JDATE, JTIME, ADJ_LGRID)
          END DO
+         IF ( TRIM(LGRID_OUTPUT_FREQ) == 'OUTPUT_STEP' )
+     &        CALL WR_ADJ_FILE(LGRID, JDATE, JTIME, ADJ_LGRID)
       END DO
+      IF ( TRIM(LGRID_OUTPUT_FREQ) == 'ONCE' )
+     &     CALL WR_ADJ_FILE(LGRID, JDATE, JTIME, ADJ_LGRID)
 
 C Write the final values of XFIRST to the file CTM_XFIRST_OUT
       IF ( MYPE == 0 ) THEN
