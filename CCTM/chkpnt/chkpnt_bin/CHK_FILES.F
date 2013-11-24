@@ -59,8 +59,15 @@
 !     - changed ADJ_RHOJ_CHK to ADJ_VA_RHOJ_CHK and added ADJ_HA_RHOJ_CHK
 !     - added TSTEP as an optional calling argument to pass in a computed
 !       sync step
+!   July 2013 by J.Resler, ICS:
+!     - fixed bug in VDESC initialization for AERO and VDIFF files
 !   Aug 2013 by Peter Percell at UH-IMAQS:
 !     - reduced vdiff checkpoint file to just layer 1 of cgrid
+!   Sep  2013 by ShunLiu Zhao, Carleton:
+!     - Removed phot species from chem checkpoint file
+!     - Added TSTEP to chem checkpoint file
+!   Oct 2013 by J.Resler, ICS:
+!     - fixes, cleaning
 !-----------------------------------------------------------------------
 
       USE GRID_CONF             ! horizontal & vertical domain specifications
@@ -90,7 +97,6 @@
       INCLUDE SUBST_IODECL      ! I/O definitions and declarations
       INCLUDE SUBST_FILES_ID    ! I/O definitions and declarations
       INCLUDE SUBST_IOFDESC     ! file header data structure
-      INCLUDE SUBST_RXCMMN      ! chemical mechanism reaction
 
 !     Input parameters
       INTEGER, INTENT(IN)       :: CHK_ID       ! checkpoint file identification
@@ -111,7 +117,6 @@
       type(CHK_FILE),pointer    :: CHK          ! checkpoint file description structure
       INTEGER                   :: INDX, L, S
 
-      CHARACTER (2)             :: TMP
 !-----------------------------------------------------------------------
 
       IF ( FIRSTIME ) THEN
@@ -143,22 +148,19 @@
          CASE ( ADJ_CHEM_CHK )
             CHK%FDESC(1) = 'Chemistry checkpoint file'
             CHK%FDESC(2) = 'From CMAQ model dyn alloc version CTM'
-            CHK%NVARS = N_GC_SPC + NPHOTAB
+            CHK%NVARS = N_GC_SPC+1
             ALLOCATE(CHK%VTYPE(CHK%NVARS))
             ALLOCATE(CHK%VNAME(CHK%NVARS))
             ALLOCATE(CHK%UNITS(CHK%NVARS))
             ALLOCATE(CHK%VDESC(CHK%NVARS))
             ALLOCATE(CHK%VINDX(CHK%NVARS))
             CHK%VTYPE(1:CHK%NVARS) = M3REAL
-            CHK%VNAME(1:N_GC_SPC) = GC_SPC(1:N_GC_SPC)
-            DO S = 1, NPHOTAB
-               WRITE (TMP,'(I2)') S
-               TMP = ADJUSTL(TMP)
-               CHK%VNAME(N_GC_SPC+S)='RJ'//TRIM(TMP)
-            END DO
             CHK%UNITS(1:N_GC_SPC) = 'ppmV'
-            CHK%UNITS(N_GC_SPC+1:CHK%NVARS) = '1/min'
-            CHK%VDESC(1:CHK%NVARS) = 'Chemistry checkpoint: gas + rj'
+            CHK%VNAME(1:N_GC_SPC) = GC_SPC(1:N_GC_SPC)
+            CHK%VDESC(1:N_GC_SPC) = 'Variable '//CHK%VNAME(1:N_GC_SPC)
+            CHK%VNAME(N_GC_SPC+1) = 'STEP'
+            CHK%UNITS(N_GC_SPC+1) = 'min'
+            CHK%VDESC(N_GC_SPC+1) = 'Time step'
 
          CASE ( ADJ_AERO_CHK )
             CHK%FDESC(1) = 'Aerosols checkpoint file'
@@ -192,7 +194,7 @@
                ELSE
                   CHK%UNITS(S) = 'micrograms/m**3'
                END IF
-               CHK%VDESC(S) = 'Variable '//TRIM(CHK%VNAME(CHK%NVARS))
+               CHK%VDESC(S) = 'Variable '//TRIM(CHK%VNAME(S))
             END DO
             INDX = INDX + N_AE_SPC
             DO S = INDX+1, INDX+N_NR_SPC
@@ -243,7 +245,7 @@
                ELSE
                   CHK%UNITS(S) = 'micrograms/m**3'
                END IF
-               CHK%VDESC(S) = 'Variable '//TRIM(CHK%VNAME(CHK%NVARS))
+               CHK%VDESC(S) = 'Variable '//TRIM(CHK%VNAME(S))
             END DO
             INDX = INDX + N_AE_SPC
             DO S = INDX+1, INDX+N_NR_SPC
@@ -311,7 +313,7 @@
             CHK%VTYPE(1:CHK%NVARS) = M3REAL
             CHK%UNITS(1:CHK%NVARS) = 'Coupled CGRID'
             CHK%VDESC(1:CHK%NVARS) = 'X advection checkpoint for ' //
-     &           CHK%VNAME(1:CHK%NVARS)
+     &                                CHK%VNAME(1:CHK%NVARS)
 
          CASE ( ADJ_YADV_CHK )
             CHK%FDESC(1) = 'Y advection checkpoint file'
@@ -335,7 +337,7 @@
             CHK%VTYPE(1:CHK%NVARS) = M3REAL
             CHK%UNITS(1:CHK%NVARS) = 'Coupled CGRID'
             CHK%VDESC(1:CHK%NVARS) = 'Y advection checkpoint for ' //
-     &           CHK%VNAME(1:CHK%NVARS)
+     &                                CHK%VNAME(1:CHK%NVARS)
 
          CASE ( ADJ_ZADV_CHK )
             CHK%FDESC(1) = 'Z advection checkpoint file'
@@ -359,7 +361,7 @@
             CHK%VTYPE(1:CHK%NVARS) = M3REAL
             CHK%UNITS(1:CHK%NVARS) = 'Coupled CGRID'
             CHK%VDESC(1:CHK%NVARS) = 'Z advection checkpoint for ' //
-     &           CHK%VNAME(1:CHK%NVARS)
+     &                                CHK%VNAME(1:CHK%NVARS)
 
          CASE DEFAULT
             XMSG =  '"' // TRIM(CHK%FNAME) // '"' //

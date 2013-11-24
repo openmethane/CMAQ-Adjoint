@@ -3042,13 +3042,14 @@ C
       INTEGER, PARAMETER    :: NSO4S = 14 
       INTEGER, PARAMETER    :: NRHS  = 20 
       INTEGER, PARAMETER    :: NASRD = NSO4S*NRHS
+      REAL*8     :: ASRAT, ASSO4 !slz
       COMMON /ASRC/ ASRAT(NASRD), ASSO4(NSO4S)
 C
       DATA ASSO4/1.0D-9, 2.5D-9, 5.0D-9, 7.5D-9, 1.0D-8,
      &           2.5D-8, 5.0D-8, 7.5D-8, 1.0D-7, 2.5D-7, 
      &           5.0D-7, 7.5D-7, 1.0D-6, 5.0D-6/
 C
-      DATA (ASRAT(I), I=1,100)/
+      DATA (ASRAT(I), I=1,280)/
      & 1.020464, 0.9998130, 0.9960167, 0.9984423, 1.004004,
      & 1.010885,  1.018356,  1.026726,  1.034268, 1.043846,
      & 1.052933,  1.062230,  1.062213,  1.080050, 1.088350,
@@ -3068,9 +3069,7 @@ C
      & 1.567743,  1.544426,  1.535928,  1.533645, 1.535016,
      & 1.539003,  1.545124,  1.553283,  1.561886, 1.570530,
      & 1.579234,  1.587813,  1.595956,  1.603901, 1.611349,
-     & 1.618833,  1.625819,  1.632543,  1.639032, 1.645276/
-
-      DATA (ASRAT(I), I=101,200)/
+     & 1.618833,  1.625819,  1.632543,  1.639032, 1.645276,
      & 1.707390,  1.689553,  1.683198,  1.681810, 1.683490,
      & 1.687477,  1.693148,  1.700084,  1.706917, 1.713507,
      & 1.719952,  1.726190,  1.731985,  1.737544, 1.742673,
@@ -3090,9 +3089,7 @@ C
      & 1.899556,  1.892637,  1.890367,  1.890165, 1.891317,
      & 1.893436,  1.896036,  1.898872,  1.901485, 1.903908,
      & 1.906212,  1.908391,  1.910375,  1.912248, 1.913952,
-     & 1.915621,  1.917140,  1.918576,  1.919934, 1.921220/
-
-      DATA (ASRAT(I), I=201,280)/
+     & 1.915621,  1.917140,  1.918576,  1.919934, 1.921220,
      & 1.928264,  1.923245,  1.921625,  1.921523, 1.922421,
      & 1.924016,  1.925931,  1.927991,  1.929875, 1.931614,
      & 1.933262,  1.934816,  1.936229,  1.937560, 1.938769,
@@ -3993,7 +3990,7 @@ C
       DO I=1,NPAIR
          WATER = WATER + MOLALR(I)/M0(I)
       ENDDO
-      WATER = MAX(WATER, TINY)
+      WATER = MAX(WATER, TINY2)
 C
       RETURN
 C
@@ -6716,7 +6713,7 @@ C
 C
 C *** decimal part        
 C
-      DATA (ADEC10(I),I=1,100)/
+      DATA (ADEC10(I),I=1,200)/
      & 0.1023E+00, 0.1047E+00, 0.1072E+00, 0.1096E+00, 0.1122E+00,
      & 0.1148E+00, 0.1175E+00, 0.1202E+00, 0.1230E+00, 0.1259E+00,
      & 0.1288E+00, 0.1318E+00, 0.1349E+00, 0.1380E+00, 0.1413E+00,
@@ -6736,9 +6733,7 @@ C
      & 0.6457E+00, 0.6607E+00, 0.6761E+00, 0.6918E+00, 0.7079E+00,
      & 0.7244E+00, 0.7413E+00, 0.7586E+00, 0.7762E+00, 0.7943E+00,
      & 0.8128E+00, 0.8318E+00, 0.8511E+00, 0.8710E+00, 0.8913E+00,
-     & 0.9120E+00, 0.9333E+00, 0.9550E+00, 0.9772E+00, 0.1000E+01/
-
-      DATA (ADEC10(I),I=101,200)/
+     & 0.9120E+00, 0.9333E+00, 0.9550E+00, 0.9772E+00, 0.1000E+01,
      & 0.1023E+01, 0.1047E+01, 0.1072E+01, 0.1096E+01, 0.1122E+01,
      & 0.1148E+01, 0.1175E+01, 0.1202E+01, 0.1230E+01, 0.1259E+01,
      & 0.1288E+01, 0.1318E+01, 0.1349E+01, 0.1380E+01, 0.1413E+01,
@@ -7837,7 +7832,7 @@ C
       DO I=1,NPAIR
          WATER = WATER + MOLALR(I)/M0(I)
       ENDDO
-      WATER = MAX(WATER, TINY)
+      WATER = MAX(WATER, TINY2)   !slc.water.dbg TINY -> TINY2
 C
 C *** CREATE ITERATION FOR ACTIVITY COEFFICIENTS
 C
@@ -8055,7 +8050,8 @@ C
          DO J=1,NPAIR
             WATER = WATER + MOLALR(J)/M0(J)
          ENDDO
-         WATER = MAX(WATER, TINY)
+         WATER = MAX(WATER, TINY2)   !slc.water.dbg TINY -> TINY2
+
 C
 C *** CALCULATE ACTIVITIES OR TERMINATE INTERNAL LOOP *****************
 C
@@ -8172,7 +8168,7 @@ C
          DO J=1,NPAIR
             WATER = WATER + MOLALR(J)/M0(J)
          ENDDO
-         WATER = MAX(WATER, TINY)
+         WATER = MAX(WATER, TINY2)  ! slc.water.debug
 C
 C *** CALCULATE ACTIVITIES OR TERMINATE INTERNAL LOOP *****************
 C
@@ -8248,7 +8244,8 @@ C
          DO J=1,NPAIR
             WATER = WATER + MOLALR(J)/M0(J)
          ENDDO
-         WATER = MAX(WATER, TINY)
+         WATER = MAX(WATER, TINY2)   !slc.water.dbg TINY -> TINY2
+
 C
 C *** CALCULATE ACTIVITIES OR TERMINATE INTERNAL LOOP *****************
 C
@@ -8325,7 +8322,8 @@ C
          DO J=1,NPAIR
             WATER = WATER + MOLALR(J)/M0(J)
          ENDDO
-         WATER = MAX(WATER, TINY)
+         WATER = MAX(WATER, TINY2)   !slc.water.dbg TINY -> TINY2
+
 C
 C *** CALCULATE ACTIVITIES OR TERMINATE INTERNAL LOOP *****************
 C
@@ -8483,7 +8481,7 @@ C            WRITE(*,*) 'Re-executing'
                GOTO 60                   ! Redo root tracking
             ELSE
                CALL PUSHERR (0002, 'CALCD3')    ! WARNING ERROR: NO CONVERGENCE
-               GOTO 50 
+               RETURN                           ! No PUSH/POP yet in adjoint (8.2013.slc)
             ENDIF
          ENDIF
       ENDIF
@@ -8511,9 +8509,13 @@ C
 C      WRITE(*, '(A,E12.5,A,E12.5)') 'In loop: X3',(X3),'Y3',(Y3)
          I = I + 1
       ENDDO
-
-      IF ((I > MAXIT+1) .AND. TST2) THEN
+C
+C *** NO CONVERGENCE ; RETURN WITH ERROR ******************************
+C
+      ! MAXIT + 1 changed to MAXIT - proper value after above loop (8.2013.slc)
+      IF ((I > MAXIT) .AND. TST2) THEN
          CALL PUSHERR (0002, 'CALCD3')    ! WARNING ERROR: NO CONVERGENCE
+         RETURN                           ! No PUSH/POP yet in adjoint (8.2013.slc)
       ENDIF
 C
 C *** CONVERGED ; RETURN **********************************************
@@ -8681,7 +8683,7 @@ C            WRITE(*,*) 'Error'
                GOTO 60                   ! Redo root tracking
             ELSE
                CALL PUSHERR (0002, 'CALCD3')    ! WARNING ERROR: NO CONVERGENCE
-               GOTO 50 
+               RETURN                           ! added 8.2013.slc - no PUSH/POP yet
             ENDIF
          ENDIF
       ENDIF
@@ -8708,9 +8710,13 @@ C
          ENDIF 
          I = I + 1
       ENDDO
-
-      IF ((I > MAXIT+1) .AND. TST2) THEN
+C
+C *** NO CONVERGENCE ; RETURN WITH ERROR ******************************
+C
+      ! MAXIT + 1 changed to MAXIT - proper value after above loop (8.2013.slc)
+      IF ((I > MAXIT) .AND. TST2) THEN
          CALL PUSHERR (0002, 'CALCD3')    ! WARNING ERROR: NO CONVERGENCE
+         RETURN                           ! added 8.2013.slc - no PUSH/POP yet
       ENDIF
 C
 C *** CONVERGED ; RETURN **********************************************
@@ -8996,7 +9002,8 @@ C
          DO J=1,NPAIR
             WATER = WATER + MOLALR(J)/M0(J)
          ENDDO
-         WATER = MAX(WATER, TINY)
+         WATER = MAX(WATER, TINY2)   !slc.water.dbg TINY -> TINY2
+
 C
          CALL CALCACT3F
       ENDDO
@@ -9227,12 +9234,13 @@ C
 C
 C *** NO SUBDIVISION WITH SOLUTION; IF ABS(Y2)<EPS SOLUTION IS ASSUMED
 C
-      IF ((ABS(Y2) > EPS).AND.TST1.AND.(I > NDIV+1)) THEN
+      ! NDIV + 1 changed to NDIV (8.2013.slc)
+      IF ((ABS(Y2) > EPS).AND.TST1.AND.(I > NDIV)) THEN
          CALL RSTGAMP
          CALL FUNCG5A (PSI6LO, Y3)
          X3 = PSI6LO
          CALL PUSHERR (0002, 'CALCG5')    ! WARNING ERROR: NO CONVERGENCE
-         GOTO 50
+         RETURN                           ! no PUSH/POP yet in adjoint (8.2013.slc)
       ENDIF
 C
 C *** PERFORM BISECTION ***********************************************
@@ -9255,8 +9263,13 @@ C
          ENDIF
          I = I+1
       ENDDO
-      IF ((I > (MAXIT+1)) .AND. TST2) THEN
-         CALL PUSHERR (0002, 'CALCG5')    ! WARNING ERROR: NO CONVERGENCE
+C
+C *** NO CONVERGENCE ; RETURN WITH ERROR ******************************
+C
+      ! MAXIT + 1 changed to MAXIT - proper value after above loop (8.2013.slc)
+      IF ((I > MAXIT) .AND. TST2) THEN
+         CALL PUSHERR (0002, 'CALCG5')   ! WARNING ERROR: NO CONVERGENCE
+         RETURN                          ! no PUSH/POP yet in adjoint (8.2013.slc)
       ENDIF
 C
 C *** CONVERGED ; RETURN **********************************************
@@ -9370,12 +9383,13 @@ C
 C
 C *** NO SUBDIVISION WITH SOLUTION; IF ABS(Y2)<EPS SOLUTION IS ASSUMED
 C
-      IF ((ABS(Y2) > EPS).AND.TST1.AND.(I > NDIV+1)) THEN
+      ! NDIV + 1 changed to NDIV (8.2013.slc)
+      IF ((ABS(Y2) > EPS).AND.TST1.AND.(I > NDIV)) THEN
          CALL RSTGAMP
          CALL FUNCG5A (PSI6LO, Y3)
          X3 = PSI6LO
          CALL PUSHERR (0002, 'CALCG5')    ! WARNING ERROR: NO CONVERGENCE
-         GOTO 50
+         RETURN                           ! no PUSH/POP yet in adjoint (8.2013.slc)
       ENDIF
 C
 C *** PERFORM BISECTION ***********************************************
@@ -9399,9 +9413,12 @@ C
          ENDIF
          I = I+1
       ENDDO
-
-      IF ((I > (MAXIT+1)) .AND. TST2) THEN
+C
+C *** NO CONVERGENCE ; RETURN WITH ERROR ******************************
+C
+      IF ((I > (MAXIT)) .AND. TST2) THEN
          CALL PUSHERR (0002, 'CALCG5')    ! WARNING ERROR: NO CONVERGENCE
+         RETURN                           ! no PUSH/POP yet in adjoint (8.2013.slc)
       ENDIF
 C
 C *** CONVERGED ; RETURN **********************************************
@@ -9551,7 +9568,8 @@ C
          DO J=1,NPAIR
             WATER = WATER + MOLALR(J)/M0(J)
          ENDDO
-         WATER = MAX(WATER, TINY)
+         WATER = MAX(WATER, TINY2)   !slc.water.dbg TINY -> TINY2
+
 C         WRITE(*,*) 'After CALCMR: WATER ',WATER
 C
 C *** CALCULATE ACTIVITIES OR TERMINATE INTERNAL LOOP *****************
@@ -9690,7 +9708,8 @@ C
          DO J=1,NPAIR
             WATER = WATER + MOLALR(J)/M0(J)
          ENDDO
-         WATER = MAX(WATER, TINY)
+         WATER = MAX(WATER, TINY2)   !slc.water.dbg TINY -> TINY2
+
 C
 C *** CALCULATE ACTIVITIES OR TERMINATE INTERNAL LOOP *****************
 C
@@ -9871,12 +9890,12 @@ C
 C
 C *** NO SUBDIVISION WITH SOLUTION; IF ABS(Y2)<EPS SOLUTION IS ASSUMED
 C
-      IF ((ABS(Y2) > EPS).AND.TST1.AND.(I > NDIV+1)) THEN
+      IF ((ABS(Y2) > EPS).AND.TST1.AND.(I > NDIV)) THEN
          CALL RSTGAMP
          CALL FUNCH6A (PSI6LO, Y3)
          X3 = PSI6LO
          CALL PUSHERR (0002, 'CALCH6')    ! WARNING ERROR: NO CONVERGENCE
-         GOTO 50
+         RETURN                           ! no PUSH/POP yet in adjoint (8.2013.slc)
       ENDIF
 C
 C *** PERFORM BISECTION ***********************************************
@@ -9900,8 +9919,12 @@ C
          ENDIF
          I = I+1
       ENDDO
-      IF ((I > (MAXIT+1)) .AND. TST2) THEN
+C
+C *** NO CONVERGENCE ; RETURN WITH ERROR ******************************
+C
+      IF ((I > (MAXIT)) .AND. TST2) THEN
          CALL PUSHERR (0002, 'CALCH6')    ! WARNING ERROR: NO CONVERGENCE
+         RETURN                           ! no PUSH/POP in adjoint yet (8.2013.slc)
       ENDIF
 C
 C *** CONVERGED ; RETURN **********************************************
@@ -10015,12 +10038,12 @@ C
 C
 C *** NO SUBDIVISION WITH SOLUTION; IF ABS(Y2)<EPS SOLUTION IS ASSUMED
 C
-      IF ((ABS(Y2) > EPS).AND.TST1.AND.(I > NDIV+1)) THEN
+      IF ((ABS(Y2) > EPS).AND.TST1.AND.(I > NDIV)) THEN
          CALL RSTGAMP
          CALL FUNCH6A (PSI6LO, Y3)
          X3 = PSI6LO
          CALL PUSHERR (0002, 'CALCH6')    ! WARNING ERROR: NO CONVERGENCE
-         GOTO 50
+         RETURN                           ! no PUSH/POP yet in adjoint (8.2013.slc)
       ENDIF
 C
 C *** PERFORM BISECTION ***********************************************
@@ -10043,8 +10066,12 @@ C
          ENDIF
          I = I+1
       ENDDO
-      IF ((I > (MAXIT+1)) .AND. TST2) THEN
+C
+C *** NO CONVERGENCE ; RETURN WITH ERROR ******************************
+C
+      IF ((I > (MAXIT)) .AND. TST2) THEN
          CALL PUSHERR (0002, 'CALCH6')    ! WARNING ERROR: NO CONVERGENCE
+         RETURN                           ! No PUSH/POP yet in adjoint (8.2013.slc)
       ENDIF
 C
 C *** CONVERGED ; RETURN **********************************************
@@ -10394,7 +10421,8 @@ C
          DO J=1,NPAIR
             WATER = WATER + MOLALR(J)/M0(J)
          ENDDO
-         WATER = MAX(WATER, TINY)
+         WATER = MAX(WATER, TINY2)   !slc.water.dbg TINY -> TINY2
+
 C
 C *** CALCULATE ACTIVITIES OR TERMINATE INTERNAL LOOP *****************
 C
@@ -10527,7 +10555,8 @@ C
          DO I=1,NPAIR
             WATER = WATER + MOLALR(I)/M0(I)
          ENDDO
-         WATER = MAX(WATER, TINY)
+         WATER = MAX(WATER, TINY2)   !slc.water.dbg TINY -> TINY2
+
 C
 C *** CALCULATE ACTIVITIES OR TERMINATE INTERNAL LOOP *****************
 C
@@ -10621,7 +10650,8 @@ C
          DO I=1,NPAIR
             WATER = WATER + MOLALR(I)/M0(I)
          ENDDO
-         WATER = MAX(WATER, TINY)
+         WATER = MAX(WATER, TINY2)   !slc.water.dbg TINY -> TINY2
+
 C
 C *** CALCULATE ACTIVITIES OR TERMINATE INTERNAL LOOP *****************
 C
@@ -10769,8 +10799,8 @@ C
       DO i=1,npair
         water = water + molalr(i)/m0(i)
       ENDDO
-      IF (water .LT. tiny) THEN
-        water = tiny
+      IF (water .LT. tiny2) THEN
+        water = tiny2
         CALL PUSHCONTROL1B(0)
       ELSE
         CALL PUSHCONTROL1B(1)
@@ -11892,8 +11922,8 @@ C
         DO j=1,npair
           water = water + molalr(j)/m0(j)
         ENDDO
-        IF (water  <  tiny) THEN
-          water = tiny
+        IF (water  <  tiny2) THEN
+          water = tiny2
           CALL PUSHCONTROL1B(0)
         ELSE
           CALL PUSHCONTROL1B(1)
@@ -14131,8 +14161,8 @@ C
         DO j=1,npair
           water = water + molalr(j)/m0(j)
         ENDDO
-        IF (water  <  tiny) THEN
-          water = tiny
+        IF (water  <  tiny2) THEN
+          water = tiny2
           CALL PUSHCONTROL1B(0)
         ELSE
           CALL PUSHCONTROL1B(1)
@@ -15257,8 +15287,8 @@ C
           waterdnrd = waterdnrd + molalrdnrd(j)/m0(j)
           water = water + molalr(j)/m0(j)
         ENDDO
-        IF (water  <  tiny) THEN
-          water = tiny
+        IF (water  <  tiny2) THEN
+          water = tiny2
           waterdnrd = 0.d0
           CALL PUSHCONTROL1B(0)
         ELSE
@@ -16903,8 +16933,8 @@ C
           waterdnrd = waterdnrd + molalrdnrd(j)/m0(j)
           water = water + molalr(j)/m0(j)
         ENDDO
-        IF (water  <  tiny) THEN
-          water = tiny
+        IF (water  <  tiny2) THEN
+          water = tiny2
           waterdnrd = 0.D0
         ELSE
           water = water
@@ -17619,8 +17649,8 @@ C
         DO j=1,npair
           water = water + molalr(j)/m0(j)
         ENDDO
-        IF (water  <  tiny) THEN
-          water = tiny
+        IF (water  <  tiny2) THEN     ! slc.water.dbg - TINY -> TINY2
+          water = tiny2
           CALL PUSHCONTROL1B(0)
         ELSE
           CALL PUSHCONTROL1B(1)
@@ -19806,8 +19836,8 @@ C
         DO j=1,npair
           water = water + molalr(j)/m0(j)
         ENDDO
-        IF (water  <  tiny) THEN
-          water = tiny
+        IF (water  <  tiny2) THEN
+          water = tiny2
           CALL PUSHCONTROL1B(0)
         ELSE
           CALL PUSHCONTROL1B(1)
@@ -21165,8 +21195,8 @@ C
           watergnrd = watergnrd + molalrgnrd(j)/m0(j)
           water = water + molalr(j)/m0(j)
         ENDDO
-        IF (water  <  tiny) THEN
-          water = tiny
+        IF (water  <  tiny2) THEN
+          water = tiny2
           watergnrd = 0.d0
           CALL PUSHCONTROL1B(0)
         ELSE
@@ -23279,8 +23309,8 @@ C
           watergnrd = watergnrd + molalrgnrd(j)/m0(j)
           water = water + molalr(j)/m0(j)
         ENDDO
-        IF (water  <  tiny) THEN
-          water = tiny
+        IF (water  <  tiny2) THEN
+          water = tiny2
           watergnrd = 0.D0
         ELSE
           water = water
@@ -24429,8 +24459,8 @@ C
         DO j=1,npair
           water = water + molalr(j)/m0(j)
         ENDDO
-        IF (water  <  tiny) THEN
-          water = tiny
+        IF (water  <  tiny2) THEN
+          water = tiny2
           CALL PUSHCONTROL1B(0)
         ELSE
           CALL PUSHCONTROL1B(1)
@@ -25808,8 +25838,8 @@ C
           waterhnrd = waterhnrd + molalrhnrd(j)/m0(j)
           water = water + molalr(j)/m0(j)
         ENDDO
-        IF (water  <  tiny) THEN
-          water = tiny
+        IF (water  <  tiny2) THEN
+          water = tiny2
           waterhnrd = 0.d0
           CALL PUSHCONTROL1B(0)
         ELSE
@@ -27832,8 +27862,8 @@ C
           waterhnrd = waterhnrd + molalrhnrd(j)/m0(j)
           water = water + molalr(j)/m0(j)
         ENDDO
-        IF (water  <  tiny) THEN
-          water = tiny
+        IF (water  <  tiny2) THEN
+          water = tiny2
           waterhnrd = 0.D0
         ELSE
           water = water
@@ -28762,8 +28792,8 @@ C
         DO j=1,npair
           water = water + molalr(j)/m0(j)
         ENDDO
-        IF (water  <  tiny) THEN
-          water = tiny
+        IF (water  <  tiny2) THEN
+          water = tiny2
           CALL PUSHCONTROL1B(0)
         ELSE
           CALL PUSHCONTROL1B(1)
@@ -30770,8 +30800,8 @@ C
         DO j=1,npair
           water = water + molalr(j)/m0(j)
         ENDDO
-        IF (water  <  tiny) THEN
-          water = tiny
+        IF (water  <  tiny2) THEN
+          water = tiny2
           CALL PUSHCONTROL1B(0)
         ELSE
           CALL PUSHCONTROL1B(1)

@@ -125,7 +125,7 @@ C..Scratch Local Variables:
 C for INTERPX
       INTEGER, SAVE :: STRTCOLMC3, ENDCOLMC3, STRTROWMC3, ENDROWMC3
 
-c      REAL*8, ALLOCATABLE, SAVE :: CHEMLAST( :, :, : )
+      REAL*8, ALLOCATABLE, SAVE :: CHEMLAST( :, :, : )
       REAL, ALLOCATABLE :: CHKGRID (:,:,:,:)
       INTEGER ALLOCSTAT
 
@@ -195,13 +195,13 @@ c..If emissions processing requested stop
 
          LFIRST = .FALSE.
 	 
-c	     ALLOCATE ( CHEMLAST( MY_NCOLS,MY_NROWS,NLAYS ), STAT = ALLOCSTAT )
-c         IF ( ALLOCSTAT .NE. 0 ) THEN
-c            CALL M3EXIT ( PNAME, JDATE, JTIME, 'CHEMLAST 
-c     &                     allocation failed in kppdriver', XSTAT1 )
-c            END IF
+         ALLOCATE ( CHEMLAST( MY_NCOLS,MY_NROWS,NLAYS ), STAT = ALLOCSTAT )
+         IF ( ALLOCSTAT .NE. 0 ) THEN
+            CALL M3EXIT ( PNAME, JDATE, JTIME, 'CHEMLAST 
+     &                     allocation failed in kppdriver', XSTAT1 )
+            END IF
 
-c         CHEMLAST = 1.0d0
+         CHEMLAST = 1.0d0
 	 
 C Create new adjoint file and open for update
          CALL CHK_FILE_OPEN ( ADJ_CHEM_CHK, JDATE, JTIME, .TRUE., TSTEP )
@@ -250,19 +250,17 @@ C.. Get photolysis rates in /min
       CALL PHOT ( MIDDATE, MIDTIME, JDATE, JTIME, NDARK, RJ )        
 
 C -------------->>
-      ALLOCATE ( CHKGRID( MY_NCOLS,MY_NROWS,NLAYS,N_GC_SPC+NPHOTAB ), STAT = ALLOCSTAT )
+!slz      ALLOCATE ( CHKGRID( MY_NCOLS,MY_NROWS,NLAYS,N_GC_SPC+NPHOTAB ), STAT = ALLOCSTAT )
+      ALLOCATE ( CHKGRID( MY_NCOLS,MY_NROWS,NLAYS,N_GC_SPC+1 ), STAT = ALLOCSTAT )
 
       IF ( ALLOCSTAT .NE. 0 ) THEN
-         CALL M3EXIT ( PNAME, JDATE, JTIME, 'CHEMLAST. allocation failed in kppdriver', XSTAT1 )
+         CALL M3EXIT ( PNAME, JDATE, JTIME, 'CHEMGRID. allocation failed in kppdriver', XSTAT1 )
       END IF
       
       CHKGRID(:,:,:,1:N_GC_SPC)=CGRID(:,:,:,1:N_GC_SPC)
-      CHKGRID(:,:,:,N_GC_SPC+1:N_GC_SPC+NPHOTAB)=RJ(:,:,:,1:NPHOTAB)
+!slz      CHKGRID(:,:,:,N_GC_SPC+1:N_GC_SPC+NPHOTAB)=RJ(:,:,:,1:NPHOTAB)
       
 
-C Checkpoint concentrations
-      CALL CHK_FILE_WRITE ( ADJ_CHEM_CHK, JDATE, JTIME, 
-     &     CHKGRID(:, :, :, 1:N_GC_SPC+NPHOTAB) )
       
 
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -300,14 +298,14 @@ c..Call EBI solver
                CHEMSTD = DBLE(CHEMSTEP)
                YCD( : ) = DBLE ( YC( : ))
 
-	       RCTRL(3) = 1.0d0 !CHEMLAST(C,R,L) !0.8*RSTAT(2) 
+               RCTRL(3) = CHEMLAST(C,R,L) !0.8*RSTAT(2) 
+               CHKGRID(C,R,L,N_GC_SPC+1) = SNGL (RCTRL(3)) !time step
 
                CALL INTEGRATE( YCD, RKI, CHEMSTD, ATOL, RTOL, 
      &         ICTRL, RCTRL, ISTAT, RSTAT, KPP_ERR)
      
 ccccc Amir: optimize these later with proper chemlast
-c               CHEMLAST(C,R,L) = RSTAT(2)     
-c               CHKGRID(C,R,L,N_GC_SPCD+1) = SNGL (RSTAT(2))
+               CHEMLAST(C,R,L) = RSTAT(3)     
 
                IF (KPP_ERR.LT.0) THEN
                   PRINT *, C,R,L
@@ -324,6 +322,11 @@ c..Update concentration array
       ENDDO
 	       
 c      CHKGRID(:,:,:,N_GC_SPCD+1) = CHEMLAST(:,:,:)
+
+C Checkpoint concentrations
+      CALL CHK_FILE_WRITE ( ADJ_CHEM_CHK, JDATE, JTIME, 
+     &     CHKGRID(:, :, :, 1:N_GC_SPC+1) )
+!slz     &     CHKGRID(:, :, :, 1:N_GC_SPC+NPHOTAB) )
 
       DEALLOCATE (CHKGRID)
 
