@@ -18,13 +18,13 @@ C   permissions subject to the above restrictions.                     *
 C***********************************************************************
 
 C RCS file, release, date & time of last delta, author, state, [and locker]
-C $Header: /Volumes/Data/CVS/CMAQ_CVSrepos/CCTM/src/driver/yamo_adj_fwd/sciproc.F,v 1.1 2010/11/17 19:22:55 sergey Exp $ 
+C $Header: /Volumes/Data/CVS/CMAQ_CVSrepos/CCTM/src/driver/yamo_adj_fwd/sciproc.F,v 1.2 2013/05/15 20:14:11 ppercell Exp $ 
 
 C what(1) key, module and SID; SCCS file; date and time of last delta:
 C %W% %P% %G% %U%
 
 C:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      SUBROUTINE SCIPROC ( CGRID, JDATE, JTIME, TSTEP, NADVSS, XFIRST )
+      SUBROUTINE SCIPROC ( CGRID, JDATE, JTIME, TSTEP, ASTEP, XFIRST )
 
 C-----------------------------------------------------------------------
 C Function:
@@ -52,6 +52,10 @@ C                       HADV negative conc's until after ZADV
 C    25 Jul 08 S.Roselle: removed PING from modeled processes
 C    Aug 2010 by Peter Percell at UH-IMAQS:
 C    - Modified for use with adjoint/4dvar code
+C    May 2013 by Peter Percell at UH-IMAQS:
+C    - call HADV instead of directly managing calls to XADV and YADV
+C    - changed the calling argument NADVSS back to the traditional ASTEP
+C    - changed XFIRST to an array indexed by layer
 C-----------------------------------------------------------------------
 
 !     USE CGRID_SPCS   ! CGRID species number and offsets
@@ -80,9 +84,8 @@ C Arguments:
                                 ! TSTEP(2) = sciproc sync. step (chem)
 
 !     INTEGER      ASTEP( NLAYS )  ! layer advection time step
-!     INTEGER      ASTEP( : )      ! layer advection time step
-      INTEGER      NADVSS( : )  ! number of advection sub-steps per sync step
-      LOGICAL      XFIRST
+      INTEGER      ASTEP( : )      ! layer advection time step
+      LOGICAL      XFIRST( : )     ! layer XFIRST
 
 C Parameters:
 
@@ -126,27 +129,14 @@ C Local Variables:
             INTEGER, INTENT( IN )     :: JDATE, JTIME
             INTEGER, INTENT( IN )     :: TSTEP( 2 )
          END SUBROUTINE PA_UPDATE
-c$$$         SUBROUTINE HADV ( CGRID, JDATE, JTIME, TSTEP, ASTEP )
-c$$$            IMPLICIT NONE
-c$$$            REAL, POINTER             :: CGRID( :,:,:,: )
-c$$$            INTEGER, INTENT( IN )     :: JDATE, JTIME
-c$$$            INTEGER, INTENT( IN )     :: TSTEP( 2 )
-c$$$            INTEGER, INTENT( IN )     :: ASTEP( : )
-c$$$         END SUBROUTINE HADV
-         SUBROUTINE XADV ( CGRID, JDATE, JTIME, TSTEP, NADVSS )
+         SUBROUTINE HADV ( CGRID, JDATE, JTIME, TSTEP, ASTEP, XFIRST )
             IMPLICIT NONE
             REAL, POINTER             :: CGRID( :,:,:,: )
             INTEGER, INTENT( IN )     :: JDATE, JTIME
             INTEGER, INTENT( IN )     :: TSTEP( 2 )
-            INTEGER, INTENT( IN )     :: NADVSS( : )
-         END SUBROUTINE XADV
-         SUBROUTINE YADV ( CGRID, JDATE, JTIME, TSTEP, NADVSS )
-            IMPLICIT NONE
-            REAL, POINTER             :: CGRID( :,:,:,: )
-            INTEGER, INTENT( IN )     :: JDATE, JTIME
-            INTEGER, INTENT( IN )     :: TSTEP( 2 )
-            INTEGER, INTENT( IN )     :: NADVSS( : )
-         END SUBROUTINE YADV
+            INTEGER, INTENT( IN )     :: ASTEP( : )
+            LOGICAL, INTENT( INOUT )  :: XFIRST( : )
+         END SUBROUTINE HADV
          SUBROUTINE ZADV ( CGRID, JDATE, JTIME, TSTEP )
             IMPLICIT NONE
             REAL, POINTER             :: CGRID( :,:,:,: )
@@ -234,39 +224,12 @@ C couple CGRID for advection
       CALL COUPLE ( CGRID, JDATE, JTIME, TSTEP )
       IF ( CKSUM ) CALL CKSUMMER ( 'COUPLE', CGRID, JDATE, JTIME )
 
-c$$$      CALL HADV ( CGRID, JDATE, JTIME, TSTEP, ASTEP )
-c$$$!     IF ( CKSUM ) CALL CKSUMMER ( 'HADV', CGRID, JDATE, JTIME )
-c$$$      IF ( LIPR ) CALL PA_UPDATE ( 'HADV', CGRID, JDATE, JTIME, TSTEP )
-      IF ( XFIRST ) THEN
-         XFIRST = .FALSE.
-
-         CALL XADV ( CGRID, JDATE, JTIME, TSTEP, NADVSS )
-
-         IF ( CKSUM ) CALL CKSUMMER ( 'XADV', CGRID, JDATE, JTIME )
-         IF ( LIPR ) CALL PA_UPDATE ( 'XADV', CGRID, JDATE, JTIME, TSTEP )
-
-         CALL YADV ( CGRID, JDATE, JTIME, TSTEP, NADVSS )
-
-         IF ( CKSUM ) CALL CKSUMMER ( 'YADV', CGRID, JDATE, JTIME )
-         IF ( LIPR ) CALL PA_UPDATE ( 'YADV', CGRID, JDATE, JTIME, TSTEP )
-
-         ELSE
-         XFIRST = .TRUE.
-
-         CALL YADV ( CGRID, JDATE, JTIME, TSTEP, NADVSS )
-
-         IF ( CKSUM ) CALL CKSUMMER ( 'YADV', CGRID, JDATE, JTIME )
-         IF ( LIPR ) CALL PA_UPDATE ( 'YADV', CGRID, JDATE, JTIME, TSTEP )
-
-         CALL XADV ( CGRID, JDATE, JTIME, TSTEP, NADVSS )
-
-         IF ( CKSUM ) CALL CKSUMMER ( 'XADV', CGRID, JDATE, JTIME )
-         IF ( LIPR ) CALL PA_UPDATE ( 'XADV', CGRID, JDATE, JTIME, TSTEP )
-
-         END IF
+      CALL HADV ( CGRID, JDATE, JTIME, TSTEP, ASTEP, XFIRST )
+!     IF ( CKSUM ) CALL CKSUMMER ( 'HADV', CGRID, JDATE, JTIME )
+      IF ( LIPR ) CALL PA_UPDATE ( 'HADV', CGRID, JDATE, JTIME, TSTEP )
 
       CALL ZADV ( CGRID, JDATE, JTIME, TSTEP )
-      IF ( CKSUM ) CALL CKSUMMER ( 'ZADV', CGRID, JDATE, JTIME )
+      IF ( CKSUM ) CALL CKSUMMER ( 'ADV', CGRID, JDATE, JTIME )
       IF ( LIPR ) CALL PA_UPDATE ( 'ZADV', CGRID, JDATE, JTIME, TSTEP )
 
       CALL HDIFF ( CGRID, JDATE, JTIME, TSTEP )

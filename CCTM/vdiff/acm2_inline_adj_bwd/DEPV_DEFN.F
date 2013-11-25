@@ -35,7 +35,9 @@ C                 Tanya Otte's work
 C     29 Jan 2010 D. Wong: Eliminate potential race condition at the MYPE = 0
 C                          to open the diagnostic file. Eliminate the BARRIER
 C                          and the CLOSE3 and OPEN3.
-
+C    Aug 2013 by Peter Percell at UH-IMAQS:
+C    -- fixed bug in adjoint for bi-directional flux
+C    -- reduced vdiff checkpoint file to just layer 1 of cgrid
 C-----------------------------------------------------------------------
 
       IMPLICIT NONE
@@ -49,14 +51,14 @@ C no. of deposition velocity model species
 C ddep spc conversion factors
       REAL,    ALLOCATABLE, SAVE :: DD_CONV( : )
 
-C model-oriented bi-directional production [ppm-m/s]
-      REAL,    ALLOCATABLE, SAVE :: PLDV( :,:,: )
-
 C gas species (gas-phase and gas non-reactive) deposition velocities
       REAL,    PRIVATE, ALLOCATABLE, SAVE :: DEPVEL_GAS( :,:,: )
 
-C m3dry-oriented bi-directional production [ppm-m/s]
-      REAL,    PRIVATE, ALLOCATABLE, SAVE :: PVD( :,:,: )
+C select partial derivatives of bi-directional production with respect to
+C species concentrations
+C d(PVD(NH3,:,:))/dCSO2, d(PVD(NH3,:,:))/dCNH3, d(PVD(HONO,:,:))/dCNO2
+      INTEGER, PARAMETER :: NH3_SO2 = 1, NH3_NH3 = 2, HONO_NO2 = 3 ! "enum"
+      REAL,    ALLOCATABLE, SAVE :: PVDD( :,:,: )
 
 C CGRID for m3dry bi-directional flux calculation
       REAL,    PRIVATE, ALLOCATABLE, SAVE :: CGRIDL1( :,:,: )
@@ -132,7 +134,7 @@ C for INTERPX
       CONTAINS
 
 C-----------------------------------------------------------------------
-         FUNCTION DEPV_INIT( JDATE, JTIME, TSTEP, CGRID ) RESULT ( SUCCESS )
+         FUNCTION DEPV_INIT( JDATE, JTIME, TSTEP ) RESULT ( SUCCESS )
 
          USE HGRD_DEFN
          USE DEPVVARS
@@ -160,7 +162,6 @@ C Includes:
 
 C Arguments:
          INTEGER JDATE, JTIME, TSTEP( 2 )
-         REAL, POINTER :: CGRID( :,:,:,: )
          LOGICAL SUCCESS
 
 C External Functions:
@@ -254,9 +255,9 @@ C-----------------------------------------------------------------------
          NDEPV_SPC = N_SPC_DEPV
 
          ALLOCATE ( DEPV( NDEPV_SPC+1,NCOLS,NROWS ),
-     &              PLDV( NDEPV_SPC,NCOLS,NROWS ), STAT = ALLOCSTAT )
+     &              PVDD( 3,NCOLS,NROWS ), STAT = ALLOCSTAT )
          IF ( ALLOCSTAT .NE. 0 ) THEN
-            XMSG = 'Failure allocating DEPV or PLDV arrays'
+            XMSG = 'Failure allocating DEPV or PVDD arrays'
             CALL M3WARN( PNAME, JDATE, JTIME, XMSG )
             SUCCESS = .FALSE.; RETURN
          END IF
@@ -273,7 +274,7 @@ C Initialize deposition velocities for nondeposited species to zero:
 C setting DEPV( N_SPC_DEPV+1,C,R ) = 0.0 accounts for dry dep. species names
 C as a subset of the vert. diffused species list
          DEPV = 0.0   ! array assignment
-         PLDV = 0.0   ! array assignment
+         PVDD = 0.0   ! array assignment
 
          ALLOCATE ( DD_CONV( NDEPV_SPC+1 ), STAT = ALLOCSTAT )
          IF ( ALLOCSTAT .NE. 0 ) THEN
@@ -580,14 +581,13 @@ D                 write( logdev,1021 ) v, unique_adepv( v ), aer_depv_sur( v )
 D           write( logdev,* ) ' '
 
             IF ( ILDEPV ) THEN
-               ALLOCATE ( CGRIDL1( N_DEPV_GAS,NCOLS,NROWS ),
-     &                    PVD    ( N_DEPV_GAS,NCOLS,NROWS ), STAT = ALLOCSTAT )
+               ALLOCATE ( CGRIDL1( N_DEPV_GAS,NCOLS,NROWS ), STAT = ALLOCSTAT )
                IF ( ALLOCSTAT .NE. 0 ) THEN
-                  XMSG = 'Failure allocating CGRIDL1 or PVD arrays'
+                  XMSG = 'Failure allocating CGRIDL1 array'
                   CALL M3WARN( PNAME, JDATE, JTIME, XMSG )
                   SUCCESS = .FALSE.; RETURN
                END IF
-               CGRIDL1 = 0.0   ! array assignment (PVD initalized in m3dry)
+               CGRIDL1 = 0.0   ! array assignment
             END IF
 
 C Get diagnostic file flag.
@@ -727,7 +727,7 @@ C Arguments:
          INTEGER, INTENT( IN ) :: TSTEP( 2 )       ! time step vector (HHMMSS)
                                                    ! TSTEP(1) = local output step
                                                    ! TSTEP(2) = sciproc sync. step (chem)
-         REAL, POINTER         :: CGRID( :,:,:,: ) ! concentrations
+         REAL, POINTER         :: CGRID( :,:,:,: ) ! layer 1 concentrations
 
          INCLUDE SUBST_GC_DEPV
          INCLUDE SUBST_AE_DEPV
@@ -803,14 +803,15 @@ C Local variables:
                REAL,    POINTER       :: CGRID( :,:,:,: )
                REAL,    INTENT( OUT ) :: CGRIDL1( :,:,: )
             END SUBROUTINE CGRID_DEPV
-            SUBROUTINE M3DRY ( JDATE, JTIME, ABFLUX, SFC_HONO, CGRIDL1, DEPVEL_GAS, PVD )
+            SUBROUTINE M3DRY ( JDATE, JTIME, ABFLUX, SFC_HONO, CGRIDL1, DEPVEL_GAS, PVDD )
                USE HGRD_DEFN
                USE DEPVVARS
                IMPLICIT NONE
                INTEGER, INTENT( IN )  :: JDATE, JTIME
                LOGICAL, INTENT( IN )  :: ABFLUX, SFC_HONO
                REAL,    INTENT( IN )  :: CGRIDL1( :,:,: )
-               REAL,    INTENT( OUT ) :: DEPVEL_GAS( :,:,: ), PVD( :,:,: )
+               REAL,    INTENT( OUT ) :: DEPVEL_GAS( :,:,: )
+               REAL,    INTENT( OUT ) :: PVDD( :,:,: )
             END SUBROUTINE M3DRY
          END INTERFACE
 
@@ -843,7 +844,7 @@ C-----------------------------------------------------------------------
                CALL CGRID_DEPV( GAS_DEPV_FOUND, GAS_DEPV_SUR, CGRID, CGRIDL1 )
             END IF
 
-            CALL M3DRY ( JDATE, JTIME, ABFLUX, SFC_HONO, CGRIDL1, DEPVEL_GAS, PVD )
+            CALL M3DRY ( JDATE, JTIME, ABFLUX, SFC_HONO, CGRIDL1, DEPVEL_GAS, PVDD )
 
 D           cw = my_ncols/2; rw = my_nrows/2
 !           cw = 17; rw = 43
@@ -862,7 +863,6 @@ D           write( logdev,1033 ) cw, rw
                DO R = 1, MY_NROWS
                   DO C = 1, MY_NCOLS
                      DEPV( V,C,R ) = GC_DEPV_FAC( N ) * DEPVEL_GAS( NDX,C,R )
-                     PLDV( V,C,R ) = PVD( NDX,C,R )
 D                    if ( c == cw .and. r == rw ) then
 D                       write( logdev,1039 ) v, n, gc_depv( n ), ndx,
 D    &                                       depvel_gas( ndx,c,r ), depv( v,c,r ),
@@ -886,7 +886,6 @@ D                    end if
                DO R = 1, MY_NROWS
                   DO C = 1, MY_NCOLS
                      DEPV( V,C,R ) = NR_DEPV_FAC( N ) * DEPVEL_GAS( NDX,C,R )
-                     PLDV( V,C,R ) = PVD( NDX,C,R )
 D                    if ( c == cw .and. r == rw ) then
 D                       write( logdev,1039 ) v, n, nr_depv( n ), ndx,
 D    &                                       depvel_gas( ndx,c,r ), depv( v,c,r ),
@@ -907,7 +906,6 @@ D                    end if
                DO R = 1, MY_NROWS
                   DO C = 1, MY_NCOLS
                      DEPV( V,C,R ) = TR_DEPV_FAC( N ) * DEPVEL_GAS( NDX,C,R )
-                     PLDV( V,C,R ) = PVD( NDX,C,R )
 D                    if ( c == cw .and. r == rw ) then
 D                       write( logdev,1039 ) v, n, tr_depv( n ), ndx,
 D    &                                       depvel_gas( ndx,c,r ), depv( v,c,r ),

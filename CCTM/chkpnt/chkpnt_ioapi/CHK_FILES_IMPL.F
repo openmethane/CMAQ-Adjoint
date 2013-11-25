@@ -33,6 +33,8 @@
 !                               CMAQ adjoint version
 !   Nov  2011 by M. Turner, CU Boulder:
 !     - Added output of filename when printing "Reading timestep"
+!   Aug 2013 by Peter Percell at UH-IMAQS:
+!   -- reduced vdiff checkpoint file to just layer 1 of cgrid
 !-----------------------------------------------------------------------
 
       IMPLICIT NONE
@@ -41,7 +43,7 @@
 
 
 !-----------------------------------------------------------------------
-      SUBROUTINE CHK_FILE_CREATE_IMPL (CHK_ID)
+      SUBROUTINE CHK_FILE_CREATE_IMPL (CHK_ID, TSTEP)
 !-----------------------------------------------------------------------
 !
 !  FUNCTION:  Create netCDF file CHK_ID using info stored in the CHK_FILE
@@ -61,6 +63,8 @@
 !   -- for this implementation, only need checkpoint files to be open for
 !      update on processor 0; opening them for update on other processors
 !      can causes problems
+!   May 2013 by Peter Percell at UH-IMAQS:
+!   -- added TSTEP as a calling argument to pass in a computed sync step
 !-----------------------------------------------------------------------
 
       USE CHK_FILES_DEFS
@@ -82,7 +86,10 @@
 
 !  ARGUMENTS and their descriptions:
 
-      INTEGER                  :: CHK_ID !  identification of the checkpoint file
+      INTEGER             :: CHK_ID   !  identification of the checkpoint file
+      INTEGER, INTENT(IN) :: TSTEP(2) ! time step vector (HHMMSS)
+                                      !   TSTEP(1) = local output step
+                                      !   TSTEP(2) = sciproc sync. step (chem)
 
 !  LOCAL VARIABLES and their descriptions:
 
@@ -111,15 +118,19 @@
 
 !     IOAPI3 implementation of the checkpointing
 !     requires constant synchronization timestep
-      CHK%TSTEP = CHK_FILE_TSTEP()
+      IF ( .NOT. CONST_SYNC_STEP ) THEN
+         XMSG = 'CMAQ adjoint requires fixed synchronization timestep.'
+         CALL M3EXIT( PNAME, 0, 0, XMSG, XSTAT1 )
+      END IF
+      CHK%TSTEP = TSTEP(2)
 
 !     Set output file characteristics based on COORD.EXT and open it
       FTYPE3D = GRDDED3
       SDATE3D = CHK%SDATE
       STIME3D = CHK%STIME
       TSTEP3D = CHK%TSTEP
-      NLAYS3D = NLAYS
-      DO L = 1, NLAYS + 1
+      NLAYS3D = CHK%NLAYS
+      DO L = 1, CHK%NLAYS + 1
          VGLVS3D( L ) = VGLVS_GD( L )
       END DO
 
@@ -386,6 +397,8 @@ c$$$      END IF
 !   July 2010 by J.Resler, ICS: Rewritten to allow different strategies
 !   Oct  2010 by J.Resler, ICS: Adapted for integration into the new
 !                               CMAQ adjoint version
+!   April 2013 by Peter Percell at UH-IMAQS:
+!   - As suggested by Jaroslav, XTRACT3 now writes directly to CHK_GRID(:,:,:,V)
 !-----------------------------------------------------------------------
 
       USE HGRD_DEFN
@@ -416,9 +429,6 @@ c$$$      END IF
       CHARACTER(NAMLEN3)      :: FNAME
       INTEGER                 :: R,C,L,V     ! loop counters
 
-      REAL, ALLOCATABLE      :: BUFFER ( :,:,: )
-      INTEGER                 :: ALLOCSTAT
-
       CHARACTER(NAMLEN_ADJ)   :: PNAME = 'CHK_FILE_READ_IMPL'
       CHARACTER( 96 )         :: XMSG = ' '
 
@@ -442,34 +452,16 @@ c$$$      END IF
          CALL M3EXIT( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
       END IF
 
-      ALLOCATE ( BUFFER( NCOLS,NROWS,NLAYS ), STAT = ALLOCSTAT )
-      IF ( ALLOCSTAT .NE. 0 ) THEN
-         XMSG = 'Failure allocating DBUFF'
-         CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
-      END IF
-
       DO V = 1, CHK%NVARS
-         IF ( .NOT. XTRACT3 ( FNAME, CHK%VNAME(V), 1, NLAYS,
+         IF ( .NOT. XTRACT3 ( FNAME, CHK%VNAME(V), 1, CHK%NLAYS,
      &                       ROWSX_PE(1,MYPE+1),ROWSX_PE(2,MYPE+1),
      &                       COLSX_PE(1,MYPE+1),COLSX_PE(2,MYPE+1),
-     &                       JDATE, JTIME, BUFFER ) ) THEN
-            BUFFER = 0.0
+     &                       JDATE, JTIME, CHK_GRID(:,:,:,V) ) ) THEN
             XMSG = 'Could not read  ' // CHK%VNAME( V )
      &           // ' from ' // TRIM(FNAME)
             CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
          END IF
-
-!!!!!! instead of buffer, XTRACT3 could write probably directly to CHK_GRID(:,:,:,V)
-         DO R = 1, NROWS
-            DO C = 1, NCOLS
-               DO L = 1, NLAYS
-                  CHK_GRID( C,R,L,V ) = BUFFER( C,R,L )
-               END DO
-            END DO
-         END DO
       END DO
-
-      DEALLOCATE ( BUFFER )
 
       RETURN
 

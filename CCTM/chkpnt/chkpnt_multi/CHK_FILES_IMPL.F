@@ -30,6 +30,8 @@
 !   July 2010 by J.Resler, ICS: Initial version
 !   Oct  2010 by J.Resler, ICS: Adapted for integration into the new
 !                               CMAQ adjoint version
+!   Aug 2013 by Peter Percell at UH-IMAQS:
+!   -- reduced vdiff checkpoint file to just layer 1 of cgrid
 !-----------------------------------------------------------------------
 
       IMPLICIT NONE
@@ -38,7 +40,7 @@
 
 
 !-----------------------------------------------------------------------
-      SUBROUTINE CHK_FILE_CREATE_IMPL ( CHK_ID )
+      SUBROUTINE CHK_FILE_CREATE_IMPL ( CHK_ID, TSTEP )
 !-----------------------------------------------------------------------
 !
 !  FUNCTION:  Create netCDF file CHK_ID using info stored in the CHK_FILE
@@ -54,6 +56,8 @@
 !                               partialy inspired by CRTFIL3 from IOAPI3
 !   Oct  2010 by J.Resler, ICS: Adapted for integration into the new
 !                               CMAQ adjoint version
+!   May 2013 by Peter Percell at UH-IMAQS:
+!   -- added TSTEP as a calling argument to pass in a computed sync step
 !-----------------------------------------------------------------------
 
         USE GRID_CONF             ! horizontal & vertical domain specifications
@@ -69,12 +73,16 @@
 
 !  ARGUMENTS and their descriptions:
 
-       INTEGER                    :: CHK_ID !  identification of the checkpoint file
+        INTEGER             :: CHK_ID   !  identification of the checkpoint file
+        INTEGER, INTENT(IN) :: TSTEP(2) ! time step vector (HHMMSS)
+                                        !   TSTEP(1) = local output step
+                                        !   TSTEP(2) = sciproc sync. step (chem)
 
 
 !  LOCAL VARIABLES and their descriptions:
 !
         CHARACTER(NAMLEN_ADJ)    :: PNAME = 'CHK_FILE_CREATE_IMPL'
+        CHARACTER( 96 )          :: XMSG = ' '
         INTEGER                  :: ISCR
         INTEGER                  :: IERR            !  netCDF error status return
         INTEGER                  :: VAR             !  loop counter for file variables
@@ -125,7 +133,11 @@
 !   synchronization timestep if we wish to produce
 !   IOAPI3 compatible files
 !   TODO: rewrite without this requirement
-      CHK%TSTEP = CHK_FILE_TSTEP()
+      IF ( .NOT. CONST_SYNC_STEP ) THEN
+         XMSG = 'CMAQ adjoint requires fixed synchronization timestep.'
+         CALL M3EXIT( PNAME, 0, 0, XMSG, XSTAT1 )
+      END IF
+      CHK%TSTEP = TSTEP(2)
 
 !...........  Create the netCDF file, and put it into definition mode.
 
@@ -247,7 +259,7 @@
       END IF
 
 !.......   NLAYS:  number of layers
-      IERR = NF90_PUT_ATT(FNUM, NF90_GLOBAL, 'NLAYS', NLAYS)
+      IERR = NF90_PUT_ATT(FNUM, NF90_GLOBAL, 'NLAYS', CHK%NLAYS)
       IF ( IERR .NE. 0 ) THEN
           CALL M3ABORT( FNAME, FNUM, IERR,
      &        'Error creating netCDF file attribute NLAYS' )
@@ -429,7 +441,7 @@
           GO TO 999
       END IF              !  ierr nonzero:  NCDDEF() failed
 
-      IERR = NF90_DEF_DIM(FNUM, 'LAY', NLAYS, LDIM)
+      IERR = NF90_DEF_DIM(FNUM, 'LAY', CHK%NLAYS, LDIM)
       IF ( IERR .NE. 0 ) THEN
           CALL M3ABORT( FNAME, FNUM, IERR,
      &          'Error creating netCDF dimension LAY' )
@@ -860,10 +872,10 @@
       DIMS( 2 ) = 1
       DELS( 2 ) = NROWS
       DIMS( 3 ) = 1
-      DELS( 3 ) = NLAYS
+      DELS( 3 ) = CHK%NLAYS
       DIMS( 4 ) = STEP
       DELS ( 4 ) = 1
-      ALLOCATE(BUFFER(NCOLS*NROWS*NLAYS))
+      ALLOCATE(BUFFER(NCOLS*NROWS*CHK%NLAYS))
 
       write(logdev,*) 'Reading chk_file: ', CHK%FNUM, FNAME, JDATE, JTIME, STEP
 
@@ -884,7 +896,7 @@
           END IF
 
           INDX = 0
-          DO L = 1, NLAYS
+          DO L = 1, CHK%NLAYS
             DO R = 1, NROWS
               DO C = 1, NCOLS
                 INDX = INDX + 1
@@ -982,7 +994,7 @@ C...........   EXTERNAL FUNCTIONS and their descriptions:
       DIMS( 2 ) = 1
       DELS( 2 ) = NROWS
       DIMS( 3 ) = 1
-      DELS( 3 ) = NLAYS
+      DELS( 3 ) = CHK%NLAYS
       DIMS( 4 ) = STEP
       DELS( 4 ) = 1
 
@@ -998,10 +1010,10 @@ C...........   EXTERNAL FUNCTIONS and their descriptions:
       write(logdev,*) 'Writing chk_file: ', CHK%FNUM, FNAME, JDATE, JTIME, STEP
 !...............   Write contents of the buffer for each variable
 
-      ALLOCATE(BUFFER(NCOLS*NROWS*NLAYS))
+      ALLOCATE(BUFFER(NCOLS*NROWS*CHK%NLAYS))
       DO  VAR = 1, CHK%NVARS
           INDX = 0
-          DO L = 1, NLAYS
+          DO L = 1, CHK%NLAYS
             DO R = 1, NROWS
               DO C = 1, NCOLS
                 INDX = INDX + 1

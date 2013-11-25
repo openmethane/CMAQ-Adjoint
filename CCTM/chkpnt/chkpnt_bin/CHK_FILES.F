@@ -36,7 +36,7 @@
       CONTAINS
 
 !-----------------------------------------------------------------------
-      SUBROUTINE CHK_FILE_OPEN ( CHK_ID, SDATE, STIME, CREATENEW )
+      SUBROUTINE CHK_FILE_OPEN ( CHK_ID, SDATE, STIME, CREATENEW, TSTEP )
 !-----------------------------------------------------------------------
 ! Function:
 !     Subroutine creates checkpoint file
@@ -55,14 +55,19 @@
 !     - made ADJ_VDIFF_CHK a full copy of the CGRID array
 !   Nov  2011 by M. Turner, CU Boulder:
 !     - Added phot species to chem checkpoint file
-!   July 2013 by J.Resler, ICS: 
+!   May  2013 by Peter Percell at UH-IMAQS:
+!     - changed ADJ_RHOJ_CHK to ADJ_VA_RHOJ_CHK and added ADJ_HA_RHOJ_CHK
+!     - added TSTEP as an optional calling argument to pass in a computed
+!       sync step
+!   July 2013 by J.Resler, ICS:
 !     - fixed bug in VDESC initialization for AERO and VDIFF files
+!   Aug 2013 by Peter Percell at UH-IMAQS:
+!     - reduced vdiff checkpoint file to just layer 1 of cgrid
 !   Sep  2013 by ShunLiu Zhao, Carleton:
 !     - Removed phot species from chem checkpoint file
 !     - Added TSTEP to chem checkpoint file
-!   Oct 2013 by J.Resler, ICS: 
+!   Oct 2013 by J.Resler, ICS:
 !     - fixes, cleaning
-!     
 !-----------------------------------------------------------------------
 
       USE GRID_CONF             ! horizontal & vertical domain specifications
@@ -98,6 +103,9 @@
       INTEGER, INTENT(IN)       :: SDATE        ! starting date (YYYYDDD)
       INTEGER, INTENT(IN)       :: STIME        ! starting time (HHMMSS)
       LOGICAL, INTENT(IN)       :: CREATENEW    ! create new file or open the old one
+      INTEGER, INTENT(IN), OPTIONAL :: TSTEP(2) ! time step vector (HHMMSS)
+                                                !   TSTEP(1) = local output step
+                                                !   TSTEP(2) = sync. step
 
 !     Local variables:
       CHARACTER(len=NAMLEN_ADJ) :: PNAME = 'CHK_FILE_OPEN'
@@ -108,8 +116,6 @@
 
       type(CHK_FILE),pointer    :: CHK          ! checkpoint file description structure
       INTEGER                   :: INDX, L, S
-      
-      CHARACTER (3)             :: TMP
 
 !-----------------------------------------------------------------------
 
@@ -133,6 +139,8 @@
 
       CHK%SDATE = SDATE
       CHK%STIME = STIME
+
+      CHK%NLAYS = NLAYS         ! default for almost all checkpoint files
 
 !  Special settings for particular file
       SELECT CASE ( CHK_ID )
@@ -205,6 +213,7 @@
             INDX = INDX + N_TR_SPC
 
          CASE ( ADJ_VDIFF_CHK )
+            CHK%NLAYS = 1
             CHK%FDESC(1) = 'Vertical diffusion checkpoint file'
             CHK%FDESC(2) = 'From CMAQ model dyn alloc version CTM'
             CHK%NVARS = N_GC_SPC + 1 + N_AE_SPC + N_NR_SPC + N_TR_SPC
@@ -254,8 +263,22 @@
             END DO
             INDX = INDX + N_TR_SPC
 
-         CASE ( ADJ_RHOJ_CHK )
-            CHK%FDESC(1) = 'RHOJ checkpoint file'
+         CASE ( ADJ_HA_RHOJ_CHK )
+            CHK%FDESC(1) = 'Horizontal advection RHOJ checkpoint file'
+            CHK%FDESC(2) = 'From CMAQ model dyn alloc version CTM'
+            CHK%NVARS = 1
+            ALLOCATE(CHK%VTYPE(CHK%NVARS))
+            ALLOCATE(CHK%VNAME(CHK%NVARS))
+            ALLOCATE(CHK%UNITS(CHK%NVARS))
+            ALLOCATE(CHK%VDESC(CHK%NVARS))
+            ALLOCATE(CHK%VINDX(CHK%NVARS))
+            CHK%VTYPE(1) = M3REAL
+            CHK%VNAME(1) = 'RHOJ'
+            CHK%UNITS(1) = 'KG/M**2'
+            CHK%VDESC(1) = 'advected air density X total Jacobian'
+
+         CASE ( ADJ_VA_RHOJ_CHK )
+            CHK%FDESC(1) = 'Vertical advection RHOJ checkpoint file'
             CHK%FDESC(2) = 'From CMAQ model dyn alloc version CTM'
             CHK%NVARS = 1
             ALLOCATE(CHK%VTYPE(CHK%NVARS))

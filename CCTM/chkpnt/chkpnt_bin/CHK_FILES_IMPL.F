@@ -34,6 +34,8 @@
 !
 ! Revision History:
 !   June 2011 by J.Resler, ICS: Initial version
+!   Aug 2013 by Peter Percell at UH-IMAQS:
+!   -- reduced vdiff checkpoint file to just layer 1 of cgrid
 !-----------------------------------------------------------------------
 
       IMPLICIT NONE
@@ -127,11 +129,11 @@
 
 !..........  Get parameters of the new file
       CHK%FNUM = CHK_FILE_UNITID()
-      RECLEN = (sizeof(CHK%SDATE)+sizeof(CHK%STIME) + sizeof(REALVAR)*CHK%NVARS*NCOLS*NROWS*NLAYS) ! suppose full grid checkpointing
+      RECLEN = (sizeof(CHK%SDATE)+sizeof(CHK%STIME) + sizeof(REALVAR)*CHK%NVARS*NCOLS*NROWS*CHK%NLAYS) ! suppose full grid checkpointing
       print*, 'RECLEN =', RECLEN
       print*, 'sizeof(REALVAR) =', sizeof(REALVAR)
       print*, 'CHK%NVARS =', CHK%NVARS
-      print*, 'NCOLS*NROWS*NLAYS =', NCOLS*NROWS*NLAYS
+      print*, 'NCOLS*NROWS*CHK%NLAYS =', NCOLS*NROWS*CHK%NLAYS
 
 !...........  Create a new file
       OPEN(UNIT=CHK%FNUM,FILE=FULLNAME,FORM='UNFORMATTED',ACCESS='DIRECT',
@@ -214,7 +216,7 @@
 
 !..........  Get parameters of the new file
       CHK%FNUM = CHK_FILE_UNITID()
-      RECLEN = (sizeof(CHK%SDATE)+sizeof(CHK%STIME) + sizeof(REALVAR)*CHK%NVARS*NCOLS*NROWS*NLAYS) ! suppose full grid checkpointing
+      RECLEN = (sizeof(CHK%SDATE)+sizeof(CHK%STIME) + sizeof(REALVAR)*CHK%NVARS*NCOLS*NROWS*CHK%NLAYS) ! suppose full grid checkpointing
 
 !...........  Open an old file
       OPEN(UNIT=CHK%FNUM,FILE=FULLNAME,FORM='UNFORMATTED',ACCESS='DIRECT',RECL=RECLEN,STATUS='OLD',ACTION='READ',IOSTAT=IERR)
