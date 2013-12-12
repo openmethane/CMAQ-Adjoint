@@ -214,7 +214,7 @@
  set FP = $FC
 
 # CHANGE: Set location of MPICH if using multiple processors
- set MPICH  =  "{$M3LIB}/mpich/include -lmpi"
+ set MPICH  =  "${M3LIB}/mpich/include -lmpi"
 
 # CHANGE: Set location for stenex library/include/and mod files
  set STENEX = $M3LIB/se_noop
@@ -256,7 +256,7 @@
 #:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#
 
  if ( $?ParOpt ) then      # Multiprocessor system configuration
-    set Mpich = $MPICH
+    set Mpich = "$MPICH"
     set seL = se_snl
     cp -p ${STENEX}/*.mod $MODLOC
 #    cp -p ${STENEX}/se_*.mod ${STENEX}/swap_sandia.mod $Bld
