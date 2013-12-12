@@ -61,8 +61,8 @@
 
 ! Checkpoint file names
       CHARACTER(16), PARAMETER :: CHK_NAMES(N_CHKS) =
-     & ( / 'ADJ_CHEM_CHK  ','ADJ_AERO_CHK  ','ADJ_VDIFF_CHK ','ADJ_HA_RHOJ_CHK ',
-     &     'ADJ_VA_RHOJ_CHK ','ADJ_XADV_CHK  ','ADJ_YADV_CHK  ','ADJ_ZADV_CHK  ' / )
+     & ( / 'ADJ_CHEM_CHK   ','ADJ_AERO_CHK   ','ADJ_VDIFF_CHK  ','ADJ_HA_RHOJ_CHK',
+     &     'ADJ_VA_RHOJ_CHK','ADJ_XADV_CHK   ','ADJ_YADV_CHK   ','ADJ_ZADV_CHK   ' / )
 
 
 ! We cannot include PARMS3.EXT here, define own parameters
