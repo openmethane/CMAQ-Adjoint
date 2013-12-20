@@ -39,6 +39,8 @@ C   - changed the calling argument NADVSS back to the traditional ASTEP
 C   - changed XFIRST to an array indexed by layer
 C-----------------------------------------------------------------------
 
+      USE ADJ_ARRAY_MOD         ! adjoint sensitivity arrays
+
       IMPLICIT NONE
 
 C Include Files:
