@@ -29,6 +29,8 @@ C   Aug 2010 by Peter Percell at UH-IMAQS: created for adjoint/4dvar
 C   Feb 2011 by Peter Percell at UH-IMAQS: added calls to DECOUPLE/COUPLE
 C-----------------------------------------------------------------------
 
+      USE ADJ_ARRAY_MOD         ! adjoint sensitivity arrays
+
       IMPLICIT NONE
 
 C Include files:

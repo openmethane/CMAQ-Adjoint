@@ -61,6 +61,7 @@ C Local Variables:
       CHARACTER(2) :: COLROW = 'CR' ! col/row arg list order
 
       INTEGER, ALLOCATABLE :: NADVSS(:) ! number of advection sub-steps per sync step
+      REAL, POINTER :: LGRID(:, :, :, :)
       INTEGER :: ALLOCSTAT
 
       REAL :: CLOCK             ! Wall-clock time (sec) at initialization.
@@ -225,11 +226,11 @@ C Read adjoint forcing from file
 
 C Since offline forcing is based on concentrations averaged over the output time step,
 C   the forcing can simply be allocated evenly to each synchronization time step. 11.2013.slc
+C        LGRID_FRC is in ADJ_ARRAY_MOD
          LGRID_FRC = LGRID_FRC_TOT / NSTEPS
          
          DO IREP = NREPS, 1, -1
-            CALL SCIPROC_BWD(LGRID, LGRID_FRC, JDATE, JTIME, TSTEP, 
-     &                       NADVSS, XFIRST)                     ! science processes
+            CALL SCIPROC_BWD(LGRID, JDATE, JTIME, TSTEP, NADVSS, XFIRST)                     ! science processes
          END DO
          
          CALL WR_ADJ_FILE(LGRID, JDATE, JTIME, ADJ_LGRID)
