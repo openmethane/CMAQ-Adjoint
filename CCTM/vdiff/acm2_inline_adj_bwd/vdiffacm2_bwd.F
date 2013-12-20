@@ -25,6 +25,9 @@ C***************************************************************
 
 C Revision History:
 C   Oct 2010 by Peter Percell at UH-IMAQS: created for adjoint/4dvar
+C   Aug 2013 by Peter Percell at UH-IMAQS:
+C   -- fixed bug in adjoint for bi-directional flux
+C   -- reduced vdiff checkpoint file to just layer 1 of cgrid
 C   Nov 2013 S.Capps (US EPA): shifted emissions-related sensitivity
 C            arrays to module; incorporated M.Turner (CU-Boulder) 
 C            emissions-related sensitivity calculations
@@ -129,13 +132,11 @@ C ACM Local Variables
       REAL, ALLOCATABLE, SAVE :: DEPVCR ( : ) ! dep vel in one cell
       REAL, ALLOCATABLE, SAVE :: EFAC1 ( : )
       REAL, ALLOCATABLE, SAVE :: EFAC2 ( : )
-      REAL :: PLDV_HONO         ! PLDV for HONO
-      REAL :: CONC_NO2          ! CONC of NO2
-      REAL :: DEPV_NO2          ! Dep. Vel. of NO2
-      REAL :: DEPV_HNO3         ! Dep. Vel. of HNO3
+      REAL :: POL(1:3)          ! prodn/lossrate = PVDD/DEPV
       REAL :: FNL
       INTEGER :: NLP, NL, LCBL
       INTEGER, SAVE :: NO2_HIT, HONO_HIT, HNO3_HIT, NO2_MAP, HONO_MAP, HNO3_MAP
+      INTEGER, SAVE :: NH3_HIT, SO2_HIT, NH3_MAP, SO2_MAP
       REAL :: DTLIM, DTS, DTACM, RZ, DELC, LFAC1, LFAC2
 
       INTEGER :: C, R, L, V     ! loop induction variables
@@ -149,6 +150,8 @@ C==============================================
       real :: dd_bwd(n_spc_diff,nlays)
       real :: delc_bwd
       real :: uu_bwd(n_spc_diff,nlays)
+      real :: conc_no2b
+      real :: conc_so2b
 
       INTERFACE
          SUBROUTINE RDMET( MDATE, MTIME, RDEPVHT, RJACM, RVJACMF, RRHOJ,
@@ -195,7 +198,7 @@ C-----------------------------------------------------------------------
          N_SPC_CGRID = SIZE ( CGRID_BWD,4 )
 
          ALLOCATE(
-     &        CGRID( MY_NCOLS,MY_NROWS,NLAYS,N_SPC_CGRID ),
+     &        CGRID( 1:NCOLS,1:NROWS,1:1,1:N_SPC_CGRID ),
      &        CNGRD_BWD( N_SPC_CGRID,NLAYS,MY_NCOLS,MY_NROWS ),
      &        STAT = ALLOCSTAT )
          IF ( ALLOCSTAT .NE. 0 ) THEN
@@ -227,10 +230,7 @@ C set vertical layer definitions from COORD.EXT
          END DO
          RDX3M( NLAYS ) = 0.0
 
-C Read vertical diffusion checkpoint at sync step
-         CALL CHK_FILE_READ ( ADJ_VDIFF_CHK, JDATE, JTIME, CGRID )
-
-         IF ( .NOT. DEPV_INIT ( JDATE, JTIME, TSTEP( 1 ), CGRID ) ) THEN
+         IF ( .NOT. DEPV_INIT ( JDATE, JTIME, TSTEP( 1 ) ) ) THEN
             XMSG = 'Failure initializing deposition velocities module'
             CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
          END IF
@@ -243,8 +243,10 @@ C create global maps
          END IF
 
          IF ( NDEPV_SPC > 0 ) THEN
-            HONO_HIT = 0; HNO3_HIT = 0; NO2_HIT  = 0
-            HONO_MAP = 0; HNO3_MAP = 0; NO2_MAP  = 0
+            HONO_HIT = 0; HNO3_HIT = 0; NO2_HIT = 0
+            HONO_MAP = 0; HNO3_MAP = 0; NO2_MAP = 0
+            NH3_HIT = 0; SO2_HIT = 0
+            NH3_MAP = 0; SO2_MAP = 0
             DO V = 1, NDEPV_SPC
                IF ( TRIM( DV2DF_SPC( V ) ) .EQ. 'NO2' ) THEN
                   NO2_HIT = V
@@ -255,6 +257,12 @@ C create global maps
                ELSE IF ( TRIM( DV2DF_SPC( V ) ) .EQ. 'HNO3' ) THEN
                   HNO3_HIT = V
                   HNO3_MAP = DV2DF( V )
+               ELSE IF ( TRIM( DV2DF_SPC( V ) ) .EQ. 'SO2' ) THEN
+                  SO2_HIT = V
+                  SO2_MAP = DV2DF( V )
+               ELSE IF ( TRIM( DV2DF_SPC( V ) ) .EQ. 'NH3' ) THEN
+                  NH3_HIT = V
+                  NH3_MAP = DV2DF( V )
                END IF
             END DO
          END IF
@@ -271,14 +279,11 @@ C set auxiliary depv arrays
      &           EFAC1 ( NDEPV_SPC ),
      &           EFAC2 ( NDEPV_SPC ), STAT = ALLOCSTAT )
             IF ( ALLOCSTAT .NE. 0 ) THEN
-               XMSG = 'Failure allocating DEPVCR, EFAC1, EFAC2'
+               XMSG = 'Failure allocating DEPVCR, EFAC1 or EFAC2'
                CALL M3EXIT( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
             END IF
 
          END IF
-
-C Open adjoint file for reading
-         CALL  CHK_FILE_OPEN ( ADJ_VDIFF_CHK, JDATE, JTIME, .FALSE. )
 
       END IF                    ! FIRSTIME
 
@@ -384,6 +389,9 @@ C----------------------------------------------
             efac1(v) = exp(-(depvcr(v)*rdepvht(c,r)*thbar*dts))
             efac2(v) = exp(-(depvcr(v)*rdepvht(c,r)*theta*dts))
           end do
+          pol(nh3_so2) = pvdd(nh3_so2,c,r)/depvcr(nh3_hit)
+          pol(nh3_nh3) = pvdd(nh3_nh3,c,r)/depvcr(nh3_hit)
+          pol(hono_no2) = pvdd(hono_no2,c,r)/depvcr(hono_hit)
           do l = 1, nlays
             do v = 1, n_spc_diff
               conc_bwd(v,l) = conc_bwd(v,l)+cngrd_bwd(diff_map(v),l,c,r)
@@ -425,15 +433,25 @@ C----------------------------------------------
             lfac1 = crankq*eddy(1)*rdx3f(1)*dts
             do v = ndepv_spc, 1, -1
               if (v .eq. hono_hit) then
+                conc_no2b = pol(hono_no2)*(1.0-efac2(v))*conc_bwd(hono_map,1)
                 conc_bwd(hono_map,1) = conc_bwd(hono_map,1)*efac2(v)
               else if (v .eq. hno3_hit) then
                 conc_bwd(hno3_map,1) = conc_bwd(hno3_map,1)*efac2(v)
               else if (v .eq. no2_hit) then
                 conc_bwd(no2_map,1) = conc_bwd(no2_map,1)*efac2(v)
+              else if (v .eq. nh3_hit) then
+                conc_so2b = pol(nh3_so2)*(1.0-efac2(v))*conc_bwd(nh3_map,1)
+                conc_bwd(nh3_map,1) =
+     &               pol(nh3_nh3)*(1.0-efac2(v))*conc_bwd(nh3_map,1)
+     &               +conc_bwd(nh3_map,1)*efac2(v)
+              else if (v .eq. so2_hit) then
+                conc_bwd(so2_map,1) = conc_bwd(so2_map,1)*efac2(v)
               else
                 conc_bwd(dv2df(v),1) = conc_bwd(dv2df(v),1)*efac2(v)
               endif
             end do
+            conc_bwd(no2_map,1) = conc_bwd(no2_map,1) + conc_no2b
+            conc_bwd(so2_map,1) = conc_bwd(so2_map,1) + conc_so2b
             do l = 1, nlays
               do v = 1, n_spc_diff
                 uu_bwd(v,l) = uu_bwd(v,l)+conc_bwd(v,l)
@@ -509,15 +527,25 @@ C----------------------------------------------
             end do
             do v = ndepv_spc, 1, -1
               if (v .eq. hono_hit) then
+                conc_no2b = pol(hono_no2)*(1.0-efac1(v))*conc_bwd(hono_map,1)
                 conc_bwd(hono_map,1) = conc_bwd(hono_map,1)*efac1(v)
               else if (v .eq. hno3_hit) then
                 conc_bwd(hno3_map,1) = conc_bwd(hno3_map,1)*efac1(v)
               else if (v .eq. no2_hit) then
                 conc_bwd(no2_map,1) = conc_bwd(no2_map,1)*efac1(v)
+              else if (v .eq. nh3_hit) then
+                conc_so2b = pol(nh3_so2)*(1.0-efac1(v))*conc_bwd(nh3_map,1)
+                conc_bwd(nh3_map,1) =
+     &               pol(nh3_nh3)*(1.0-efac1(v))*conc_bwd(nh3_map,1)
+     &               +conc_bwd(nh3_map,1)*efac1(v)
+              else if (v .eq. so2_hit) then
+                conc_bwd(so2_map,1) = conc_bwd(so2_map,1)*efac1(v)
               else
                 conc_bwd(dv2df(v),1) = conc_bwd(dv2df(v),1)*efac1(v)
               endif
             end do
+            conc_bwd(no2_map,1) = conc_bwd(no2_map,1) + conc_no2b
+            conc_bwd(so2_map,1) = conc_bwd(so2_map,1) + conc_so2b
           end do
           do l = 1, nlays
             do v = 1, n_spc_diff

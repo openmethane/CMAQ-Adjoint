@@ -18,7 +18,7 @@ C   permissions subject to the above restrictions.                     *
 C***********************************************************************
 
 C RCS file, release, date & time of last delta, author, state, [and locker]
-C $Header: /Volumes/Data/CVS/CMAQ_CVSrepos/CCTM/src/vadv/vyamo_cadj_bwd/zadvyppm_bwd.F,v 1.2 2011/02/22 00:48:34 ppercell Exp $
+C $Header: /Volumes/Data/CVS/CMAQ_CVSrepos/CCTM/src/vadv/vyamo_cadj_bwd/zadvyppm_bwd.F,v 1.3 2013/05/14 22:49:32 ppercell Exp $
 
 C what(1) key, module and SID; SCCS file; date and time of last delta:
 C %W% %P% %G% %U%
@@ -38,6 +38,7 @@ C-----------------------------------------------------------------------
       USE CGRID_SPCS            ! CGRID species number and offsets
       USE CHK_FILES_DEFS        ! adjoint checkpoint files definition
       USE CHK_FILES             ! adjoint checkpoint files routines
+
       IMPLICIT NONE
 
 C Includes:
@@ -82,7 +83,7 @@ C Advected species dimension
 C File Variables:
 
       REAL :: RHOJM( NCOLS,NROWS,NLAYS ) ! RhoJ (Kg/m**2) from Met file
-      REAL :: RHOJ_CHK( NCOLS,NROWS,NLAYS, 1 ) ! RhoJ (Kg/m**2) from ADJ_RHOJ_CHK file
+      REAL :: RHOJ_CHK( NCOLS,NROWS,NLAYS, 1 ) ! RhoJ (Kg/m**2) from ADJ_VA_RHOJ_CHK file
 
 C Local variables:
 
@@ -191,12 +192,12 @@ C get file local domain offsets
      &        STRTCOLMC3, ENDCOLMC3, STRTROWMC3, ENDROWMC3 )
 
 C Open checkpoint file as read-only
-         CALL CHK_FILE_OPEN ( ADJ_RHOJ_CHK, JDATE, JTIME, .FALSE. )
+         CALL CHK_FILE_OPEN ( ADJ_VA_RHOJ_CHK, JDATE, JTIME, .FALSE. )
 
       END IF                    ! if firstime
 
 C Read advected RHOJ checkpoint at sync step
-      CALL CHK_FILE_READ ( ADJ_RHOJ_CHK, JDATE, JTIME, RHOJ_CHK )
+      CALL CHK_FILE_READ ( ADJ_VA_RHOJ_CHK, JDATE, JTIME, RHOJ_CHK )
 
 C Time-stepped gridded computation for Z-direction advection.
       DTSEC  = FLOAT( TIME2SEC( TSTEP( 2 ) ) ) ! process time step (seconds)

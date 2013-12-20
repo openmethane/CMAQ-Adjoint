@@ -20,7 +20,7 @@ C RCS file, release, date & time of last delta, author, state, [and locker]
 C $Header: /Volumes/Data/CVS/CMAQ_CVSrepos/CCTM/src/vdiff/acm2_inline_adj_bwd/m3dry.F,v 1.1 2011/02/22 01:10:45 ppercell Exp $
 
 C::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      SUBROUTINE m3dry ( jdate, jtime, abflux, sfc_hono, cgridl1, depvel_gas, pvd )
+      SUBROUTINE m3dry ( jdate, jtime, abflux, sfc_hono, cgridl1, depvel_gas, pvdd )
 
 C-------------------------------------------------------------------------------
 C Name:     Models-3 Dry Deposition
@@ -102,12 +102,19 @@ C           05 Oct 2009  Added condition that vegetation fraction must be
 C                        greater than zero to be considered a land point.  This
 C                        works around intermittent inconsistencies in surface
 C                        fields in some WRF data sets.  (T. Otte)
+C    Aug 2013 by Peter Percell at UH-IMAQS:
+C    -- fixed bug in adjoint for bi-directional flux
 C-------------------------------------------------------------------------------
 
       USE HGRD_DEFN           ! horizontal grid specifications
       USE DEPVVARS
 
       IMPLICIT NONE
+
+C Parameters:
+C Enum of partial derivatives of pvd
+      INTEGER, PARAMETER :: NH3_SO2 = 1, NH3_NH3 = 2, HONO_NO2 = 3
+
 C Includes:
 
       INCLUDE SUBST_CONST     ! constants
@@ -124,7 +131,7 @@ C Arguments:
       LOGICAL,     INTENT( IN )  :: sfc_hono
       REAL,        INTENT( IN )  :: cgridl1( :,:,: )    ! layer 1 concentrations
       REAL,        INTENT( OUT ) :: depvel_gas( :,:,: )
-      REAL,        INTENT( OUT ) :: pvd( :,:,: )
+      REAL,        INTENT( OUT ) :: pvdd( :,:,: )
 
 C Local Variables:
 
@@ -251,7 +258,6 @@ C Local Variables:
 
 C-------------------------------------------------------------------------------
 C For heterogenous hono on surfaces
-      REAL                       :: conc_no2                  ! concentration of NO2
       REAL                       :: kno2                      ! first order rate constant for the heterogenous reaction [1/s]  
       REAL,    SAVE, ALLOCATABLE :: purb      ( :,: )         ! urban percent [%]
       REAL                       :: surf_bldg                 ! Surface area of bldgs to volume of air [-]
@@ -292,6 +298,20 @@ C For Ammonia bi-directional flux
       REAL                       :: vdg          ! Vd(nh3) to non-veg part [m/s]
 
       REAL,    SAVE              :: luf_fac( n_lufrac )
+      INTEGER :: nd
+      REAL :: max1
+      REAL :: aqd(2)
+      REAL :: bqd(2)
+      REAL :: cnh3d(2)
+      REAL :: cnh3cd(2)
+      REAL :: cqd(2)
+      REAL :: cso2cd(2)
+      REAL :: qqd(2)
+      REAL :: rwxd(2)
+      REAL :: arg1
+      REAL :: arg1d(2)
+      REAL :: result1
+      REAL :: result1d(2)
       DATA luf_fac(  1 ) /   50.0 /                ! hardwired for 24-category USGS
       DATA luf_fac(  2 ) / 1000.0 /                !     "      "       "       "
       DATA luf_fac(  3 ) / 1000.0 /                !     "      "       "       "
@@ -779,7 +799,7 @@ C-------------------------------------------------------------------------------
       effective = .TRUE.
 
       depvel_gas( :,:,: ) = 0.0  ! initialize for this time period
-      pvd       ( :,:,: ) = 0.0  !     "       "    "    "    "
+      pvdd      ( :,:,: ) = 0.0  !     "       "    "    "    "
 
       DO r = 1, my_nrows
       DO c = 1, my_ncols
@@ -1037,8 +1057,13 @@ C--------------------------------------------------------------------------
                IF ( abflux ) THEN   ! Ammonia Bidirectional Flux
 
                   IF ( TRIM( depspc( l ) ) == 'SO2' ) THEN     ! Is SO2 before NH3?
-                     cso2c = cgridl1( n,c,r ) * ( 1.0 - depvel_gas( n,c,r ) * rac )
-                     cso2c = MAX( cso2c, 0.00001 )   ! impose minimum of 0.01 ppb
+                     cso2cd(NH3_SO2) = ( 1.0 - depvel_gas( n,c,r ) * rac )
+                     cso2cd(NH3_NH3) = 0.0
+                     cso2c = cso2cd(NH3_SO2)*cgridl1(n, c, r)
+                     IF (cso2c .LT. 0.00001) THEN ! impose minimum of 0.01 ppb
+                        cso2c = 0.00001
+                        cso2cd(NH3_SO2) = 0.0
+                     END IF
                   END IF
 
                   IF ( TRIM( depspc( l ) ) == 'NH3' ) THEN
@@ -1063,12 +1088,17 @@ C--------------------------------------------------------------------------
 
                         cnh3s = 161512.0 / tempgcr
      &                        * 10.0 ** ( -4507.11 / tempgcr ) * gamma
-                        cnh3s = cnh3s * 24.5 *1.0E6  ! ppm
+                        cnh3s = cnh3s * 24.5 * 1.0E6 ! ppm
                         cnh3g = cnh3s * 0.8
 
                      ! Cuticle resistance : rw = rwx * cnh3c + rwm
 
-                        rwx   = rwetsfc / cso2c * MAX( 1.0, 700.0 - 7.0 * rh_air )
+                        IF (1.0 .LT. 700.0 - 7.0*rh_air) THEN
+                           max1 = 700.0 - 7.0*rh_air
+                        ELSE
+                           max1 = 1.0
+                        END IF
+                        rwx   = rwetsfc / cso2c * max1
                         rwmb  = rwm + rbc
                         ga    = 1.0 / ra( c,r )
                         gsb   = 1.0 / ( rstom + rbc )
@@ -1080,11 +1110,31 @@ C--------------------------------------------------------------------------
                         aq    = rwx * gt
                         bq    = rwmb * gt + laicr * ( 1.0 - delta( c,r ) ) - rwx * qq
                         cq    = -rwmb * qq
-                        cnh3c = ( -bq + SQRT( bq * bq - 4.0 * aq * cq ) ) / ( 2.0 * aq )
+         ! Used Tapenade in multidirectional tangent mode to calculate the
+         ! partial derivatives of pvd for nh3 with respect to so2 and nh3 and
+         ! inserted the results into the standard m3dry.F
+                        arg1 = bq*bq - 4.0*aq*cq
+                        result1 = SQRT(arg1)
+                        cnh3d(NH3_SO2) = 0.0
+                        cnh3d(NH3_NH3) = 1.0
+                        DO nd=1,2
+                           rwxd(nd) = -(max1*rwetsfc*cso2cd(nd)/cso2c**2)
+                           qqd(nd) = ga*cnh3d(nd)
+                           aqd(nd) = gt*rwxd(nd)
+                           bqd(nd) = -(rwxd(nd)*qq) - rwx*qqd(nd)
+                           cqd(nd) = -(rwmb*qqd(nd))
+                           arg1d(nd) = bqd(nd)*bq + bq*bqd(nd) - 4.0*(aqd(
+     &                          nd)*cq+aq*cqd(nd))
+                           IF (arg1 .EQ. 0.0) THEN
+                              result1d(nd) = 0.0
+                           ELSE
+                              result1d(nd) = arg1d(nd)/(2.0*SQRT(arg1))
+                           END IF
+                           cnh3cd(nd) = ((result1d(nd)-bqd(nd))*2.0*aq-(-bq
+     &                          +result1)*2.0*aqd(nd))/(2.0*aq)**2
+                           pvdd(nd, c, r) = ga*vegcr*cnh3cd(nd)
+                        ENDDO
                         vdg   = 1.0 / ( 1.0 / ga + rbg )
-                        pvd( n,c,r ) = cnh3c * ga * vegcr
-     &                               + ( 1.0 - vegcr ) * vdg * cnh3g
-!                       lnh3  = vegcr * ga + ( 1.0 - vegcr ) * vdg
                         lnh3  = vdg + vegcr * ( ga - vdg )
                         depvel_gas( n,c,r ) = lnh3
 
@@ -1136,7 +1186,6 @@ C by 60 to convert it into 1/sec.
 C Determine NO2 concentration needed for HONO production term.
 
                   IF ( TRIM( depspc( l ) ) == 'NO2' ) THEN
-                     conc_no2 = cgridl1( n,c,r )
 
 C Loss of NO2 via the heterogeneous reaction is accounted as additional
 C depositional loss. Add the loss of NO2 via the heterogeneous reaction
@@ -1149,10 +1198,10 @@ C depositional loss.
 
                   END IF
 
-C Calculate production (pvd) for HONO; unit = ppm * m/s
+C Calculate partial derivative of production (pvd) for HONO; unit = m/s
 
                   IF ( TRIM( depspc( l ) ) == 'HONO' )
-     &               pvd( n,c,r ) = kno2 * conc_no2 * zf( c,r )
+     &               pvdd( HONO_NO2,c,r ) = kno2 * zf( c,r )
 
                END IF
 C--------------------------------------------------------------------------

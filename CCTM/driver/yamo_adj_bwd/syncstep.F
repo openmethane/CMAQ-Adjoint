@@ -18,7 +18,7 @@ C   permissions subject to the above restrictions.                     *
 C***********************************************************************
 
 C RCS file, release, date & time of last delta, author, state, [and locker]
-C $Header: /Volumes/Data/CVS/CMAQ_CVSrepos/CCTM/src/driver/yamo_adj_bwd/syncstep.F,v 1.1 2010/11/17 19:22:51 sergey Exp $
+C $Header: /Volumes/Data/CVS/CMAQ_CVSrepos/CCTM/src/driver/yamo_adj_bwd/syncstep.F,v 1.2 2013/05/15 20:14:11 ppercell Exp $
 
 C what(1) key, module and SID; SCCS file; date and time of last delta:
 C %W% %P% %G% %U%
@@ -35,6 +35,10 @@ C    steps per output time step TSTEP(1).
 C Revision history:
 C   Aug 2010 by Peter Percell at UH-IMAQS:
 C   - adapted from advstep.F for adjoint/4dvar
+C   May 2013 by Peter Percell at UH-IMAQS:
+C   - changed default HDIV_LIM to 0.9 (as in CMAQ_5.0.1)
+C   - support multiple calls so that the sync step can change with the
+C     output step if called with NSTEPS=1
 C-----------------------------------------------------------------------
 
       USE GRID_CONF             ! horizontal & vertical domain specifications
@@ -94,7 +98,7 @@ C Local Variables:
       REAL, SAVE :: IDX1        ! 1/dx1
       REAL, SAVE :: IDX2        ! 1/dx2
 
-      REAL, SAVE :: HDIV_LIM = 1.0 ! limit on allowable horiz. div. for advection step
+      REAL, SAVE :: HDIV_LIM    ! cutoff for max horizontal divergence step adj
 
       INTEGER :: STATUS         ! ENVINT or ENVREAL status
       CHARACTER(80) :: VARDESC  ! environment variable description
@@ -212,18 +216,6 @@ C Get the wind file start date and time and the wind file time step
          WETIME = STIME3D
          CALL NEXTIME(WEDATE, WETIME, SEC2TIME((MXREC3D - 1) * TIME2SEC(FSTEP)))
 
-C Establish end time for Courant number calculation
-         EDATE = JDATE
-         ETIME = JTIME
-         CALL NEXTIME(EDATE, ETIME, SEC2TIME(NSTEPS * OSTEP))
-
-C Make sure that there is sufficient wind data for Courant number calculation
-         IF ( SECSDIFF(JDATE, JTIME, WSDATE, WSTIME) > 0 .OR.
-     &        SECSDIFF(WEDATE, WETIME, EDATE, ETIME) > 0 ) THEN
-            XMSG = 'Insufficient wind data for Courant number calculation'
-            CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT3)
-         END IF
-
          IF ( VGTYP_GD /= VGSGPN3 .AND.
      &        VGTYP_GD /= VGSGPH3 .AND.
      &        VGTYP_GD /= VGWRFEM ) THEN
@@ -287,12 +279,30 @@ C Get cell size in meters
          CALL SUBST_LOOP_INDEX('R', 1, NROWS, 1, MY_TEMP,
      &        STARTROW, ENDROW)
 
-         VARDESC = 'Limit on allowable horiz. div. for advection step'
+         HDIV_LIM = 0.9
+         VARDESC = 'Maximum horiz. div. limit for adv step adjustment'
          HDIV_LIM = ENVREAL(ADV_HDIV_LIM, VARDESC, HDIV_LIM, STATUS)
+         IF ( STATUS .NE. 0 ) WRITE( LOGDEV,'(5X, A)' ) VARDESC
+         IF ( STATUS .EQ. 1 ) THEN
+            XMSG = 'Environment variable improperly formatted'
+            CALL M3EXIT( PNAME, JDATE, JTIME, XMSG, XSTAT2 )
+         END IF
 
       END IF                    ! FIRSTIME
 
       WRITE(LOGDEV, 92013) JDATE, JTIME
+
+C Establish end time for Courant number calculation
+      EDATE = JDATE
+      ETIME = JTIME
+      CALL NEXTIME(EDATE, ETIME, SEC2TIME(NSTEPS * OSTEP))
+
+C Make sure that there is sufficient wind data for Courant number calculation
+      IF ( SECSDIFF(JDATE, JTIME, WSDATE, WSTIME) > 0 .OR.
+     &     SECSDIFF(WEDATE, WETIME, EDATE, ETIME) > 0 ) THEN
+         XMSG = 'Insufficient wind data for Courant number calculation'
+         CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT3)
+      END IF
 
 C Get the initial wind file date and time needed for determining the
 C synchronization time step

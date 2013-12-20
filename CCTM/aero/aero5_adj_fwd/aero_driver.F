@@ -18,7 +18,7 @@ C   permissions subject to the above restrictions.                     *
 C***********************************************************************
 
 C RCS file, release, date & time of last delta, author, state, [and locker]
-C $Header: /Volumes/Data/CVS/CMAQ_CVSrepos/CCTM/src/aero/aero5_adj_fwd/aero_driver.F,v 1.3 2011/08/15 11:48:34 jaroslav Exp $
+C $Header: /Volumes/Data/CVS/CMAQ_CVSrepos/CCTM/src/aero/aero5_adj_fwd/aero_driver.F,v 1.4 2013/05/14 21:06:51 ppercell Exp $
 
 C what(1) key, module and SID; SCCS file; date and time of last delta:
 C %W% %P% %G% %U%
@@ -309,7 +309,7 @@ C Get domain decomp info from the MET_CRO_3D file
      &                   STRTCOLMC3, ENDCOLMC3, STRTROWMC3, ENDROWMC3 )
 
 C Create new adjoint file and open for update
-         CALL CHK_FILE_OPEN ( ADJ_AERO_CHK, JDATE, JTIME, .TRUE. )
+         CALL CHK_FILE_OPEN ( ADJ_AERO_CHK, JDATE, JTIME, .TRUE., TSTEP )
 
       END IF    ! FIRSTIME
 
