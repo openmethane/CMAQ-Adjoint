@@ -34,6 +34,7 @@ C            emissions-related sensitivity calculations
 
       USE GRID_CONF             ! horizontal & vertical domain specifications
       USE DEPV_DEFN
+      USE EMIS_DEFN
       USE VDIFF_MAP
       USE CHK_FILES_DEFS        ! adjoint checkpoint files definition
       USE CHK_FILES             ! adjoint checkpoint files routines
@@ -104,6 +105,7 @@ C Local Variables:
 
       REAL, POINTER, SAVE :: CGRID( :,:,:,: ) ! forward concentrations
       REAL, ALLOCATABLE, SAVE :: CNGRD_BWD( :,:,:,: ) ! cgrid_bwd replacement
+      REAL :: EMIS ( N_SPC_DIFF, NLAYS )   ! emissions subexpression
 
       REAL :: CONVPA            ! conversion factor to pressure in Pascals
 
@@ -140,8 +142,11 @@ C ACM Local Variables
       REAL :: DTLIM, DTS, DTACM, RZ, DELC, LFAC1, LFAC2
 
       INTEGER :: C, R, L, V     ! loop induction variables
+      INTEGER, PARAMETER :: M = 1 ! em_sf dimension length (e.g., for layers)
       INTEGER :: MDATE, MTIME, MSTEP ! internal simulation date&time
                                      ! array in vert. mixing
+                                     
+      REAL, ALLOCATABLE, SAVE :: VDEMIS_VD(:,:,:,:)
 
 C==============================================
 C define local adjoint variables
@@ -206,6 +211,25 @@ C-----------------------------------------------------------------------
             CALL M3EXIT( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
          END IF
 
+         ALLOCATE ( EM_SF( 1:NCOLS,1:NROWS,1:1,1:NSPCSD ),
+     &              STAT = ALLOCSTAT )
+         IF ( ALLOCSTAT .NE. 0 ) THEN
+            XMSG = 'EM_SF memory allocation failed'
+            CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
+         END IF
+
+         IF ( .NOT. EMIS_INIT ( JDATE, JTIME, TSTEP( 1 ) ) ) THEN
+            XMSG = 'Failure initializing emissions module'
+            CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
+         END IF
+
+         ALLOCATE ( VDEMIS_VD( MY_NCOLS,MY_NROWS,NLAYS,N_SPC_EMIS+1 ), 
+     &              STAT = ALLOCSTAT )
+         IF ( ALLOCSTAT .NE. 0 ) THEN
+            XMSG = 'VDEMIS_VD memory allocation failed'
+            CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
+         END IF
+
 C Open checkpoint file as read-only
          CALL CHK_FILE_OPEN ( ADJ_VDIFF_CHK, JDATE, JTIME, .FALSE. )
 
@@ -229,6 +253,14 @@ C set vertical layer definitions from COORD.EXT
             RDX3M( L ) = 1.0 / ( X3M( L+1 ) - X3M( L ) )
          END DO
          RDX3M( NLAYS ) = 0.0
+
+         IF ( .NOT. EMIS_INIT ( JDATE, JTIME, TSTEP( 1 ) ) ) THEN
+            XMSG = 'Failure initializing emissions module'
+            CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
+         END IF
+
+C Read vertical diffusion checkpoint at sync step
+         CALL CHK_FILE_READ ( ADJ_VDIFF_CHK, JDATE, JTIME, CGRID )
 
          IF ( .NOT. DEPV_INIT ( JDATE, JTIME, TSTEP( 1 ) ) ) THEN
             XMSG = 'Failure initializing deposition velocities module'
@@ -285,6 +317,10 @@ C set auxiliary depv arrays
 
          END IF
 
+C Open adjoint file for reading
+         CALL  CHK_FILE_OPEN ( ADJ_VDIFF_CHK, JDATE, JTIME, .FALSE. )
+         CALL  CHK_FILE_OPEN ( ADJ_EMIS_CHK, JDATE, JTIME, .FALSE. )
+
       END IF                    ! FIRSTIME
 
 C Read vertical diffusion checkpoint at sync step
@@ -320,10 +356,14 @@ C EDDYV returned = Kz, where Kz is in m**2/sec
 
       IF ( IFACM .EQ. 0 ) CONVCT = .FALSE.   ! no ACM
 
+C Read emissions from checkpoint file
+      CALL CHK_FILE_READ ( ADJ_EMIS_CHK, MDATE, MTIME, VDEMIS_VD )
+
 C----------------------------------------------
 C RESET GLOBAL ADJOINT VARIABLES
 C----------------------------------------------
       cngrd_bwd(:,:,:,:) = 0.
+      em_sf = 1.0     !debug, mdt
 
 C----------------------------------------------
 C RESET LOCAL ADJOINT VARIABLES
@@ -381,6 +421,12 @@ C----------------------------------------------
           endif
           nlp = int(dtsec/dtlim+0.99)
           dts = dtsec/nlp
+          EMIS = 0.0
+          DO L = 1, EMLAYS
+             DO V = 1, N_SPC_DIFF
+                EMIS( V,L ) = VDEMIS_VD( C,R,L,DF2EM( V ) ) * DTS
+             END DO
+          END DO
           do l = 1, nlays
             eddy(l) = seddy(l,c,r)
           end do
@@ -464,6 +510,10 @@ C----------------------------------------------
               call tri_bwd( cc,bb,ee,dd_bwd,uu_bwd )
             endif
             do v = 1, n_spc_diff
+              lgrid_em_sf(c,r,1,v) = lgrid_em_sf(c,r,1,v) + emis(v,1) 
+     &                      * dd_bwd(v,1)
+              lgrid_em(c,r,1,v) = lgrid_em(c,r,1,v) + em_sf(c,r,m,v)
+     &                      * dd_bwd(v,1)
               conc_bwd(v,2) = conc_bwd(v,2)+dd_bwd(v,1)*lfac1
               conc_bwd(v,1) = conc_bwd(v,1)-dd_bwd(v,1)*lfac1
             end do
@@ -495,6 +545,12 @@ C----------------------------------------------
                   conc_bwd(v,l-1) = conc_bwd(v,l-1)+dd_bwd(v,l)*lfac2
                   conc_bwd(v,l+1) = conc_bwd(v,l+1)+dd_bwd(v,l)*lfac1
                   conc_bwd(v,l) = conc_bwd(v,l)-dd_bwd(v,l)*(lfac1+lfac2)
+                  if ( l .le. emlays ) then
+                    lgrid_em_sf(c,r,l,v) = lgrid_em_sf(c,r,l,v) + emis(v,l)
+     &                                 * dd_bwd(v,l)
+                    lgrid_em(c,r,l,v) = lgrid_em(c,r,l,v) + em_sf(c,r,m,v)
+     &                                 * dd_bwd(v,l)
+                  end if
                 end do
               endif
               if (l .gt. lcbl) then
@@ -551,6 +607,9 @@ C----------------------------------------------
             do v = 1, n_spc_diff
               cngrd_bwd(diff_map(v),l,c,r) = cngrd_bwd(diff_map(v),l,c,r)+conc_bwd(v,l)
               conc_bwd(v,l) = 0.
+              IF ( COST_FUNC /= 0.0 ) THEN
+                 LGRID_EM_NRM(c,r,l,v) = LGRID_EM_SF(c,r,l,v) / COST_FUNC
+              END IF
             end do
           end do
         end do
