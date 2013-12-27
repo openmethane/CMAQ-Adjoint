@@ -73,10 +73,12 @@ C-----------------------------------------------------------------------
 #include      SUBST_IODECL    # I/O definitions and declarations
 
       CHARACTER( 120 ) :: XMSG = ' '
+      CHARACTER( 7 ) :: RUN_TYPE
 
 C Arguments:
 
       REAL, POINTER :: CGRID( :,:,:,: )              !  concentrations
+      REAL, ALLOCATABLE :: PERT (:, :, :, :) ! emis perturbation
       INTEGER      JDATE        ! current model date, coded YYYYDDD
       INTEGER      JTIME        ! current model time, coded HHMMSS
       INTEGER      TSTEP( 2 )   ! time step vector (HHMMSS)
@@ -121,7 +123,9 @@ C Local Variables:
       CHARACTER( 80 ) :: VARDESC                ! env variable description
 
       LOGICAL, SAVE :: FIRSTIME = .TRUE.
+      LOGICAL, SAVE :: FIRST = .TRUE.
       INTEGER, SAVE :: WSTEP  = 0               ! local write counter
+      INTEGER, SAVE :: JTIME_SAVE
       INTEGER  STATUS                           ! ENV... status
 
       REAL          DX1, DX2                    ! CX x1- and x2-cell widths
@@ -138,6 +142,7 @@ C Local Variables:
       REAL          WRDD( NCOLS,NROWS )         ! ddep write buffer
 
       REAL, ALLOCATABLE, SAVE :: EMIS_PA( :,:,:,: ) ! emis for process analysis
+      REAL, ALLOCATABLE, SAVE :: VDEMIS_CHK( :,:,:,: )
 
       INTEGER, SAVE :: N_SPC_CGRID              ! no. of CGRID species
 
@@ -187,9 +192,11 @@ C ACM Local Variables
       REAL        DTLIM, DTS, DTACM, RZ, DELC, LFAC1, LFAC2
 
       INTEGER, SAVE :: LOGDEV
+      CHARACTER(80) :: JDATE_STR, JTIME_STR, filename
  
       INTEGER      ALLOCSTAT
       INTEGER      C, R, L, S, V                ! loop induction variables
+      INTEGER, PARAMETER :: M = 1               ! em_sf variable (time, layer, etc)
       INTEGER      MDATE, MTIME, MSTEP          ! internal simulation date&time
                                                 ! array in vert. mixing
       INTERFACE
@@ -369,6 +376,30 @@ C set auxiliary depv arrays
 
          CNGRD = 0.0
 
+         filename = "N_SPC_EMIS.dat"
+
+         OPEN(UNIT=8,FILE=filename,STATUS="REPLACE",
+     &        ACTION="WRITE")
+
+         WRITE(8,*) N_SPC_EMIS
+         WRITE(LOGDEV,*) 'N_SPC_EMIS = ', N_SPC_EMIS
+
+         CLOSE( 8 )
+
+         ALLOCATE ( EM_SF( MY_NCOLS,MY_NROWS,NLAYS,NSPCSD ),
+     &              STAT = ALLOCSTAT )
+         IF ( ALLOCSTAT .NE. 0 ) THEN
+            XMSG = 'EM_SF memory allocation failed'
+            CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
+         END IF
+
+         ALLOCATE ( VDEMIS_CHK( MY_NCOLS,MY_NROWS,NLAYS,NSPCSD ),
+     &              STAT = ALLOCSTAT )
+         IF ( ALLOCSTAT .NE. 0 ) THEN
+            XMSG = 'VDEMIS_CHK memory allocation failed'
+            CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
+         END IF
+
 C Create new adjoint file and open for update
          CALL CHK_FILE_OPEN ( ADJ_VDIFF_CHK, JDATE, JTIME, .TRUE., TSTEP )
 
@@ -397,6 +428,68 @@ C read & interpolate deposition velocities
 C read & interpolate emissions data => VDEMIS from EMIS_DEFN module
 
          CALL GET_EMIS ( MDATE, MTIME, TSTEP, CONVPA, RDX3F, RRHOJ, RJACM )
+
+! *** perturb emis if validating emissions sensitivities
+!     Technique implemented by mdt; commented for now (slc.12.2013)
+!      RUN_TYPE = 'for'    !default value
+!      CALL GET_ENVIRONMENT_VARIABLE("CTM_RUN_TYPE", RUN_TYPE)
+!
+!      IF ( TRIM( RUN_TYPE ) == 'emis_fd' ) THEN
+!         IF ( JDATE == 2008092 .AND.  JTIME >= 200000 ) THEN
+!            ! Allocate PERT Array
+!            ALLOCATE ( PERT ( N_SPC_EMIS+1, EMLAYS, MY_NCOLS, MY_NROWS )
+!     &                 , STAT = ALLOCSTAT )
+!            IF ( ALLOCSTAT .NE. 0 ) THEN
+!               XMSG = 'PERT  memory allocation failed'
+!               CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
+!            END IF
+
+!            PERT( :,:,:,: ) = 1.0
+!            PERT(25,:,:,: ) = 1.0000001   ! ASO4J
+!            PERT(31,:,:,: ) = 1.0001    ! AECJ
+!            WRITE(LOGDEV,*) 'Applying emission perturbation'   !debug, mdt
+!            DO V = 1, N_SPC_EMIS
+!               DO L = 1, EMLAYS
+!                  DO R = 1, MY_NROWS
+!                     DO C = 1, MY_NCOLS
+!                        VDEMIS(V, L, C, R) = VDEMIS(V, L, C, R) *
+!     &                                      PERT( V, L, C, R)
+!                     END DO
+!                  END DO
+!               END DO
+!            END DO
+!         END IF
+!      END IF
+
+      IF ( FIRST ) THEN
+         FIRST = .false.
+! Open checkpoint file for emissions
+         CALL  CHK_FILE_OPEN ( ADJ_EMIS_CHK, MDATE, MTIME, .TRUE., TSTEP )
+      END IF
+
+      DO S = 1, N_SPC_EMIS+1
+         DO L = 1, EMLAYS
+            DO R = 1, MY_NROWS
+               DO C = 1, MY_NCOLS
+                  VDEMIS_CHK( C, R, L, S ) = VDEMIS( S, L, C, R )
+               END DO
+            END DO
+         END DO
+      END DO
+
+C Write emissions to emission checkpoint file
+      CALL CHK_FILE_WRITE ( ADJ_EMIS_CHK, MDATE, MTIME, VDEMIS_CHK )
+
+! apply emissions scaling factors
+
+!         ALLOCATE ( EM_SF( MY_NCOLS,MY_NROWS,NLAYS,NSPCSD ),
+!     &              STAT = ALLOCSTAT )
+!         IF ( ALLOCSTAT .NE. 0 ) THEN
+!            XMSG = 'EM_SF memory allocation failed'
+!            CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
+!         END IF
+
+         EM_SF = 1.0
 
          IF ( LIPR ) THEN
             DO S = 1, N_SPC_EMIS+1
@@ -660,7 +753,8 @@ C Define arrays A,B,E which make up MATRIX and D which is RHS
      &                         * ( CONC( V,L+1 ) - CONC( V,L ) )
      &                         - LFAC2
      &                         * ( CONC( V,L ) - CONC( V,L-1 ) )
-                     IF ( L .LE. EMLAYS ) DD( V,L ) = DD( V,L ) + EMIS( V,L )
+                     IF ( L .LE. EMLAYS ) DD( V,L ) = DD( V,L ) + EMIS( V,L ) 
+     &                         *  EM_SF( C, R, M, V )
                   END DO
                END IF
             END DO
@@ -688,7 +782,7 @@ C Define arrays A,B,E which make up MATRIX and D which is RHS
             DO V = 1, N_SPC_DIFF
                DD( V,1 ) = DD( V,1 )
      &                   + LFAC1 * ( CONC( V,2 ) - CONC( V,1 ) )
-     &                   + EMIS( V,1 )
+     &                   + EMIS( V,1 ) * EM_SF( C, R, M, V )
             END DO
 
 C Subroutine MATRIX then solves for U if ACM2, else TRI solves for U

@@ -145,6 +145,8 @@ C ACM Local Variables
       INTEGER, PARAMETER :: M = 1 ! em_sf dimension length (e.g., for layers)
       INTEGER :: MDATE, MTIME, MSTEP ! internal simulation date&time
                                      ! array in vert. mixing
+
+      REAL, POINTER :: L1_CGRID( :,:,:,: )      ! layer 1 concentrations
                                      
       REAL, ALLOCATABLE, SAVE :: VDEMIS_VD(:,:,:,:)
 
@@ -324,7 +326,7 @@ C Open adjoint file for reading
       END IF                    ! FIRSTIME
 
 C Read vertical diffusion checkpoint at sync step
-      CALL CHK_FILE_READ ( ADJ_VDIFF_CHK, JDATE, JTIME, CGRID )
+      CALL CHK_FILE_READ ( ADJ_VDIFF_CHK, JDATE, JTIME, L1_CGRID )
 
       MDATE = JDATE
       MTIME = JTIME
@@ -338,7 +340,7 @@ C read & interpolate met data
 
 C read & interpolate deposition velocities
 
-      IF ( NDEPV_SPC > 0 ) CALL GET_DEPV ( MDATE, MTIME, TSTEP, CGRID )
+      IF ( NDEPV_SPC > 0 ) CALL GET_DEPV ( MDATE, MTIME, TSTEP, L1_CGRID )
 
       CALL EDDYX ( JDATE, JTIME, TSTEP( 2 ),
      &             EDDYV, HOL, XPBL, LPBL, CONVCT )
