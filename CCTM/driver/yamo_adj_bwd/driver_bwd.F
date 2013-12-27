@@ -182,6 +182,31 @@ C Allocate memory
          CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
       END IF
 
+! Allocate emissions sensitivity arrays (mdt|slc.12.2013)
+      ALLOCATE(
+     &     LGRID_EM_SF(1:NCOLS, 1:NROWS, 1:NLAYS, 1:NSPCSD),
+     &     STAT = ALLOCSTAT)
+      IF ( ALLOCSTAT /= 0 ) THEN
+         XMSG = 'Failure allocating LGRID_EMIS_SF'
+         CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
+      END IF
+
+      ALLOCATE(
+     &     LGRID_EM_NRM(1:NCOLS, 1:NROWS, 1:NLAYS, 1:NSPCSD),
+     &     STAT = ALLOCSTAT)
+      IF ( ALLOCSTAT /= 0 ) THEN
+         XMSG = 'Failure allocating LGRID_EMIS_NRM'
+         CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
+      END IF
+
+      ALLOCATE(
+     &     LGRID_EM(1:NCOLS, 1:NROWS, 1:NLAYS, 1:NSPCSD),
+     &     STAT = ALLOCSTAT)
+      IF ( ALLOCSTAT /= 0 ) THEN
+         XMSG = 'Failure allocating LGRID_EMIS'
+         CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
+      END IF
+
 C Determine the simulation time period and time stepping constants;
 C initialize the LGRID array.
       LGRID(:, :, :, :) = 0.0
@@ -207,10 +232,12 @@ C Create new adjoint output files and open for update
       CALL OP_ADJ_FILE(EDATE, ETIME, TSTEP, ADJ_LGRID_EM_SF)
       CALL OP_ADJ_FILE(EDATE, ETIME, TSTEP, ADJ_LGRID_EM_NRM)
 
-      CALL WR_ADJ_FILE(LGRID, EDATE, ETIME, ADJ_LGRID)
-
-      IF ( TRIM(LGRID_OUTPUT_FREQ) /= 'ONCE' )
-     &     CALL WR_ADJ_FILE(LGRID, EDATE, ETIME, ADJ_LGRID)
+      IF ( TRIM(LGRID_OUTPUT_FREQ) /= 'ONCE' ) THEN
+         CALL WR_ADJ_FILE(LGRID, EDATE, ETIME, ADJ_LGRID)
+         CALL WR_ADJ_FILE(LGRID_EM, EDATE, ETIME, ADJ_LGRID_EM)
+         CALL WR_ADJ_FILE(LGRID_EM_SF, EDATE, ETIME, ADJ_LGRID_EM_SF)
+         CALL WR_ADJ_FILE(LGRID_EM_NRM, EDATE, ETIME, ADJ_LGRID_EM_NRM)
+      END IF
 
 C Read XFIRST from the file CTM_XFIRST_IN
       IUNIT = GETEFILE(CTM_XFIRST_IN, .TRUE., .TRUE., PNAME)
@@ -253,7 +280,7 @@ C Read adjoint forcing from file
 
 C Since offline forcing is based on concentrations averaged over the output time step,
 C   the forcing can simply be allocated evenly to each synchronization time step. 11.2013.slc
-C        LGRID_FRC is in ADJ_ARRAY_MOD
+C        LGRID_FRC and LGRID_FRC_TOT are stored in ADJ_ARRAY_MOD
          LGRID_FRC = LGRID_FRC_TOT / NSTEPS
          
          DO IREP = NREPS, 1, -1
