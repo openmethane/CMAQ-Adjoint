@@ -210,8 +210,13 @@ C Allocate memory
 C Determine the simulation time period and time stepping constants;
 C initialize the LGRID array.
       LGRID(:, :, :, :) = 0.0
+      LGRID_EM(:, :, :, :) = 0.0
+      LGRID_EM_SF(:, :, :, :) = 0.0
+      LGRID_EM_NRM(:, :, :, :) = 0.0
+      
       LGRID_FRC(:, :, :, :) = 0.0
       LGRID_FRC_TOT(:, :, :, :) = 0.0
+      
       CALL INIT_LGRID(LGRID, SDATE, STIME, EDATE, ETIME, TSTEP, NSTEPS)
 
 C Verify input file header consistency with COORD.EXT and run duration
