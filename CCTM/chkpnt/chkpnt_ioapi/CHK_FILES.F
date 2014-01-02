@@ -73,6 +73,7 @@
       USE GRID_CONF             ! horizontal & vertical domain specifications
       USE CHK_FILES_DEFS
       USE CHK_FILES_IMPL
+      USE ADJ_ARRAY_MOD         ! adjoint arrays (may not need) (slc.1.2014)
 
       IMPLICIT NONE
 
@@ -93,6 +94,11 @@
       INCLUDE SUBST_NR_DIFF     ! non-react diffusion species and map table
       INCLUDE SUBST_TR_DIFF     ! tracer diffusion species and map table
       INCLUDE SUBST_GC_EMIS     ! gas chem emis surrogate names and map table
+      ! Necessary to checkpoint emissions sensitivities (mdt|slc.1.2014)
+      INCLUDE SUBST_AE_EMIS     ! aerosol emis surrogate names and map table 
+      INCLUDE SUBST_NR_EMIS     ! non-reactive emis surrogate names and map table
+      INCLUDE SUBST_TR_EMIS     ! tracer emis surrogate names and map table
+      ! End of additional includes for emissions sensitivities
       INCLUDE SUBST_IOPARMS     ! I/O parameters definitions
       INCLUDE SUBST_IODECL      ! I/O definitions and declarations
       INCLUDE SUBST_FILES_ID    ! I/O definitions and declarations
@@ -362,6 +368,53 @@
             CHK%UNITS(1:CHK%NVARS) = 'Coupled CGRID'
             CHK%VDESC(1:CHK%NVARS) = 'Z advection checkpoint for ' //
      &                                CHK%VNAME(1:CHK%NVARS)
+
+         ! Added to checkpoint emissions (mdt|slc.1.2014)
+         ! Suboptimal method for incorporating emissions sensitivities
+         CASE ( ADJ_EMIS_CHK )
+            CHK%FDESC(1) = 'Emissions checkpoint file'
+            CHK%FDESC(2) = 'From CMAQ model dyn alloc version CTM'
+            CHK%NVARS = N_GC_EMIS + N_AE_EMIS + N_NR_EMIS + N_TR_EMIS
+            ALLOCATE(CHK%VTYPE(CHK%NVARS))
+            ALLOCATE(CHK%VNAME(CHK%NVARS))
+            ALLOCATE(CHK%UNITS(CHK%NVARS))
+            ALLOCATE(CHK%VDESC(CHK%NVARS))
+            ALLOCATE(CHK%VINDX(CHK%NVARS))
+            INDX = 0
+            DO S = INDX+1, INDX+N_GC_EMIS
+               CHK%VTYPE(S) = M3REAL
+               CHK%VNAME(S) = GC_EMIS(S-INDX)
+               CHK%UNITS(S) = 'mol/s'
+               CHK%VDESC(S) = 'Variable '//TRIM(CHK%VNAME(S))
+            END DO
+            INDX = INDX + N_GC_EMIS
+            DO S = INDX+1, INDX+N_AE_EMIS
+               CHK%VTYPE(S) = M3REAL
+               CHK%VNAME(S) = AE_EMIS(S-INDX)
+               IF ( CHK%VNAME(S)(1:3) == 'NUM' ) THEN
+                  CHK%UNITS(S) = 'number/m**3'
+               ELSE IF ( CHK%VNAME(S)(1:3) == 'SRF' ) THEN
+                  CHK%UNITS(S) = 'm**2/m**3'
+               ELSE
+                  CHK%UNITS(S) = 'g/s'
+               END IF
+               CHK%VDESC(S) = 'Variable '//TRIM(CHK%VNAME(CHK%NVARS))
+            END DO 
+            INDX = INDX + N_AE_EMIS
+            DO S = INDX+1, INDX+N_NR_EMIS
+               CHK%VTYPE(S) = M3REAL
+               CHK%VNAME(S) = NR_EMIS(S-INDX)
+               CHK%UNITS(S) = 'mol/s'
+               CHK%VDESC(S) = 'Variable '//TRIM(CHK%VNAME(S))
+            END DO 
+            INDX = INDX + N_NR_EMIS
+            DO S = INDX+1, INDX+N_TR_EMIS
+               CHK%VTYPE(S) = M3REAL
+               CHK%VNAME(S) = TR_EMIS(S-INDX)
+               CHK%UNITS(S) = 'mol/s'
+               CHK%VDESC(S) = 'Variable '//TRIM(CHK%VNAME(S))
+            END DO 
+            INDX = INDX + N_TR_EMIS
 
          CASE DEFAULT
             XMSG =  '"' // TRIM(CHK%FNAME) // '"' //
