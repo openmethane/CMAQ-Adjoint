@@ -284,7 +284,7 @@ C Read adjoint forcing from file
          END IF
 
 C Since offline forcing is based on concentrations averaged over the output time step,
-C   the forcing can simply be allocated evenly to each synchronization time step. 11.2013.slc
+C   the forcing can simply be allocated evenly to each synchronization time step. (slc.11.2013)
 C        LGRID_FRC and LGRID_FRC_TOT are stored in ADJ_ARRAY_MOD
          LGRID_FRC = LGRID_FRC_TOT / NSTEPS
          
