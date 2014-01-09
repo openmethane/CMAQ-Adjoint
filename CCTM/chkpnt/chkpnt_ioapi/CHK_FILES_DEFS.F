@@ -41,13 +41,15 @@
 !     checkpointing implementation requires a constant synchronization step
 !   Aug 2013 by Peter Percell at UH-IMAQS:
 !   - reduced vdiff checkpoint file to just layer 1 of cgrid
+!   Jan 2014 - S.Capps (US EPA) | M.Turner (UC Boulder)
+!   - included emissions checkpointing file
 !-----------------------------------------------------------------------
 
       IMPLICIT NONE
 
 
 ! Number of checkpoint files
-      INTEGER, PARAMETER                   :: N_CHKS = 8
+      INTEGER, PARAMETER                   :: N_CHKS = 9
 
 ! Checkpoint files ids
       INTEGER, PARAMETER                   :: ADJ_CHEM_CHK = 1
@@ -58,11 +60,13 @@
       INTEGER, PARAMETER                   :: ADJ_XADV_CHK = 6
       INTEGER, PARAMETER                   :: ADJ_YADV_CHK = 7
       INTEGER, PARAMETER                   :: ADJ_ZADV_CHK = 8
+      INTEGER, PARAMETER                   :: ADJ_EMIS_CHK = 9
 
 ! Checkpoint file names
       CHARACTER(16), PARAMETER :: CHK_NAMES(N_CHKS) =
      & ( / 'ADJ_CHEM_CHK   ','ADJ_AERO_CHK   ','ADJ_VDIFF_CHK  ','ADJ_HA_RHOJ_CHK',
-     &     'ADJ_VA_RHOJ_CHK','ADJ_XADV_CHK   ','ADJ_YADV_CHK   ','ADJ_ZADV_CHK   ' / )
+     &     'ADJ_VA_RHOJ_CHK','ADJ_XADV_CHK   ','ADJ_YADV_CHK   ','ADJ_ZADV_CHK   ',
+     &     'ADJ_EMIS_CHK' / )
 
 
 ! We cannot include PARMS3.EXT here, define own parameters
