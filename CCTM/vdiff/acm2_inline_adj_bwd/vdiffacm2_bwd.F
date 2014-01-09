@@ -422,12 +422,16 @@ C----------------------------------------------
           endif
           nlp = int(dtsec/dtlim+0.99)
           dts = dtsec/nlp
-          EMIS = 0.0
-          DO L = 1, EMLAYS
-             DO V = 1, N_SPC_DIFF
-                EMIS( V,L ) = VDEMIS_VD( C,R,L,DF2EM( V ) ) * DTS
-             END DO
-          END DO
+          emis = 0.0
+          
+          ! Recalculate emissions from checkpoint file (mdt|slc.1.2014)
+          do l  = 1, emlays
+             do v = 1, n_spc_diff
+                emis( c,r,l,v ) = vdemis_vd( c,r,l,df2em( v ) ) * dts
+             end do
+          end do
+          ! Use outside of the loop over rows and columns
+          
           do l = 1, nlays
             eddy(l) = seddy(l,c,r)
           end do
@@ -511,10 +515,13 @@ C----------------------------------------------
               call tri_bwd( cc,bb,ee,dd_bwd,uu_bwd )
             endif
             do v = 1, n_spc_diff
-              lgrid_em_sf(c,r,1,v) = lgrid_em_sf(c,r,1,v) + emis(v,1) 
-     &                      * dd_bwd(v,1)
-              lgrid_em(c,r,1,v) = lgrid_em(c,r,1,v) + em_sf(c,r,m,v)
-     &                      * dd_bwd(v,1)
+
+!      1.2014.slc - semi-normalized and scaling factor-related sensitivities after conv_cgrid_bwd
+!              lgrid_em_sf(c,r,1,v) = lgrid_em_sf(c,r,1,v) + emis(v,1) 
+!     &                      * dd_bwd(v,1)
+!              lgrid_em(c,r,1,v) = lgrid_em(c,r,1,v) + em_sf(c,r,m,v)
+!     &                      * dd_bwd(v,1)
+
               conc_bwd(v,2) = conc_bwd(v,2)+dd_bwd(v,1)*lfac1
               conc_bwd(v,1) = conc_bwd(v,1)-dd_bwd(v,1)*lfac1
             end do
@@ -546,12 +553,15 @@ C----------------------------------------------
                   conc_bwd(v,l-1) = conc_bwd(v,l-1)+dd_bwd(v,l)*lfac2
                   conc_bwd(v,l+1) = conc_bwd(v,l+1)+dd_bwd(v,l)*lfac1
                   conc_bwd(v,l) = conc_bwd(v,l)-dd_bwd(v,l)*(lfac1+lfac2)
-                  if ( l .le. emlays ) then
-                    lgrid_em_sf(c,r,l,v) = lgrid_em_sf(c,r,l,v) + emis(v,l)
-     &                                 * dd_bwd(v,l)
-                    lgrid_em(c,r,l,v) = lgrid_em(c,r,l,v) + em_sf(c,r,m,v)
-     &                                 * dd_bwd(v,l)
-                  end if
+
+!      1.2014.slc - semi-normalized and scaling factor-related sensitivities after conv_cgrid_bwd
+!                  if ( l .le. emlays ) then
+!                    lgrid_em_sf(c,r,l,v) = lgrid_em_sf(c,r,l,v) + emis(v,l)
+!     &                                 * dd_bwd(v,l)
+!                    lgrid_em(c,r,l,v) = lgrid_em(c,r,l,v) + em_sf(c,r,l,v)
+!     &                                 * dd_bwd(v,l)
+!                  end if
+
                 end do
               endif
               if (l .gt. lcbl) then
@@ -608,13 +618,34 @@ C----------------------------------------------
             do v = 1, n_spc_diff
               cngrd_bwd(diff_map(v),l,c,r) = cngrd_bwd(diff_map(v),l,c,r)+conc_bwd(v,l)
               conc_bwd(v,l) = 0.
-              IF ( COST_FUNC /= 0.0 ) THEN
-                 LGRID_EM_NRM(c,r,l,v) = LGRID_EM_SF(c,r,l,v) / COST_FUNC
-              END IF
             end do
           end do
         end do
       end do
+      
       call conv_cgrid_bwd( cgrid_bwd, mdate, mtime, cngrd_bwd )
+
+      ! Use emissions from within the above loop to calculate sensitivities 
+      !    as emissions scaling factors or semi-normalized w.r.t. emissions
+      !    (mdt|slc.1.2014)
+      do r = 1, my_nrows
+        do c = 1, my_ncols
+          do l = 1, nlays
+            do v = 1, n_spc_diff
+              if ( l .le. emlays ) then
+                ! emis array populated on line 427-433 from checkpoint file and timestep  
+                lgrid_em_sf(c,r,l,v) = lgrid_em_sf(c,r,l,v) + emis(c,r,l,v)
+     &                                 * cgrid_bwd(c,r,l,v)
+                ! Default: em_sf = 1.0
+                lgrid_em(c,r,l,v) = lgrid_em(c,r,l,v) + em_sf(c,r,l,v)
+     &                              * cgrid_bwd(c,r,l,v)
+                if ( cost_func /= 0.0 ) then
+                  lgrid_em_nrm(c,r,l,v) = lgrid_em_sf(c,r,l,v) / cost_func
+                end if
+              end if
+            end do
+          end do
+        end do
+      end do
 
       end subroutine vdiff_bwd
