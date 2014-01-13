@@ -56,6 +56,8 @@ C       of species
 C    -- revised for use with adjoint/4dvar code
 C    Aug 2013 by Peter Percell at UH-IMAQS:
 C    -- reduced vdiff checkpoint file to just layer 1 of cgrid
+C    Dec 2013 | M.Turner (UC Boulder) & S.Capps (US EPA):
+C    -- added checkpointing for emissions in forward adjoint sweep
 C-----------------------------------------------------------------------
 
       USE EMIS_DEFN           ! inherits GRID_CONF
@@ -63,6 +65,7 @@ C-----------------------------------------------------------------------
       USE VDIFF_MAP
       USE CHK_FILES_DEFS      ! adjoint checkpoint files definition
       USE CHK_FILES           ! adjoint checkpoint files routines
+      USE ADJ_ARRAY_MOD       ! adjoint sensitivity arrays
 
       IMPLICIT NONE
 
