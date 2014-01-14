@@ -171,25 +171,25 @@ if ( $MONTH == 01 ) then
 else if ( $MONTH == 02 ) then
  set juladd = 31
 else if ( $MONTH == 03 ) then
- set juladd = 60  #59
+ set juladd = 59  #60
 else if ( $MONTH == 04 ) then
- set juladd = 91  #90
+ set juladd = 90  #91
 else if ( $MONTH == 05 ) then
- set juladd = 121 #120
+ set juladd = 120 #121
 else if ( $MONTH == 06 ) then
- set juladd = 152 #151
+ set juladd = 151 #152
 else if ( $MONTH == 07 ) then
- set juladd = 182 #181
+ set juladd = 181 #182
 else if ( $MONTH == 08 ) then
- set juladd = 213 #212
+ set juladd = 212 #213
 else if ( $MONTH == 09 ) then
- set juladd = 244 #243
+ set juladd = 243 #244
 else if ( $MONTH == 10 ) then
- set juladd = 274 #273
+ set juladd = 273 #274
 else if ( $MONTH == 11 ) then
- set juladd = 305 #304
+ set juladd = 304 #305
 else if ( $MONTH == 12 ) then
- set juladd = 335 #334
+ set juladd = 334 #335
 else
  echo " MONTH MUST BE BETWEEN 1-12 "
  exit (1)
