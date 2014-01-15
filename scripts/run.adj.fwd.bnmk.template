@@ -111,6 +111,9 @@
 #> min sync time step (sec) (default is 60)
  setenv CTM_MINSYNC 600
 
+#> define number of emissions layers
+ setenv CTM_EMLAYS 1
+
 #> top sigma level thru which sync step determined (default is 0.7)
 #setenv SIGMA_SYNC_TOP 0.7
 
