@@ -142,9 +142,9 @@
 #set ModVdiff  = vdiff/acm2_inline_adj_bwd
 
 #set ModPhot   = phot/phot_noop
-#set ModPhot   = phot/phot
+ set ModPhot   = phot/phot
 #set ModPhot   = phot/phot_sat
- set ModPhot   = phot/phot_inline
+#set ModPhot   = phot/phot_inline
 
 #set ModChem   = chem/chem_noop
 #set ModChem   = chem/chem_bwd_noop
