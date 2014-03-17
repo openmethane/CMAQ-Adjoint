@@ -32,6 +32,7 @@ C   Nov 2013 S.Capps (US EPA): shifted emissions-related sensitivity
 C            arrays to module; incorporated M.Turner (CU-Boulder) 
 C            emissions-related sensitivity calculations
 
+      USE PCGRID_DEFN
       USE EMIS_DEFN             ! inherits GRID_CONF
       USE DEPV_DEFN
       USE VDIFF_MAP
@@ -47,7 +48,7 @@ C==============================================
       INCLUDE SUBST_CONST       ! constants
       INCLUDE SUBST_FILES_ID    ! file name parameters
       INCLUDE SUBST_IOPARMS     ! I/O parameters definitions
-      INCLUDE SUBST_IODECL      ! I/O definitions and declarations
+#     INCLUDE SUBST_IODECL      ! I/O definitions and declarations
 
 C Arguments:
 
@@ -104,7 +105,7 @@ C Local Variables:
 
       REAL, POINTER, SAVE :: CGRID( :,:,:,: ) ! forward concentrations
       REAL, ALLOCATABLE, SAVE :: CNGRD_BWD( :,:,:,: ) ! cgrid_bwd replacement
-      REAL :: EMIS ( N_SPC_DIFF, NLAYS )   ! emissions subexpression
+      REAL :: emis ( NCOLS,NROWS,NLAYS,N_SPC_DIFF )   ! emissions subexpression
 
       REAL :: CONVPA            ! conversion factor to pressure in Pascals
 
@@ -255,10 +256,10 @@ C set vertical layer definitions from COORD.EXT
          END DO
          RDX3M( NLAYS ) = 0.0
 
-         IF ( .NOT. EMIS_INIT ( JDATE, JTIME, TSTEP( 1 ) ) ) THEN
-            XMSG = 'Failure initializing emissions module'
-            CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
-         END IF
+!         IF ( .NOT. EMIS_INIT ( JDATE, JTIME, TSTEP( 1 ) ) ) THEN
+!            XMSG = 'Failure initializing emissions module'
+!            CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
+!         END IF
 
 C Read vertical diffusion checkpoint at sync step
          CALL CHK_FILE_READ ( ADJ_VDIFF_CHK, JDATE, JTIME, CGRID )
@@ -325,6 +326,8 @@ C Open adjoint file for reading
       END IF                    ! FIRSTIME
 
 C Read vertical diffusion checkpoint at sync step
+      L1_CGRID => CGRID(:, :, 1:1, :)
+
       CALL CHK_FILE_READ ( ADJ_VDIFF_CHK, JDATE, JTIME, L1_CGRID )
 
       MDATE = JDATE
@@ -639,9 +642,9 @@ C----------------------------------------------
                 ! Default: em_sf = 1.0
                 lgrid_em(c,r,l,v) = lgrid_em(c,r,l,v) + em_sf(c,r,l,v)
      &                              * cgrid_bwd(c,r,l,v)
-                if ( cost_func /= 0.0 ) then
-                  lgrid_em_nrm(c,r,l,v) = lgrid_em_sf(c,r,l,v) / cost_func
-                end if
+!                if ( cost_func /= 0.0 ) then
+!                  lgrid_em_nrm(c,r,l,v) = lgrid_em_sf(c,r,l,v) / cost_func
+!                end if
               end if
             end do
           end do

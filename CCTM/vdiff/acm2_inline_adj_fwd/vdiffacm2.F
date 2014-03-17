@@ -60,6 +60,7 @@ C    Dec 2013 | M.Turner (UC Boulder) & S.Capps (US EPA):
 C    -- added checkpointing for emissions in forward adjoint sweep
 C-----------------------------------------------------------------------
 
+      USE CGRID_SPCS          ! CGRID species number and offsets
       USE EMIS_DEFN           ! inherits GRID_CONF
       USE DEPV_DEFN
       USE VDIFF_MAP
