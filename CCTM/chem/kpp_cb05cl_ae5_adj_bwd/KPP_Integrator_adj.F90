@@ -449,8 +449,8 @@ SUBROUTINE RosenbrockADJ( Y, NADJ, Lambda,             &
 
  
 !~~~>  Unit roundoff (1+Roundoff>1)  
-   Roundoff = WLAMCH('E')
-!   Roundoff = 1.0E-14  !debug, mdt
+!   Roundoff = WLAMCH('E')
+   Roundoff = 1.0E-14  !debug, mdt
 
 !~~~>  Lower bound on the step size: (positive value)
    IF (RCNTRL(1) == ZERO) THEN
