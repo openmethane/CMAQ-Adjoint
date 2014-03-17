@@ -100,10 +100,12 @@ CC Gradient of cost function (unitless)
 C      REAL, ALLOCATABLE :: LGRID(:, :, :, :)  ! adjoint accumulation variable
 
 C Adjoint forcing function - at synchronization time step (unitless)
-      REAL, ALLOCATABLE :: LGRID_FRC(:, :, :, :)   ! adjoint forcing at sync step
+!      REAL, ALLOCATABLE :: LGRID_FRC(:, :, :, :)   ! adjoint forcing at sync step
+!      REAL, ALLOCATABLE :: LGRID_FRC(:)   ! adjoint forcing at sync step
 
 C Adjoint forcing function - at output time step (unitless)
-      REAL, ALLOCATABLE :: LGRID_FRC_TOT(:, :, :, :)   ! adjoint forcing at output step from file
+!      REAL, ALLOCATABLE :: LGRID_FRC_TOT(:, :, :, :)   ! adjoint forcing at output step from file
+!      REAL, ALLOCATABLE :: LGRID_FRC_TOT(:)   ! adjoint forcing at output step from file
 
 C Gradient of cost function wrt emissions
       REAL, ALLOCATABLE :: LGRID_EM(:, :, :, :)

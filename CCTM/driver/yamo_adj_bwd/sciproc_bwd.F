@@ -48,6 +48,8 @@ C Include Files:
 
 C Arguments:
       REAL, POINTER :: LGRID(:, :, :, :) ! adjoint variable
+      REAL, POINTER :: LGRID_FRC(:, :, :, :) ! adjoint variable
+      REAL, POINTER :: LGRID_FRC_TOT(:, :, :, :) ! adjoint variable
       INTEGER, INTENT(IN OUT) :: JDATE ! current model date, coded YYYYDDD
       INTEGER, INTENT(IN OUT) :: JTIME ! current model time, coded HHMMSS
       INTEGER, INTENT(IN) :: TSTEP(2) ! time step vector (HHMMSS)
@@ -133,8 +135,6 @@ C-----------------------------------------------------------------------
 
       SDATE = JDATE
       STIME = JTIME
-
-      LGRID = LGRID + LGRID_FRC
 
       CALL NEXTIME(JDATE, JTIME, -TSTEP(2))
       WRITE(LOGDEV, '(/ 5X, A, I8, I7.6)') NMSG, JDATE, JTIME
