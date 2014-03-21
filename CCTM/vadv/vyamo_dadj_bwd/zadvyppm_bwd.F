@@ -32,6 +32,7 @@ C   Discrete adjoint of advection in the vertical, x3-direction
 
 C Revision history:
 C   Aug 2010 by Peter Percell at UH-IMAQS: created for adjoint/4dvar
+C   Mar 2014 by Peter Percell, UH: renamed ADJ_ZADV_CHK to ADJ_VADV_CHK
 C-----------------------------------------------------------------------
 
       USE GRID_CONF             ! horizontal & vertical domain specifications
@@ -202,12 +203,12 @@ C get file local domain offsets
      &        STRTCOLMC3, ENDCOLMC3, STRTROWMC3, ENDROWMC3 )
 
 C Open checkpoint file as read-only
-         CALL CHK_FILE_OPEN ( ADJ_ZADV_CHK, JDATE, JTIME, .FALSE. )
+         CALL CHK_FILE_OPEN ( ADJ_VADV_CHK, JDATE, JTIME, .FALSE. )
 
       END IF                    ! FIRSTIME
 
 C Read vertical advection checkpoint at sync step
-      CALL CHK_FILE_READ ( ADJ_ZADV_CHK, JDATE, JTIME, ADV_CHK_SYNC )
+      CALL CHK_FILE_READ ( ADJ_VADV_CHK, JDATE, JTIME, ADV_CHK_SYNC )
 
 C Time-stepped gridded computation for Z-direction advection.
       DTSEC  = FLOAT( TIME2SEC( TSTEP( 2 ) ) ) ! process time step (seconds)
