@@ -120,6 +120,8 @@
 #set ModHadv   = hadv/yamo
  set ModHadv   = hadv/yamo_cadj_fwd
 #set ModHadv   = hadv/yamo_cadj_bwd
+#set ModHadv   = hadv/yamo_dadj_fwd
+#set ModHadv   = hadv/yamo_dadj_bwd
 
 #set ModVadv   = vadv/vadv_noop
 #set ModVadv   = vadv/vppm
