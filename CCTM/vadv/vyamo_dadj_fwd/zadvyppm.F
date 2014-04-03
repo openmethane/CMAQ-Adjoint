@@ -67,7 +67,6 @@ C
 C   1/03 - JP modified for Yamo mass conservation
 C          Vertical velocity is diagnosed from mass continuity
 C          vertical advection is upstream (no call to adv scheme)
-
 C    31 Jan 05 J.Young: dyn alloc - establish both horizontal & vertical
 C                       domain specifications in one module
 C    27 Apr 07 J.Young: Talat's First-order upstream (donor cell) algorithm
@@ -76,6 +75,7 @@ C                                accordingly
 C    21 Aug 09 J.Young: Don't bypass VPPMY if ITER = 0
 C    18 Nov 09 J.Young: Combine VPPMY and VPPM functionality
 C    Aug 2010 by Peter Percell at UH-IMAQS: modified for adjoint/4dvar
+C    Mar 2014 by Peter Percell, UH: renamed ADJ_ZADV_CHK to ADJ_VADV_CHK
 C-----------------------------------------------------------------------
 
       USE GRID_CONF             ! horizontal & vertical domain specifications
@@ -236,12 +236,12 @@ C get file local domain offsets
      &        STRTCOLMC3, ENDCOLMC3, STRTROWMC3, ENDROWMC3 )
 
 C Create new adjoint file and open for update
-         CALL CHK_FILE_OPEN ( ADJ_ZADV_CHK, JDATE, JTIME, .TRUE., TSTEP )
+         CALL CHK_FILE_OPEN ( ADJ_VADV_CHK, JDATE, JTIME, .TRUE., TSTEP )
 
       END IF                    ! FIRSTIME
 
 C Write vertical advection checkpoint at sync step
-      CALL CHK_FILE_WRITE ( ADJ_ZADV_CHK, JDATE, JTIME,
+      CALL CHK_FILE_WRITE ( ADJ_VADV_CHK, JDATE, JTIME,
      &     CGRID(1:NCOLS, 1:NROWS, 1:NLAYS, ADV_MAP(1:N_SPC_ADV)) )
 
 C Time-stepped gridded computation for Z-direction advection.
