@@ -23,7 +23,7 @@ C   25 July 2008, S.Roselle: removed files associated with PING
 C   13 Aug 2008, S.Napelenok, added files for ddm-3d
 C.......................................................................
 
-      INTEGER, PARAMETER :: N_FILES = 58
+      INTEGER, PARAMETER :: N_FILES = 59
 
       CHARACTER( 16 ) :: LGCL_NAME( N_FILES ) 
       LOGICAL            IN_MODE( N_FILES )
@@ -86,6 +86,7 @@ C.......................................................................
       CHARACTER( 16 ) :: A_SENS_1
       CHARACTER( 16 ) :: CTM_SWETDEP_1
       CHARACTER( 16 ) :: CTM_SDRYDEP_1
+      CHARACTER( 16 ) :: ADJ_FORCE
 
       DATA GRID_DOT_2D      / 'GRID_DOT_2D     ' /
       DATA GRID_CRO_2D      / 'GRID_CRO_2D     ' /
@@ -145,6 +146,7 @@ C.......................................................................
       DATA A_SENS_1         / 'A_SENS_1        ' /
       DATA CTM_SWETDEP_1    / 'CTM_SWETDEP_1   ' /
       DATA CTM_SDRYDEP_1    / 'CTM_SDRYDEP_1   ' /
+      DATA ADJ_FORCE        / 'ADJ_FORCE       ' /
 
       DATA LGCL_NAME(  1 ), IN_MODE(  1 )    / 'GRID_DOT_2D     ', .TRUE. /
       DATA LGCL_NAME(  2 ), IN_MODE(  2 )    / 'GRID_CRO_2D     ', .TRUE. /
@@ -204,5 +206,6 @@ C.......................................................................
       DATA LGCL_NAME( 56 ), IN_MODE( 56 )    / 'A_SENS_1        ', .FALSE. /
       DATA LGCL_NAME( 57 ), IN_MODE( 57 )    / 'CTM_SWETDEP_1   ', .FALSE. /
       DATA LGCL_NAME( 58 ), IN_MODE( 58 )    / 'CTM_SDRYDEP_1   ', .FALSE. /
+      DATA LGCL_NAME( 59 ), IN_MODE( 59 )    / 'ADJ_FORCE       ', .FALSE. /
 
 C................   end   FILES3_CTM.EXT   .............................
