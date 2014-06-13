@@ -110,7 +110,10 @@ C Local Variables:
       ! Allocate arrays for emissions-related and semi-normalized sensitivities
       REAL, ALLOCATABLE, SAVE :: CNGRD_BWD_EM( :,:,:,: ) ! cgrid_bwd replacement
       REAL, ALLOCATABLE, SAVE :: CNGRD_BWD_EM_SF( :,:,:,: ) ! cgrid_bwd replacement
-      REAL :: emis ( NCOLS,NROWS,NLAYS,N_SPC_DIFF )   ! emissions subexpression
+
+      ! Limiting to two dimensional array because the CNGRD_BWD_EM and CNGRD_BWD_EM_SF
+      !    matrices are now calculated in the loops according to the forward formulation
+      REAL :: EMIS( N_SPC_DIFF,NLAYS )   ! emissions subexpression
 
       REAL :: CONVPA            ! conversion factor to pressure in Pascals
 
@@ -436,17 +439,16 @@ C----------------------------------------------
           else
             lcbl = 1
           endif
+          
+          ! Recalculate emissions from checkpoint file (mdt|slc.1.2014)
           nlp = int(dtsec/dtlim+0.99)
           dts = dtsec/nlp
           emis = 0.0
-          
-          ! Recalculate emissions from checkpoint file (mdt|slc.1.2014)
           do l  = 1, emlays
              do v = 1, n_spc_diff
-                emis( c,r,l,v ) = vdemis_vd( c,r,l,df2em( v ) ) * dts
+                emis( v,l ) = vdemis_vd( c,r,l,df2em( v ) ) * dts
              end do
           end do
-          ! Use outside of the loop over rows and columns
           
           do l = 1, nlays
             eddy(l) = seddy(l,c,r)
@@ -463,6 +465,10 @@ C----------------------------------------------
             do v = 1, n_spc_diff
               conc_bwd(v,l) = conc_bwd(v,l)+cngrd_bwd(diff_map(v),l,c,r)
               cngrd_bwd(diff_map(v),l,c,r) = 0.
+              conc_bwd_em(v,l) = conc_bwd_em(v,l)+cngrd_bwd_em(diff_map(v),l,c,r)
+              cngrd_bwd_em(diff_map(v),l,c,r) = 0.
+              conc_bwd_em_sf(v,l) = conc_bwd_em_sf(v,l)+cngrd_bwd_em_sf(diff_map(v),l,c,r)
+              cngrd_bwd_em_sf(diff_map(v),l,c,r) = 0.
             end do
           end do
           do nl = nlp, 1, -1
@@ -532,22 +538,23 @@ C----------------------------------------------
             endif
             do v = 1, n_spc_diff
 
-!      From vdiffacm2.F (forward code) as a reference for the emissions-related sensitivity calculations
-!         (6.2014.slc)
+!           From vdiffacm2.F (forward code) as a reference for the emissions-related 
+!              sensitivity calculations FOR LEVEL ONE (6.2014.slc|mdt)
+!              Because the species indices used in the forward code for EMIS and EM_SF require
+!              no mapping for 1 to N_SPC_DIFF, no use of diff_map is required here.
 !            DO V = 1, N_SPC_DIFF
 !               DD( V,1 ) = DD( V,1 )
 !     &                   + LFAC1 * ( CONC( V,2 ) - CONC( V,1 ) )
 !     &                   + EMIS( V,1 ) * EM_SF( C, R, M, V )
 !            END DO
-
-!      6.2014.slc - semi-normalized and scaling factor-related sensitivities 
+!
+!             Semi-normalized and scaling factor-related sensitivities 
 !                   by propagating arrays through all of vdiff as CNGRD_BWD_EM 
-!                   and CNGRD_BWD_EM_SF
-!              lgrid_em_sf(c,r,1,v) = lgrid_em_sf(c,r,1,v) + emis(v,1) 
-!     &                      * dd_bwd(v,1)
-!              lgrid_em(c,r,1,v) = lgrid_em(c,r,1,v) + em_sf(c,r,m,v)
-!     &                      * dd_bwd(v,1)
-
+!                   and CNGRD_BWD_EM_SF (6.2014.slc|mdt)
+              conc_bwd_em_sf(v,1) = conc_bwd_em_sf(v,1) + emis(v,1) 
+     &                      * dd_bwd(v,1)
+              conc_bwd_em(v,1) = conc_bwd_em(v,1) + em_sf(c,r,m,v)
+     &                      * dd_bwd(v,1)
               conc_bwd(v,2) = conc_bwd(v,2)+dd_bwd(v,1)*lfac1
               conc_bwd(v,1) = conc_bwd(v,1)-dd_bwd(v,1)*lfac1
             end do
@@ -579,22 +586,21 @@ C----------------------------------------------
                   conc_bwd(v,l-1) = conc_bwd(v,l-1)+dd_bwd(v,l)*lfac2
                   conc_bwd(v,l+1) = conc_bwd(v,l+1)+dd_bwd(v,l)*lfac1
                   conc_bwd(v,l) = conc_bwd(v,l)-dd_bwd(v,l)*(lfac1+lfac2)
-
-
-!      From vdiffacm2.F (forward code) as a reference for the emissions-related sensitivity calculations
-!         (6.2014.slc)
+!      From vdiffacm2.F (forward code) as a reference for the emissions-related sensitivity
+!         calculations for layers 2 to EMLAYS (6.2014.slc)
 !                     IF ( L .LE. EMLAYS ) DD( V,L ) = DD( V,L ) + EMIS( V,L ) 
-!     &                         *  EM_SF( C, R, M, V )
-       
-
-!      1.2014.slc - semi-normalized and scaling factor-related sensitivities after conv_cgrid_bwd
-!                  if ( l .le. emlays ) then
-!                    lgrid_em_sf(c,r,l,v) = lgrid_em_sf(c,r,l,v) + emis(v,l)
-!     &                                 * dd_bwd(v,l)
-!                    lgrid_em(c,r,l,v) = lgrid_em(c,r,l,v) + em_sf(c,r,l,v)
-!     &                                 * dd_bwd(v,l)
-!                  end if
-
+!     &                         *  EM_SF( C, R, M, V )  
+!            DO V = 1, N_SPC_DIFF
+!               DD( V,1 ) = CONC( V,1 )
+!            END DO
+!      Semi-normalized and scaling factor-related sensitivities after conv_cgrid_bwd (6.2014.slc)
+                  if ( l .le. emlays ) then
+                    conc_bwd_em_sf(v,l) = conc_bwd_em_sf(v,l) + emis(v,l)
+     &                                 * dd_bwd(v,l)
+!      Layer index is always 1 (=m) for em_sf because it is only defined for layer 1
+                    conc_bwd_em(v,l) = conc_bwd_em(v,l) + em_sf(c,r,m,v)
+     &                                 * dd_bwd(v,l)
+                  end if
                 end do
               endif
               if (l .gt. lcbl) then
@@ -651,34 +657,17 @@ C----------------------------------------------
             do v = 1, n_spc_diff
               cngrd_bwd(diff_map(v),l,c,r) = cngrd_bwd(diff_map(v),l,c,r)+conc_bwd(v,l)
               conc_bwd(v,l) = 0.
+              cngrd_bwd_em(diff_map(v),l,c,r) = cngrd_bwd_em(diff_map(v),l,c,r)+conc_bwd_em(v,l)
+              conc_bwd_em(v,l) = 0.
+              cngrd_bwd_em_sf(diff_map(v),l,c,r) = cngrd_bwd_em_sf(diff_map(v),l,c,r)+conc_bwd_em_sf(v,l)
+              conc_bwd_em_sf(v,l) = 0.
             end do
           end do
         end do
       end do
       
       call conv_cgrid_bwd( cgrid_bwd, mdate, mtime, cngrd_bwd )
-
-      ! Use emissions from within the above loop to calculate sensitivities 
-      !    as emissions scaling factors or semi-normalized w.r.t. emissions
-      !    (mdt|slc.1.2014)
-      do r = 1, my_nrows
-        do c = 1, my_ncols
-          do l = 1, nlays
-            do v = 1, n_spc_diff
-              if ( l .le. emlays ) then
-                ! emis array populated on line 427-433 from checkpoint file and timestep  
-                lgrid_em_sf(c,r,l,v) = lgrid_em_sf(c,r,l,v) + emis(c,r,l,v)
-     &                                 * cgrid_bwd(c,r,l,v)
-                ! Default: em_sf = 1.0
-                lgrid_em(c,r,l,v) = lgrid_em(c,r,l,v) + em_sf(c,r,l,v)
-     &                              * cgrid_bwd(c,r,l,v)
-!                if ( cost_func /= 0.0 ) then
-!                  lgrid_em_nrm(c,r,l,v) = lgrid_em_sf(c,r,l,v) / cost_func
-!                end if
-              end if
-            end do
-          end do
-        end do
-      end do
+      call conv_cgrid_bwd( cgrid_bwd_em, mdate, mtime, cngrd_bwd_em )
+      call conv_cgrid_bwd( cgrid_bwd_em_sf, mdate, mtime, cngrd_bwd_em_sf )
 
       end subroutine vdiff_bwd
