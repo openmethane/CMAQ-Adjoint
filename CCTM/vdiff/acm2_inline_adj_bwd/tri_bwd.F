@@ -63,6 +63,7 @@ C diagonal
 C superdiagonal
       REAL u(nlays)
 C R.H. side
+! Output for adjoint (_bwd) routine (6.2014.slc)
       REAL bb(n_spc_diff, nlays)
 C solution
       REAL xb(n_spc_diff, nlays)

@@ -52,7 +52,9 @@ C==============================================
 
 C Arguments:
 
-      REAL, POINTER :: CGRID_BWD( :,:,:,: ) ! sensitivities
+      REAL, POINTER :: CGRID_BWD( :,:,:,: ) ! sensitivities of J w.r.t. concentration
+      REAL, POINTER :: CGRID_BWD_EM( :,:,:,: ) ! sensitivities of J w.r.t. emissions
+      REAL, POINTER :: CGRID_BWD_EM_SF( :,:,:,: ) ! sensitivities of J w.r.t. emissions multiplied by emissions
       INTEGER :: JDATE          ! current model date, coded YYYYDDD
       INTEGER :: JTIME          ! current model time, coded HHMMSS
       INTEGER :: TSTEP( 2 )     ! time step vector (HHMMSS)
@@ -105,6 +107,9 @@ C Local Variables:
 
       REAL, POINTER, SAVE :: CGRID( :,:,:,: ) ! forward concentrations
       REAL, ALLOCATABLE, SAVE :: CNGRD_BWD( :,:,:,: ) ! cgrid_bwd replacement
+      ! Allocate arrays for emissions-related and semi-normalized sensitivities
+      REAL, ALLOCATABLE, SAVE :: CNGRD_BWD_EM( :,:,:,: ) ! cgrid_bwd replacement
+      REAL, ALLOCATABLE, SAVE :: CNGRD_BWD_EM_SF( :,:,:,: ) ! cgrid_bwd replacement
       REAL :: emis ( NCOLS,NROWS,NLAYS,N_SPC_DIFF )   ! emissions subexpression
 
       REAL :: CONVPA            ! conversion factor to pressure in Pascals
@@ -171,12 +176,14 @@ C==============================================
             REAL, INTENT( OUT )         :: RRHOJ  ( :,:,: )
             REAL, INTENT( OUT )         :: DENS1  ( :,: )
          END SUBROUTINE RDMET
+         ! CONV_CGRID_BWD is equally suitable for all types of sensitivity arrays
          SUBROUTINE CONV_CGRID_BWD ( CGRID_BWD, JDATE, JTIME, CNGRD_BWD )
             IMPLICIT NONE
             REAL, POINTER :: CGRID_BWD( :,:,:,: )
             INTEGER, INTENT( IN )        :: JDATE, JTIME
             REAL, INTENT( IN ) :: CNGRD_BWD( :,:,:,: )
          END SUBROUTINE CONV_CGRID_BWD
+         ! REV_CGRID_BWD is equally suitable for all types of sensitivity arrays
          SUBROUTINE REV_CGRID_BWD ( CNGRD_BWD, JDATE, JTIME, CGRID_BWD )
             IMPLICIT NONE
             REAL, INTENT( OUT ) :: CNGRD_BWD( :,:,:,: )
@@ -207,6 +214,8 @@ C-----------------------------------------------------------------------
          ALLOCATE(
      &        CGRID( 1:NCOLS,1:NROWS,1:1,1:N_SPC_CGRID ),
      &        CNGRD_BWD( N_SPC_CGRID,NLAYS,MY_NCOLS,MY_NROWS ),
+     &        CNGRD_BWD_EM( N_SPC_CGRID,NLAYS,MY_NCOLS,MY_NROWS ),
+     &        CNGRD_BWD_EM_SF( N_SPC_CGRID,NLAYS,MY_NCOLS,MY_NROWS ),
      &        STAT = ALLOCSTAT )
          IF ( ALLOCSTAT .NE. 0 ) THEN
             XMSG = 'Failure allocating CGRID, CNGRD_BWD'
@@ -367,6 +376,8 @@ C----------------------------------------------
 C RESET GLOBAL ADJOINT VARIABLES
 C----------------------------------------------
       cngrd_bwd(:,:,:,:) = 0.
+      cngrd_bwd_em(:,:,:,:) = 0.
+      cngrd_bwd_em_sf(:,:,:,:) = 0.
       em_sf = 1.0     !debug, mdt
 
 C----------------------------------------------
@@ -381,6 +392,8 @@ C----------------------------------------------
 C ROUTINE BODY
 C----------------------------------------------
       call rev_cgrid_bwd( cngrd_bwd, mdate, mtime, cgrid_bwd )
+      call rev_cgrid_bwd( cngrd_bwd_em, mdate, mtime, cgrid_bwd_em )
+      call rev_cgrid_bwd( cngrd_bwd_em_sf, mdate, mtime, cgrid_bwd_em_sf )
       do r = 1, my_nrows
         do c = 1, my_ncols
           dtlim = dtsec
@@ -519,7 +532,17 @@ C----------------------------------------------
             endif
             do v = 1, n_spc_diff
 
-!      1.2014.slc - semi-normalized and scaling factor-related sensitivities after conv_cgrid_bwd
+!      From vdiffacm2.F (forward code) as a reference for the emissions-related sensitivity calculations
+!         (6.2014.slc)
+!            DO V = 1, N_SPC_DIFF
+!               DD( V,1 ) = DD( V,1 )
+!     &                   + LFAC1 * ( CONC( V,2 ) - CONC( V,1 ) )
+!     &                   + EMIS( V,1 ) * EM_SF( C, R, M, V )
+!            END DO
+
+!      6.2014.slc - semi-normalized and scaling factor-related sensitivities 
+!                   by propagating arrays through all of vdiff as CNGRD_BWD_EM 
+!                   and CNGRD_BWD_EM_SF
 !              lgrid_em_sf(c,r,1,v) = lgrid_em_sf(c,r,1,v) + emis(v,1) 
 !     &                      * dd_bwd(v,1)
 !              lgrid_em(c,r,1,v) = lgrid_em(c,r,1,v) + em_sf(c,r,m,v)
@@ -556,6 +579,13 @@ C----------------------------------------------
                   conc_bwd(v,l-1) = conc_bwd(v,l-1)+dd_bwd(v,l)*lfac2
                   conc_bwd(v,l+1) = conc_bwd(v,l+1)+dd_bwd(v,l)*lfac1
                   conc_bwd(v,l) = conc_bwd(v,l)-dd_bwd(v,l)*(lfac1+lfac2)
+
+
+!      From vdiffacm2.F (forward code) as a reference for the emissions-related sensitivity calculations
+!         (6.2014.slc)
+!                     IF ( L .LE. EMLAYS ) DD( V,L ) = DD( V,L ) + EMIS( V,L ) 
+!     &                         *  EM_SF( C, R, M, V )
+       
 
 !      1.2014.slc - semi-normalized and scaling factor-related sensitivities after conv_cgrid_bwd
 !                  if ( l .le. emlays ) then
