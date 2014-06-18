@@ -2,7 +2,8 @@
 
  EXEC = bldmake
 
- FC = /usr/local/intel/ictce/3.2.2.013/fc/bin/intel64/ifort
+ FC = /usr/local/apps/intel/composer_xe_2013.2.146/bin/intel64/ifort
+# FC = /usr/local/intel/ictce/3.2.2.013/fc/bin/intel64/ifort
 #F_FLAGS = -O2 -fixed -extend_source -WB 
  F_FLAGS = -g -fixed -extend_source -WB 
 
