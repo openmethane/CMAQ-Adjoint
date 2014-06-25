@@ -391,24 +391,25 @@ C accessed by GET_AERO_EMIS to be "speciated" and merged with the 27 AE emission
 
          END IF
 
+! Commenting for gas phase only (6.2014.slc)
 C aerosol emissions - all units conversions done in GET_AERO_EMIS for aerosols
 C GET_AERO_EMIS in f90 module AERO_EMIS
 
          IF ( N_AE_SPC .GT. 0 ) THEN
-            CALL GET_AERO_EMIS ( JDATE, JTIME, TSTEP, EMLAYS, RJACM,
-     &                           VDEMIS, VDEMIS_AE )
+!            CALL GET_AERO_EMIS ( JDATE, JTIME, TSTEP, EMLAYS, RJACM,
+!     &                           VDEMIS, VDEMIS_AE )
 
-            DO R = 1, MY_NROWS
-               DO C = 1, MY_NCOLS
-                  DO L = 1, EMLAYS
-                     DO V = STRT_AE, FINI_AE
-                        S = V + 1 - STRT_AE
-                        VDEMIS( V,L,C,R ) = VDEMIS( V,L,C,R )
-     &                                    + VDEMIS_AE( S,L,C,R )
-                     END DO
-                  END DO
-               END DO
-            END DO
+!            DO R = 1, MY_NROWS
+!               DO C = 1, MY_NCOLS
+!                  DO L = 1, EMLAYS
+!                     DO V = STRT_AE, FINI_AE
+!                        S = V + 1 - STRT_AE
+!                        VDEMIS( V,L,C,R ) = VDEMIS( V,L,C,R )
+!     &                                    + VDEMIS_AE( S,L,C,R )
+!                     END DO
+!                  END DO
+!               END DO
+!            END DO
 
          END IF
 

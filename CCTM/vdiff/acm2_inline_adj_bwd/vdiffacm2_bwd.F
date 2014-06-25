@@ -162,6 +162,8 @@ C==============================================
 C define local adjoint variables
 C==============================================
       real :: conc_bwd(n_spc_diff,nlays)
+      real :: conc_bwd_em(n_spc_diff,nlays)
+      real :: conc_bwd_em_sf(n_spc_diff,nlays)
       real :: dd_bwd(n_spc_diff,nlays)
       real :: delc_bwd
       real :: uu_bwd(n_spc_diff,nlays)
