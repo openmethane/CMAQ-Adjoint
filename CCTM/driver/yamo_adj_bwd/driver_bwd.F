@@ -58,6 +58,10 @@ C Include Files:
       INCLUDE SUBST_IOPARMS     ! I/O parameters definitions
       INCLUDE SUBST_IODECL      ! I/O definitions and declarations
       INCLUDE SUBST_FILES_ID    ! file name parameters
+      INCLUDE SUBST_GC_SPC      ! gas chemistry species table
+      INCLUDE SUBST_AE_SPC      ! aerosol species table
+      INCLUDE SUBST_NR_SPC      ! non-reactive species table
+      INCLUDE SUBST_TR_SPC      ! tracer species table
 
 C Load the mechanism COMMON ... (next two INCLUDE files)
       INCLUDE SUBST_RXCMMN      ! chemical mechamism reactions COMMON
@@ -77,6 +81,8 @@ C Local Variables:
       INTEGER, ALLOCATABLE, SAVE :: ASTEP(:) ! advection time steps
       LOGICAL, ALLOCATABLE, SAVE :: XFIRST(:)
       REAL, POINTER :: LGRID(:, :, :, :)
+      REAL, POINTER :: LGRID_FRC(:, :, :, :)
+      REAL, POINTER :: LGRID_FRC_TOT(:, :, :, :)
       
       INTEGER :: ALLOCSTAT
 
@@ -101,6 +107,8 @@ C Local Variables:
 
       INTEGER :: STEP_NUM       ! current output time step number
       INTEGER :: IREP           ! model step number within this output step
+
+      INTEGER :: VI             ! variable index in naming array
 
       INTERFACE
          SUBROUTINE INIT_LGRID(LGRID, SDATE, STIME, EDATE, ETIME, TSTEP, NSTEPS)
@@ -182,6 +190,23 @@ C Allocate memory
          CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
       END IF
 
+C Allocate memory for adjoint forcing (6.2014.slc)
+      ALLOCATE(
+     &     LGRID_FRC(1:NCOLS, 1:NROWS, 1:NLAYS, 1:NSPCSD),
+     &     STAT = ALLOCSTAT)
+      IF ( ALLOCSTAT /= 0 ) THEN
+         XMSG = 'Failure allocating LGRID_FRC, ASTEP, XFIRST'
+         CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
+      END IF
+
+      ALLOCATE(
+     &     LGRID_FRC_TOT(1:NCOLS, 1:NROWS, 1:NLAYS, 1:NSPCSD),
+     &     STAT = ALLOCSTAT)
+      IF ( ALLOCSTAT /= 0 ) THEN
+         XMSG = 'Failure allocating LGRID_FRC_TOT'
+         CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
+      END IF
+
 ! Allocate emissions sensitivity arrays (mdt|slc.12.2013)
       ALLOCATE(
      &     LGRID_EM_SF(1:NCOLS, 1:NROWS, 1:NLAYS, 1:NSPCSD),
@@ -258,6 +283,11 @@ C Set the current date and time to the end date and time
       JDATE = EDATE
       JTIME = ETIME
 
+! dbg.slc.4.2014
+!    print only specific variable
+
+      VI = N_GC_SPCD + N_AE_SPC + 1    ! NH3
+
 C Do backward (adjoint) solution and write sensitivities (step backwards from
 C final time)
       DO STEP_NUM = NSTEPS, 1, -1 ! output time step loop
@@ -280,15 +310,22 @@ C Read adjoint forcing from file
      &             ' file; exiting'
             CALL M3EXIT(PNAME, SDATE, STIME, XMSG, XSTAT1)
          ELSE
-            CALL RD_ADJ_FILE(LGRID_FRC_TOT, SDATE, STIME, ADJ_FORCE)
+            CALL RD_FORCE_FILE(LGRID_FRC_TOT, SDATE, STIME) !, ADJ_FORCE)
+         END IF
+
+         IF ( .NOT. CLOSE3(ADJ_FORCE) ) THEN
+            XMSG = 'Could not close ' // TRIM(ADJ_FORCE)
+            CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
          END IF
 
 C Since offline forcing is based on concentrations averaged over the output time step,
 C   the forcing can simply be allocated evenly to each synchronization time step. (slc.11.2013)
 C        LGRID_FRC and LGRID_FRC_TOT are stored in ADJ_ARRAY_MOD
-         LGRID_FRC = LGRID_FRC_TOT / NSTEPS
+         LGRID_FRC = LGRID_FRC_TOT / REAL(NREPS)
          
          DO IREP = NREPS, 1, -1
+            ! (6.2014.slc)
+            LGRID(:,:,1,:) = LGRID(:,:,1,:) + LGRID_FRC(:,:,1,:) 
             CALL SCIPROC_BWD(LGRID, JDATE, JTIME, TSTEP, ASTEP, XFIRST)                     ! science processes
             IF ( TRIM(LGRID_OUTPUT_FREQ) == 'SYNC_STEP' ) THEN
                  CALL WR_ADJ_FILE(LGRID, JDATE, JTIME, ADJ_LGRID)

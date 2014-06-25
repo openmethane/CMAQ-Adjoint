@@ -68,22 +68,41 @@ C-----------------------------------------------------------------------
       JDATE = 0
       JTIME = 0
 
-C Get file characteristics of CTM_CONC_FWD
-      IF ( .NOT. OPEN3(CTM_CONC_FWD, FSREAD3, PNAME) ) THEN
-         XMSG = 'Could not open ' // TRIM(CTM_CONC_FWD) //
+!C Get file characteristics of CTM_CONC_FWD
+!      IF ( .NOT. OPEN3(CTM_CONC_FWD, FSREAD3, PNAME) ) THEN
+!         XMSG = 'Could not open ' // TRIM(CTM_CONC_FWD) //
+!     &        ' file as OLD:READ-ONLY'
+!         CALL M3EXIT(PNAME, EDATE, ETIME, XMSG, XSTAT1)
+!      END IF
+!
+!      IF ( .NOT. DESC3(CTM_CONC_FWD) ) THEN
+!         XMSG = 'Could not get ' // TRIM(CTM_CONC_FWD) // ' file description'
+!         CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
+!      END IF
+!
+!      IF ( .NOT. CLOSE3(CTM_CONC_FWD) ) THEN
+!         XMSG = 'Could not close ' // TRIM(CTM_CONC_FWD)
+!         CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
+!      END IF
+
+
+C Get file characteristics of CTM_CONC_1
+      IF ( .NOT. OPEN3(CTM_CONC_1, FSREAD3, PNAME) ) THEN
+         XMSG = 'Could not open ' // TRIM(CTM_CONC_1) //
      &        ' file as OLD:READ-ONLY'
+         CALL M3EXIT(PNAME, EDATE, ETIME, XMSG, XSTAT1)
+      END IF
+
+      IF ( .NOT. DESC3(CTM_CONC_1) ) THEN
+         XMSG = 'Could not get ' // TRIM(CTM_CONC_1) // ' file description'
          CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
       END IF
 
-      IF ( .NOT. DESC3(CTM_CONC_FWD) ) THEN
-         XMSG = 'Could not get ' // TRIM(CTM_CONC_FWD) // ' file description'
+      IF ( .NOT. CLOSE3(CTM_CONC_1) ) THEN
+         XMSG = 'Could not close ' // TRIM(CTM_CONC_1)
          CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
       END IF
 
-      IF ( .NOT. CLOSE3(CTM_CONC_FWD) ) THEN
-         XMSG = 'Could not close ' // TRIM(CTM_CONC_FWD)
-         CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
-      END IF
 
 C Set the output time step, TSTEP(1), and number of output steps, NSTEPS, to
 C the values used for the forward simulation
@@ -99,9 +118,11 @@ C Set start date and time and end date and time
       CALL NEXTIME(EDATE, ETIME, SEC2TIME(NSTEPS * TIME2SEC(TSTEP(1))))
 
 C Initialize LGRID
-      IF ( .NOT. OPEN3(INIT_LGRID_1, FSREAD3, PNAME) ) THEN
-         XMSG = 'Could not open ' // TRIM(INIT_LGRID_1) // '.'
-         CALL M3EXIT(PNAME, EDATE, ETIME, XMSG, XSTAT1)
+      IF ( .NOT. OPEN3(ADJ_FORCE, FSREAD3, PNAME) ) THEN
+         XMSG = 'Could not open ' // TRIM(ADJ_FORCE) // '.'
+!         CALL M3EXIT(PNAME, EDATE, ETIME, XMSG, XSTAT1)
+         CALL M3WARN(PNAME, EDATE, ETIME, XMSG)
+         WRITE(*,*) 'slc.dbg.1.2014 - did not open ADJ_FORCE for offline forcing'
       ELSE
          CALL RD_ADJ_FILE(LGRID, EDATE, ETIME, INIT_LGRID_1)
          !CALL RD_ADJ_FILE(LGRID_EM, EDATE, ETIME, INIT_EM_1)
