@@ -24,7 +24,8 @@ C what(1) key, module and SID; SCCS file; date and time of last delta:
 C %W% %P% %G% %U%
 
 C:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      SUBROUTINE SCIPROC_BWD(LGRID, JDATE, JTIME, TSTEP, ASTEP, XFIRST)
+      SUBROUTINE SCIPROC_BWD(LGRID, LGRID_EM, LGRID_EM_SF, 
+     &                       JDATE, JTIME, TSTEP, ASTEP, XFIRST)
 
 C-----------------------------------------------------------------------
 C Function:
@@ -48,6 +49,9 @@ C Include Files:
 
 C Arguments:
       REAL, POINTER :: LGRID(:, :, :, :) ! adjoint variable
+      REAL, POINTER :: LGRID_EM(:, :, :, :) ! adjoint variable
+      REAL, POINTER :: LGRID_EM_SF(:, :, :, :) ! adjoint variable
+!      REAL, POINTER :: LGRID_EM_NRM(:, :, :, :) ! adjoint variable
       REAL, POINTER :: LGRID_FRC(:, :, :, :) ! adjoint variable
       REAL, POINTER :: LGRID_FRC_TOT(:, :, :, :) ! adjoint variable
       INTEGER, INTENT(IN OUT) :: JDATE ! current model date, coded YYYYDDD
@@ -61,6 +65,7 @@ C Arguments:
 C Local Variables:
       LOGICAL, SAVE :: FIRSTIME = .TRUE.
       INTEGER, SAVE :: LOGDEV
+      INTEGER, SAVE :: tim 
 
       CHARACTER(36), SAVE :: NMSG = 'After NEXTIME: returned JDATE, JTIME'
 
@@ -118,9 +123,12 @@ C Local Variables:
             INTEGER, INTENT(IN) :: JDATE, JTIME
             INTEGER, INTENT(IN) :: TSTEP(2)
          END SUBROUTINE COUPLE
-         SUBROUTINE VDIFF_BWD(LGRID, JDATE, JTIME, TSTEP)
+         SUBROUTINE VDIFF_BWD(LGRID, LGRID_EM, LGRID_EM_SF, JDATE, JTIME, TSTEP)
             IMPLICIT NONE
             REAL, POINTER       :: LGRID(:, :, :, :)
+            REAL, POINTER       :: LGRID_EM(:, :, :, :) ! adjoint variable
+            REAL, POINTER       :: LGRID_EM_SF(:, :, :, :) ! adjoint variable
+!           REAL, POINTER       :: LGRID_EM_NRM(:, :, :, :) ! adjoint variable
             INTEGER, INTENT(IN) :: JDATE, JTIME
             INTEGER, INTENT(IN) :: TSTEP(2)
          END SUBROUTINE VDIFF_BWD
@@ -143,19 +151,23 @@ C-----------------------------------------------------------------------
 
       CALL CHEM_BWD(LGRID, JDATE, JTIME, TSTEP)
 
-      CALL CLDPROC_BWD(LGRID, JDATE, JTIME, TSTEP)
+!      CALL CLDPROC_BWD(LGRID, JDATE, JTIME, TSTEP)
 
       CALL DECOUPLE(LGRID, SDATE, STIME, TSTEP)
 
-      CALL HDIFF_BWD(LGRID, JDATE, JTIME, TSTEP)
+!      CALL HDIFF_BWD(LGRID, JDATE, JTIME, TSTEP)
 
       CALL ZADV_BWD(LGRID, JDATE, JTIME, TSTEP)
 
-      CALL HADV_BWD(LGRID, JDATE, JTIME, TSTEP, ASTEP, XFIRST)
+!      CALL HADV_BWD(LGRID, JDATE, JTIME, TSTEP, ASTEP, XFIRST)
 
       CALL COUPLE(LGRID, JDATE, JTIME, TSTEP)
 
-      CALL VDIFF_BWD(LGRID, JDATE, JTIME, TSTEP)
+      WRITE(*,*) 'sciproc, before VDIFF_BWD - lgrid(10,10,1,22):',LGRID(10,10,1,22)
+      WRITE(*,*) 'sciproc, before VDIFF_BWD - lgrid_em(10,10,1,22):',LGRID_EM(10,10,1,22)
+      CALL VDIFF_BWD(LGRID, LGRID_EM, LGRID_EM_SF, JDATE, JTIME, TSTEP)
+      WRITE(*,*) 'sciproc, after VDIFF_BWD - lgrid(10,10,1,22): ',LGRID(10,10,1,22)
+      WRITE(*,*) 'sciproc, after VDIFF_BWD - lgrid_em(10,10,1,22): ',LGRID_EM(10,10,1,22)
 
       RETURN
       END
