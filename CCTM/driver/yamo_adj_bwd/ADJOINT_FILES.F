@@ -256,52 +256,75 @@ C Note: "CF" stands for "cost function units"
                FDESC3D(K) = ' '
             END DO
 
+            NLAYS3D = NLAYS
             NVARS3D = 0
 
+            IF ( TRIM(LGRID_OUTPUT_FREQ) == 'SYNC_STEP' ) THEN
+               TSTEP3D = TSTEP(2) ! sync step
+            ELSE IF ( TRIM(LGRID_OUTPUT_FREQ) == 'OUTPUT_STEP' ) THEN
+               TSTEP3D = TSTEP(1) ! output step
+            ELSE
+               TSTEP3D = 0      ! make it a time-independent file
+            END IF
+
 C Note: "CF" stands for "cost function units"
-            DO S = 1, N_GC_DIFF
+            DO S = 1, N_GC_SPC
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = GC_DIFF(S)
-               UNITS3D(NVARS3D) = 'mol/s'
-               VDESC3D(NVARS3D) = 'Sensitivity of cost function to emissions of ' //
+               VNAME3D(NVARS3D) = GC_SPC(S)
+               UNITS3D(NVARS3D) = 'CF/(mol/s)'
+               VDESC3D(NVARS3D) = 
+     &              'Sensitivity of cost function to emissions of ' //
      &              TRIM(VNAME3D(NVARS3D))
             END DO
 
-!     Aerosol species - slc.4.2014
-            DO S = 1, N_AE_DIFF
+            NVARS3D = NVARS3D + 1
+            VTYPE3D(NVARS3D) = M3REAL
+            VNAME3D(NVARS3D) = 'RHOJ'
+            UNITS3D(NVARS3D) = 'CF/m*kg/m**3'
+            VDESC3D(NVARS3D) = 
+     &           'Sensitivity of cost function to emissions of  ' //
+     &           TRIM(VNAME3D(NVARS3D))
+
+!     Aerosol species - slc.7.2014
+            DO S = 1, N_AE_SPC
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = AE_DIFF(S)
+               VNAME3D(NVARS3D) = AE_SPC(S)
                IF ( VNAME3D(NVARS3D)(1:3) == 'NUM' ) THEN
-                  UNITS3D(NVARS3D) = 'g/s'
+                  UNITS3D(NVARS3D) = 'CF/(g/s)'
                ELSE IF ( VNAME3D(NVARS3D)(1:3) == 'SRF' ) THEN
-                  UNITS3D(NVARS3D) = 'g/s'
+                  UNITS3D(NVARS3D) = 'CF/(g/s)'
                ELSE
-                  UNITS3D(NVARS3D) = 'g/s'
+                  UNITS3D(NVARS3D) = 'CF/(g/s)'
                END IF
-               VDESC3D(NVARS3D) = 'Sensitivity of cost function to emissions of ' //
+               VDESC3D(NVARS3D) = 
+     &              'Sensitivity of cost function to emissions of ' //
      &              TRIM(VNAME3D(NVARS3D))
             END DO
 
-            DO S = 1, N_NR_DIFF
+!        Ammonia and semi-volatile compounds
+            DO S = 1, N_NR_SPC
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = NR_DIFF(S)
-               UNITS3D(NVARS3D) = 'mol/s'
-               VDESC3D(NVARS3D) = 'Sensitivity of cost function to emissions of ' //
+               VNAME3D(NVARS3D) = NR_SPC(S)
+               UNITS3D(NVARS3D) = 'CF/(mol/s)'
+               VDESC3D(NVARS3D) = 
+     &              'Sensitivity of cost function to emissions of ' //
      &              TRIM(VNAME3D(NVARS3D))
             END DO
 
-!        Tracer species - slc.4.2014
-            DO S = 1, N_TR_DIFF
+!        Tracer species - slc.7.2014
+            DO S = 1, N_TR_SPC
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = TR_DIFF(S)
-               UNITS3D(NVARS3D) = 'mol/s'
-               VDESC3D(NVARS3D) = 'Sensitivity of cost function to emissions of ' //
+               VNAME3D(NVARS3D) = TR_SPC(S)
+               UNITS3D(NVARS3D) = 'CF/(mol/s)'
+               VDESC3D(NVARS3D) = 
+     &              'Sensitivity of cost function to emissions of ' //
      &              TRIM(VNAME3D(NVARS3D))
             END DO
+
 
          CASE ( ADJ_LGRID_EM_SF )
 
@@ -314,52 +337,75 @@ C Note: "CF" stands for "cost function units"
                FDESC3D(K) = ' '
             END DO
 
+            NLAYS3D = NLAYS
             NVARS3D = 0
 
+            IF ( TRIM(LGRID_OUTPUT_FREQ) == 'SYNC_STEP' ) THEN
+               TSTEP3D = TSTEP(2) ! sync step
+            ELSE IF ( TRIM(LGRID_OUTPUT_FREQ) == 'OUTPUT_STEP' ) THEN
+               TSTEP3D = TSTEP(1) ! output step
+            ELSE
+               TSTEP3D = 0      ! make it a time-independent file
+            END IF
+
 C Note: "CF" stands for "cost function units"
-            DO S = 1, N_GC_DIFF
+            DO S = 1, N_GC_SPC
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = GC_DIFF(S)
-               UNITS3D(NVARS3D) = 'ppmV'
-               VDESC3D(NVARS3D) = 'Sensitivity of cost function to emissions s.f. of ' //
+               VNAME3D(NVARS3D) = GC_SPC(S)
+               UNITS3D(NVARS3D) = 'CF'
+               VDESC3D(NVARS3D) = 'Sensitivity of cost function to
+     %              emissions of ' //
      &              TRIM(VNAME3D(NVARS3D))
             END DO
 
-!     Aerosol species - slc.4.2014
-            DO S = 1, N_AE_DIFF
+            NVARS3D = NVARS3D + 1
+            VTYPE3D(NVARS3D) = M3REAL
+            VNAME3D(NVARS3D) = 'RHOJ'
+            UNITS3D(NVARS3D) = 'CF'
+            VDESC3D(NVARS3D) = 'Sensitivity of cost function to
+     &           emissions of  ' //
+     &           TRIM(VNAME3D(NVARS3D))
+
+!     Aerosol species - slc.7.2014
+            DO S = 1, N_AE_SPC
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = AE_DIFF(S)
+               VNAME3D(NVARS3D) = AE_SPC(S)
                IF ( VNAME3D(NVARS3D)(1:3) == 'NUM' ) THEN
-                  UNITS3D(NVARS3D) = 'number/m**3'
+                  UNITS3D(NVARS3D) = 'CF'
                ELSE IF ( VNAME3D(NVARS3D)(1:3) == 'SRF' ) THEN
-                  UNITS3D(NVARS3D) = 'm**2/m**3'
+                  UNITS3D(NVARS3D) = 'CF'
                ELSE
-                  UNITS3D(NVARS3D) = 'microg/m**3'
+                  UNITS3D(NVARS3D) = 'CF'
                END IF
-               VDESC3D(NVARS3D) = 'Sensitivity of cost function to emissions s.f. of ' //
+               VDESC3D(NVARS3D) = 'Sensitivity of cost function to
+     &              emissions of ' //
      &              TRIM(VNAME3D(NVARS3D))
             END DO
 
-            DO S = 1, N_NR_DIFF
+!        Ammonia and semi-volatile compounds
+            DO S = 1, N_NR_SPC
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = NR_DIFF(S)
-               UNITS3D(NVARS3D) = 'ppmV'
-               VDESC3D(NVARS3D) = 'Sensitivity of cost function to emissions s.f. of ' //
+               VNAME3D(NVARS3D) = NR_SPC(S)
+               UNITS3D(NVARS3D) = 'CF'
+               VDESC3D(NVARS3D) = 'Sensitivity of cost function to
+     &              emissions of ' //
      &              TRIM(VNAME3D(NVARS3D))
             END DO
 
-!        Tracer species - slc.4.2014
-            DO S = 1, N_TR_DIFF
+!        Tracer species - slc.7.2014
+            DO S = 1, N_TR_SPC
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = TR_DIFF(S)
-               UNITS3D(NVARS3D) = 'ppmV'
-               VDESC3D(NVARS3D) = 'Sensitivity of cost function to emissions s.f. of ' //
+               VNAME3D(NVARS3D) = TR_SPC(S)
+               UNITS3D(NVARS3D) = 'CF'
+               VDESC3D(NVARS3D) = 'Sensitivity of cost function to
+     &              emissions of ' //
      &              TRIM(VNAME3D(NVARS3D))
             END DO
+
 
          CASE ( ADJ_LGRID_EM_NRM )
 
@@ -372,50 +418,66 @@ C Note: "CF" stands for "cost function units"
                FDESC3D(K) = ' '
             END DO
 
+            NLAYS3D = NLAYS
             NVARS3D = 0
 
+            IF ( TRIM(LGRID_OUTPUT_FREQ) == 'SYNC_STEP' ) THEN
+               TSTEP3D = TSTEP(2) ! sync step
+            ELSE IF ( TRIM(LGRID_OUTPUT_FREQ) == 'OUTPUT_STEP' ) THEN
+               TSTEP3D = TSTEP(1) ! output step
+            ELSE
+               TSTEP3D = 0      ! make it a time-independent file
+            END IF
+
 C Note: "CF" stands for "cost function units"
-            DO S = 1, N_GC_DIFF
+            DO S = 1, N_GC_SPC
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = GC_DIFF(S)
-               UNITS3D(NVARS3D) = 'unitless'
-               VDESC3D(NVARS3D) = 'Normalized ensitivity of cost function to emissions of ' //
+               VNAME3D(NVARS3D) = GC_SPC(S)
+               UNITS3D(NVARS3D) = 'CF/(mol/s)'
+               VDESC3D(NVARS3D) = 'Normalized ensitivity of cost function to emissions of ' // 
      &              TRIM(VNAME3D(NVARS3D))
             END DO
 
-!     Aerosol species - slc.4.2014
-            DO S = 1, N_AE_DIFF
+            NVARS3D = NVARS3D + 1
+            VTYPE3D(NVARS3D) = M3REAL
+            VNAME3D(NVARS3D) = 'RHOJ'
+            UNITS3D(NVARS3D) = 'CF/m*kg/m**3'
+            VDESC3D(NVARS3D) = 'Normalized ensitivity of cost function to emissions of ' //
+     &           TRIM(VNAME3D(NVARS3D))
+
+!     Aerosol species - slc.7.2014
+            DO S = 1, N_AE_SPC
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = AE_DIFF(S)
+               VNAME3D(NVARS3D) = AE_SPC(S)
                IF ( VNAME3D(NVARS3D)(1:3) == 'NUM' ) THEN
-                  UNITS3D(NVARS3D) = 'unitless'
+                  UNITS3D(NVARS3D) = 'CF/(g/s)'
                ELSE IF ( VNAME3D(NVARS3D)(1:3) == 'SRF' ) THEN
-                  UNITS3D(NVARS3D) = 'unitless'
+                  UNITS3D(NVARS3D) = 'CF/(g/s)'
                ELSE
-                  UNITS3D(NVARS3D) = 'unitless'
+                  UNITS3D(NVARS3D) = 'CF/(g/s)'
                END IF
                VDESC3D(NVARS3D) = 'Normalized ensitivity of cost function to emissions of ' //
      &              TRIM(VNAME3D(NVARS3D))
             END DO
 
-            DO S = 1, N_NR_DIFF
+!        Ammonia and semi-volatile compounds
+            DO S = 1, N_NR_SPC
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = NR_DIFF(S)
-               UNITS3D(NVARS3D) = 'unitless'
+               VNAME3D(NVARS3D) = NR_SPC(S)
+               UNITS3D(NVARS3D) = 'CF/(mol/s)'
                VDESC3D(NVARS3D) = 'Normalized ensitivity of cost function to emissions of ' //
      &              TRIM(VNAME3D(NVARS3D))
             END DO
 
-
-!        Tracer species - slc.4.2014
-            DO S = 1, N_TR_DIFF
+!        Tracer species - slc.7.2014
+            DO S = 1, N_TR_SPC
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = TR_DIFF(S)
-               UNITS3D(NVARS3D) = 'unitless'
+               VNAME3D(NVARS3D) = TR_SPC(S)
+               UNITS3D(NVARS3D) = 'CF/(mol/s)'
                VDESC3D(NVARS3D) = 'Normalized ensitivity of cost function to emissions of ' //
      &              TRIM(VNAME3D(NVARS3D))
             END DO
@@ -450,7 +512,7 @@ C Include Files:
 #include      SUBST_IODECL      # I/O definitions and declarations
 
 C Arguments:
-      REAL, INTENT(IN) :: ARRAY(*)
+      REAL, INTENT(IN) :: ARRAY(:,:,:,:)
       INTEGER, INTENT(IN) :: JDATE ! current model date, coded YYYYDDD
       INTEGER, INTENT(IN) :: JTIME ! current model time, coded HHMMSS
       CHARACTER(16), INTENT(IN) :: ADJ_FILE
@@ -468,6 +530,9 @@ C-----------------------------------------------------------------------
          FIRSTIME = .FALSE.
          LOGDEV = INIT3()
       END IF
+
+      WRITE(*,*) 'WR_ADJ_FILE, ARRAY(10,10,1,22): ',ARRAY(10,10,1,22)
+      WRITE(*,*) 'JDATE.TIME: ',JDATE, JTIME
 
       IF ( .NOT. WRITE3(ADJ_FILE, ALLVAR3, JDATE, JTIME, ARRAY) ) THEN
          XMSG = 'Could not write to ' // TRIM(ADJ_FILE)
@@ -632,7 +697,7 @@ C Get file characteristics of ADJ_FILE
       ! Specify chemical species based on index in *_SPC files 
       ! in cmaq_adj/ICL directory
 
-      V = 22 ! CO 
+      V = 22 ! CO (NSPC index) 
 
 !     Because ADJ_FORCE will only have one variable,
 !        this one variable should be extracted.

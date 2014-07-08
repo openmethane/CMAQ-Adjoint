@@ -83,6 +83,9 @@ C Local Variables:
       REAL, POINTER :: LGRID(:, :, :, :)
       REAL, POINTER :: LGRID_FRC(:, :, :, :)
       REAL, POINTER :: LGRID_FRC_TOT(:, :, :, :)
+      REAL, POINTER :: LGRID_EM(:, :, :, :)
+      REAL, POINTER :: LGRID_EM_SF(:, :, :, :)
+!      REAL, POINTER :: LGRID_EM_NRM(:, :, :, :)
       
       INTEGER :: ALLOCSTAT
 
@@ -134,9 +137,12 @@ C Local Variables:
             INTEGER, INTENT(IN)  :: TSTEP(2)
             INTEGER, INTENT(OUT) :: ASTEP(:)
          END SUBROUTINE ADVSTEP
-         SUBROUTINE SCIPROC_BWD(LGRID, JDATE, JTIME, TSTEP, ASTEP, XFIRST)
+         SUBROUTINE SCIPROC_BWD(LGRID, LGRID_EM, LGRID_EM_SF, 
+     &                          JDATE, JTIME, TSTEP, ASTEP, XFIRST)
             IMPLICIT NONE
             REAL, POINTER          :: LGRID(:, :, :, :)
+            REAL, POINTER          :: LGRID_EM(:, :, :, :) ! adjoint variable
+            REAL, POINTER          :: LGRID_EM_SF(:, :, :, :) ! adjoint variable
             INTEGER, INTENT(INOUT) :: JDATE, JTIME
             INTEGER, INTENT(IN)    :: TSTEP(2)
             INTEGER, INTENT(IN)    :: ASTEP(:)
@@ -216,13 +222,13 @@ C Allocate memory for adjoint forcing (6.2014.slc)
          CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
       END IF
 
-      ALLOCATE(
-     &     LGRID_EM_NRM(1:NCOLS, 1:NROWS, 1:NLAYS, 1:NSPCSD),
-     &     STAT = ALLOCSTAT)
-      IF ( ALLOCSTAT /= 0 ) THEN
-         XMSG = 'Failure allocating LGRID_EMIS_NRM'
-         CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
-      END IF
+!      ALLOCATE(
+!     &     LGRID_EM_NRM(1:NCOLS, 1:NROWS, 1:NLAYS, 1:NSPCSD),
+!     &     STAT = ALLOCSTAT)
+!      IF ( ALLOCSTAT /= 0 ) THEN
+!         XMSG = 'Failure allocating LGRID_EMIS_NRM'
+!         CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
+!      END IF
 
       ALLOCATE(
      &     LGRID_EM(1:NCOLS, 1:NROWS, 1:NLAYS, 1:NSPCSD),
@@ -237,7 +243,8 @@ C initialize the LGRID array.
       LGRID(:, :, :, :) = 0.0
       LGRID_EM(:, :, :, :) = 0.0
       LGRID_EM_SF(:, :, :, :) = 0.0
-      LGRID_EM_NRM(:, :, :, :) = 0.0
+!      WRITE(*,*) 'driver - lgrid_em(1,1,1,1): ',LGRID_EM(1,1,1,1)
+!      LGRID_EM_NRM(:, :, :, :) = 0.0
       
       LGRID_FRC(:, :, :, :) = 0.0
       LGRID_FRC_TOT(:, :, :, :) = 0.0
@@ -260,13 +267,13 @@ C Create new adjoint output files and open for update
       ! Also for emissions related sensitivity output (mdt|slc.11.2013)
       CALL OP_ADJ_FILE(EDATE, ETIME, TSTEP, ADJ_LGRID_EM)
       CALL OP_ADJ_FILE(EDATE, ETIME, TSTEP, ADJ_LGRID_EM_SF)
-      CALL OP_ADJ_FILE(EDATE, ETIME, TSTEP, ADJ_LGRID_EM_NRM)
+!      CALL OP_ADJ_FILE(EDATE, ETIME, TSTEP, ADJ_LGRID_EM_NRM)
 
       IF ( TRIM(LGRID_OUTPUT_FREQ) /= 'ONCE' ) THEN
          CALL WR_ADJ_FILE(LGRID, EDATE, ETIME, ADJ_LGRID)
          CALL WR_ADJ_FILE(LGRID_EM, EDATE, ETIME, ADJ_LGRID_EM)
          CALL WR_ADJ_FILE(LGRID_EM_SF, EDATE, ETIME, ADJ_LGRID_EM_SF)
-         CALL WR_ADJ_FILE(LGRID_EM_NRM, EDATE, ETIME, ADJ_LGRID_EM_NRM)
+!         CALL WR_ADJ_FILE(LGRID_EM_NRM, EDATE, ETIME, ADJ_LGRID_EM_NRM)
       END IF
 
 C Read XFIRST from the file CTM_XFIRST_IN
@@ -282,11 +289,13 @@ C Read XFIRST from the file CTM_XFIRST_IN
 C Set the current date and time to the end date and time
       JDATE = EDATE
       JTIME = ETIME
+! dbg.slc.7.2014
+      WRITE(*,*) 'driver, EDATE.ETIME: ', EDATE,ETIME
 
 ! dbg.slc.4.2014
 !    print only specific variable
 
-      VI = N_GC_SPCD + N_AE_SPC + 1    ! NH3
+!      VI = N_GC_SPCD + N_AE_SPC + 1    ! NH3
 
 C Do backward (adjoint) solution and write sensitivities (step backwards from
 C final time)
@@ -311,7 +320,8 @@ C Read adjoint forcing from file
             CALL M3EXIT(PNAME, SDATE, STIME, XMSG, XSTAT1)
          ELSE
             CALL RD_FORCE_FILE(LGRID_FRC_TOT, SDATE, STIME) !, ADJ_FORCE)
-         END IF
+            WRITE(*,*) 'CO forcing at (10,10,1): ',LGRID_FRC_TOT(10,10,1,22)
+          END IF
 
          IF ( .NOT. CLOSE3(ADJ_FORCE) ) THEN
             XMSG = 'Could not close ' // TRIM(ADJ_FORCE)
@@ -326,33 +336,55 @@ C        LGRID_FRC and LGRID_FRC_TOT are stored in ADJ_ARRAY_MOD
          DO IREP = NREPS, 1, -1
             ! (6.2014.slc)
             LGRID(:,:,1,:) = LGRID(:,:,1,:) + LGRID_FRC(:,:,1,:) 
-            CALL SCIPROC_BWD(LGRID, JDATE, JTIME, TSTEP, ASTEP, XFIRST)                     ! science processes
+            WRITE(*,*) 'Before SCIPROC_BWD, CO forcing at (10,10,1):',LGRID_FRC(10,10,1,22)
+            CALL SCIPROC_BWD(LGRID, LGRID_EM, LGRID_EM_SF,
+     &                       JDATE, JTIME, TSTEP, ASTEP, XFIRST)                     ! science processes
             IF ( TRIM(LGRID_OUTPUT_FREQ) == 'SYNC_STEP' ) THEN
                  CALL WR_ADJ_FILE(LGRID, JDATE, JTIME, ADJ_LGRID)
+!                 WRITE(*,*) 'Size CGRID_BWD_EM: ',size(CGRID_BWD_EM)
+!                 WRITE(*,*) 'Size CGRID_BWD_EM_SF: ',size(CGRID_BWD_EM_SF)
+!                 WRITE(*,*) 'Size CGRID_BWD_EM_NRM: ',size(CGRID_BWD_EM_NRM)
+!                 LGRID_EM = CGRID_BWD_EM
                  CALL WR_ADJ_FILE(LGRID_EM, JDATE, JTIME, 
      &                            ADJ_LGRID_EM)
+!                 LGRID_EM_SF = CGRID_BWD_EM_SF
                  CALL WR_ADJ_FILE(LGRID_EM_SF, JDATE, JTIME, 
      &                            ADJ_LGRID_EM_SF)
-                 CALL WR_ADJ_FILE(LGRID_EM_NRM, JDATE, JTIME, 
-     &                            ADJ_LGRID_EM_NRM)
+!                 LGRID_EM_NRM = CGRID_BWD_EM_NRM
+!                 CALL WR_ADJ_FILE(LGRID_EM_NRM, JDATE, JTIME, 
+!     &                            ADJ_LGRID_EM_NRM)
             END IF
          END DO
          
          IF ( TRIM(LGRID_OUTPUT_FREQ) == 'OUTPUT_STEP' ) THEN
+            WRITE(*,*) 'driver - lgrid(10,10,1,22): ',LGRID(10,10,1,22)
+            WRITE(*,*) 'driver - lgrid_em(10,1,1,22): ',LGRID_EM(10,10,1,22)
+                 WRITE(*,*) 'Size LGRID: ',size(LGRID,4)
+                 WRITE(*,*) 'Size LGRID_EM: ',size(LGRID_EM,4)
+                 WRITE(*,*) 'Size LGRID_EM_SF:',size(LGRID_EM_SF,4)
+!                 WRITE(*,*) 'Size LGRID_EM_NRM:
+!                 ',size(LGRID_EM_NRM,4)
+
             CALL WR_ADJ_FILE(LGRID, JDATE, JTIME, ADJ_LGRID)
+!            LGRID_EM = CGRID_BWD_EM
             CALL WR_ADJ_FILE(LGRID_EM, JDATE, JTIME, ADJ_LGRID_EM)
+!            LGRID_EM_SF = CGRID_BWD_EM_SF            
             CALL WR_ADJ_FILE(LGRID_EM_SF, JDATE, JTIME, ADJ_LGRID_EM_SF)
-            CALL WR_ADJ_FILE(LGRID_EM_NRM, JDATE, JTIME, 
-     &                       ADJ_LGRID_EM_NRM)
+!            LGRID_EM_NRM = CGRID_BWD_EM_NRM
+!            CALL WR_ADJ_FILE(LGRID_EM_NRM, JDATE, JTIME, 
+!     &                       ADJ_LGRID_EM_NRM)
          END IF
      
       END DO
       IF ( TRIM(LGRID_OUTPUT_FREQ) == 'ONCE' ) THEN
            CALL WR_ADJ_FILE(LGRID, JDATE, JTIME, ADJ_LGRID)
+!           LGRID_EM = CGRID_BWD_EM
            CALL WR_ADJ_FILE(LGRID_EM, JDATE, JTIME, ADJ_LGRID_EM)
+!           LGRID_EM_SF = CGRID_BWD_EM_SF
            CALL WR_ADJ_FILE(LGRID_EM_SF, JDATE, JTIME, ADJ_LGRID_EM_SF)
-           CALL WR_ADJ_FILE(LGRID_EM_NRM, JDATE, JTIME,
-     &                      ADJ_LGRID_EM_NRM)
+!           LGRID_EM_NRM = CGRID_BWD_EM_NRM
+!           CALL WR_ADJ_FILE(LGRID_EM_NRM, JDATE, JTIME,
+!     &                      ADJ_LGRID_EM_NRM)
       END IF
 
 C Write the final values of XFIRST to the file CTM_XFIRST_OUT
