@@ -108,6 +108,8 @@ C Set the output time step, TSTEP(1), and number of output steps, NSTEPS, to
 C the values used for the forward simulation
       TSTEP(1) = TSTEP3D
       NSTEPS = MXREC3D - 1
+!     Limit execution to one hour for debugging - dbg.slc.7.2014
+!      NSTEPS = 1
 
 C Set start date and time and end date and time
       SDATE = SDATE3D
@@ -116,18 +118,23 @@ C Set start date and time and end date and time
       EDATE = SDATE3D
       ETIME = STIME3D
       CALL NEXTIME(EDATE, ETIME, SEC2TIME(NSTEPS * TIME2SEC(TSTEP(1))))
+      ! dbg.slc.7.2014
+      !WRITE(*,*) 'init_lgrid, EDATE/ETIME: ',EDATE, ETIME
 
-C Initialize LGRID
-      IF ( .NOT. OPEN3(ADJ_FORCE, FSREAD3, PNAME) ) THEN
-         XMSG = 'Could not open ' // TRIM(ADJ_FORCE) // '.'
-!         CALL M3EXIT(PNAME, EDATE, ETIME, XMSG, XSTAT1)
-         CALL M3WARN(PNAME, EDATE, ETIME, XMSG)
-         WRITE(*,*) 'slc.dbg.1.2014 - did not open ADJ_FORCE for offline forcing'
-      ELSE
-         CALL RD_ADJ_FILE(LGRID, EDATE, ETIME, INIT_LGRID_1)
-         !CALL RD_ADJ_FILE(LGRID_EM, EDATE, ETIME, INIT_EM_1)
-         !CALL RD_ADJ_FILE(LGRID_EM_SF, EDATE, ETIME, INIT_EM_SF_1)
-         !CALL RD_ADJ_FILE(LGRID_EM_NRM, EDATE, ETIME, INIT_LGRID_1)
-      END IF
+! Now the reading of the adjoint forcing is done in the driver_bwd
+! routine (6.2014.slc)
+!C Initialize LGRID
+!      IF ( .NOT. OPEN3(ADJ_FORCE, FSREAD3, PNAME) ) THEN
+!         XMSG = 'Could not open ' // TRIM(ADJ_FORCE) // '.'
+!!         CALL M3EXIT(PNAME, EDATE, ETIME, XMSG, XSTAT1)
+!         CALL M3WARN(PNAME, EDATE, ETIME, XMSG)
+!         WRITE(*,*) 'slc.dbg.1.2014 - did not open ADJ_FORCE for offline forcing'
+!      ELSE
+!         CALL RD_FORCE_FILE(LGRID, EDATE, ETIME) !, ADJ_FORCE)
+!         !CALL RD_ADJ_FILE(LGRID, EDATE, ETIME, INIT_LGRID_1)
+!         !CALL RD_ADJ_FILE(LGRID_EM, EDATE, ETIME, INIT_EM_1)
+!         !CALL RD_ADJ_FILE(LGRID_EM_SF, EDATE, ETIME, INIT_EM_SF_1)
+!         !CALL RD_ADJ_FILE(LGRID_EM_NRM, EDATE, ETIME, INIT_LGRID_1)
+!      END IF
 
       END SUBROUTINE INIT_LGRID
