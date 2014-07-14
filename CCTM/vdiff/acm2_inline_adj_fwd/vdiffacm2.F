@@ -440,30 +440,37 @@ C read & interpolate emissions data => VDEMIS from EMIS_DEFN module
 !
 !      IF ( TRIM( RUN_TYPE ) == 'emis_fd' ) THEN
 !         IF ( JDATE == 2008092 .AND.  JTIME >= 200000 ) THEN
-!            ! Allocate PERT Array
-!            ALLOCATE ( PERT ( N_SPC_EMIS+1, EMLAYS, MY_NCOLS, MY_NROWS )
-!     &                 , STAT = ALLOCSTAT )
-!            IF ( ALLOCSTAT .NE. 0 ) THEN
-!               XMSG = 'PERT  memory allocation failed'
-!               CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
-!            END IF
-
-!            PERT( :,:,:,: ) = 1.0
+!        Limit perturbation to first four hours of benchmark
+!        (6.2014.slc)
+         IF ( JDATE == 2007161 .AND.  JTIME < 10000 ) THEN
+            ! Allocate PERT Array
+            ALLOCATE ( PERT ( N_SPC_EMIS+1, EMLAYS, MY_NCOLS, MY_NROWS )
+     &                 , STAT = ALLOCSTAT )
+            IF ( ALLOCSTAT .NE. 0 ) THEN
+               XMSG = 'PERT  memory allocation failed'
+               CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
+            END IF
+            ! Always include the PERT = 1.0 to ensure that all emissions
+            ! other than that perturbed are constant.
+            PERT( :,:,:,: ) = 1.0
+            ! Perturb one species in specific location or column
 !            PERT(25,:,:,: ) = 1.0000001   ! ASO4J
 !            PERT(31,:,:,: ) = 1.0001    ! AECJ
-!            WRITE(LOGDEV,*) 'Applying emission perturbation'   !debug, mdt
-!            DO V = 1, N_SPC_EMIS
-!               DO L = 1, EMLAYS
-!                  DO R = 1, MY_NROWS
-!                     DO C = 1, MY_NCOLS
-!                        VDEMIS(V, L, C, R) = VDEMIS(V, L, C, R) *
-!     &                                      PERT( V, L, C, R)
-!                     END DO
-!                  END DO
-!               END DO
-!            END DO
-!         END IF
-!      END IF
+!            PERT(8,:,2:6,17:22 ) = 1.10    ! CO
+            PERT(8,:,:,: ) = 1.10    ! CO
+            WRITE(LOGDEV,*) 'Applying emission perturbation'   !debug, mdt
+            DO V = 1, N_SPC_EMIS
+               DO L = 1, EMLAYS
+                  DO R = 1, MY_NROWS
+                     DO C = 1, MY_NCOLS
+                        VDEMIS(V, L, C, R) = VDEMIS(V, L, C, R) *
+     &                                      PERT( V, L, C, R)
+                     END DO ! Col
+                  END DO ! Row
+               END DO ! Layer
+            END DO ! Species
+         END IF ! Date and time qualification
+!      END IF ! Run type flag
 
       IF ( FIRST ) THEN
          FIRST = .false.
