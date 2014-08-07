@@ -208,7 +208,7 @@ C
      &                     TRUSTISO) !,NERR)
       INCLUDE 'isrpia_adj.inc'
       INTEGER, PARAMETER :: NCTRL  =   2
-      INTEGER, PARAMETER :: NOTHER =   9      
+      INTEGER, PARAMETER :: NOTHER =   6      
       CHARACTER(LEN=15)  :: SCASI
       REAL*8             :: CNTRL, AERSLD, OTHER
       LOGICAL            :: TRUSTISO
@@ -318,9 +318,10 @@ C
       OTHER(4) = SODRAT
       OTHER(5) = IONIC
       OTHER(6) = ICLACT
-      OTHER(7) = SO4RAT
-      OTHER(8) = CRNARAT
-      OTHER(9) = CRRAT
+!      Only useful for ISO v2.1+ (8.2014.slc)
+!      OTHER(7) = SO4RAT
+!      OTHER(8) = CRNARAT
+!      OTHER(9) = CRRAT
 C
       SCASI = SCASE
 C
@@ -395,7 +396,7 @@ C
      &               SCASI, OTHER, TRUSTISO)    !, NERR)
       INCLUDE 'isrpia_adj.inc'
       INTEGER, PARAMETER :: NCTRL  =   2
-      INTEGER, PARAMETER :: NOTHER =   9      
+      INTEGER, PARAMETER :: NOTHER =   6      
       CHARACTER(LEN=15)  :: SCASI
       LOGICAL       :: TRUSTISO
       REAL*8     :: wp(ncomp), aerliq, gas
@@ -659,9 +660,10 @@ C
       OTHER(4) = SODRAT
       OTHER(5) = IONIC
       OTHER(6) = ICLACT
-      OTHER(7) = SO4RAT
-      OTHER(8) = CRNARAT
-      OTHER(9) = CRRAT
+!      Only useful for ISO v2.1+ (8.2014.slc)
+!      OTHER(7) = SO4RAT
+!      OTHER(8) = CRNARAT
+!      OTHER(9) = CRRAT
 C
       SCASI = SCASE
 C
