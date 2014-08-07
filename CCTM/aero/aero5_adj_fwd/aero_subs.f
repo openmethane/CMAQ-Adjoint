@@ -758,7 +758,7 @@ C *** ISORROPIA output variables
       REAL( 8 ) :: GAS( 3 )             ! gas-phase   "     " 
       REAL( 8 ) :: AERLIQ( 12 )         ! liq aerosol "     " 
       REAL( 8 ) :: AERSLD( 9 )          ! solid "     "     " 
-      REAL( 8 ) :: OTHER( 6 )           ! supplmentary output array
+      REAL( 8 ) :: OTHER( 9 )           ! supplmentary output array
       CHARACTER( 15 ) :: SCASI          ! subcase number output
 
 C *** Variables to account for mass conservation violations in ISRP3F
