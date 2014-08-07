@@ -1349,7 +1349,7 @@ C	  if(pcontrol.eq.3) then   ! mode merging
 ! solid "     "     "
         REAL*8 :: aersld(9)
 ! supplmentary output array
-        REAL*8 :: other(9)
+        REAL*8 :: other(6)
 ! subcase number output
         CHARACTER(len=15) :: scasi
 !
