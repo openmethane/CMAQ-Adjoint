@@ -63,7 +63,7 @@
       INTEGER, PARAMETER                   :: ADJ_HADV_CHK = 6
       INTEGER, PARAMETER                   :: ADJ_VADV_CHK = 7
       INTEGER, PARAMETER                   :: ADJ_EMIS_CHK = 8
-      INTEGER, PARAMETER                   :: ADJ_EMIST_CHK = 10
+      INTEGER, PARAMETER                   :: ADJ_EMIST_CHK = 9
 ! Checkpoint file names
       CHARACTER(16), PARAMETER :: CHK_NAMES(N_CHKS) =
      & ( / 'ADJ_CHEM_CHK   ','ADJ_AERO_CHK   ','ADJ_VDIFF_CHK  ','ADJ_HA_RHOJ_CHK',
