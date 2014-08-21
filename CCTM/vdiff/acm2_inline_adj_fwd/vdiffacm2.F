@@ -147,6 +147,7 @@ C Local Variables:
 
       REAL, ALLOCATABLE, SAVE :: EMIS_PA( :,:,:,: ) ! emis for process analysis
       REAL, ALLOCATABLE, SAVE :: VDEMIS_CHK( :,:,:,: )
+      REAL, ALLOCATABLE, SAVE :: EMIS_CHK( :,:,:,: )
 
       INTEGER, SAVE :: N_SPC_CGRID              ! no. of CGRID species
 
@@ -390,17 +391,26 @@ C set auxiliary depv arrays
 
          CLOSE( 8 )
 
-         ALLOCATE ( EM_SF( MY_NCOLS,MY_NROWS,NLAYS,NSPCSD ),
+!         ALLOCATE ( EM_SF( MY_NCOLS,MY_NROWS,NLAYS,NSPCSD ),
+         ALLOCATE ( EM_SF( MY_NCOLS,MY_NROWS,EMLAYS,N_SPC_DIFF ),
      &              STAT = ALLOCSTAT )
          IF ( ALLOCSTAT .NE. 0 ) THEN
             XMSG = 'EM_SF memory allocation failed'
             CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
          END IF
 
-         ALLOCATE ( VDEMIS_CHK( MY_NCOLS,MY_NROWS,NLAYS,NSPCSD ),
+!         ALLOCATE ( VDEMIS_CHK( MY_NCOLS,MY_NROWS,NLAYS,NSPCSD ),
+         ALLOCATE ( VDEMIS_CHK( MY_NCOLS,MY_NROWS,NLAYS,N_SPC_EMIS+1 ),
      &              STAT = ALLOCSTAT )
          IF ( ALLOCSTAT .NE. 0 ) THEN
             XMSG = 'VDEMIS_CHK memory allocation failed'
+            CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
+         END IF
+
+         ALLOCATE ( EMIS_CHK( MY_NCOLS,MY_NROWS,NLAYS,N_SPC_DIFF ),
+     &              STAT = ALLOCSTAT )
+         IF ( ALLOCSTAT .NE. 0 ) THEN
+            XMSG = 'EMIS_CHK memory allocation failed'
             CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
          END IF
 
@@ -433,49 +443,60 @@ C read & interpolate emissions data => VDEMIS from EMIS_DEFN module
 
          CALL GET_EMIS ( MDATE, MTIME, TSTEP, CONVPA, RDX3F, RRHOJ, RJACM )
 
-! *** perturb emis if validating emissions sensitivities
-!     Technique implemented by mdt; commented for now (slc.12.2013)
-!      RUN_TYPE = 'for'    !default value
-!      CALL GET_ENVIRONMENT_VARIABLE("CTM_RUN_TYPE", RUN_TYPE)
+!! *** perturb emis if validating emissions sensitivities
+!!     Technique implemented by mdt, refined by slc (8.2014)
+!!      RUN_TYPE = 'for'    !default value
+!!      CALL GET_ENVIRONMENT_VARIABLE("CTM_RUN_TYPE", RUN_TYPE)
+!!
+!!      IF ( TRIM( RUN_TYPE ) == 'emis_fd' ) THEN
+!!        Limit perturbation to first four hours of benchmark
+!!        (6.2014.slc)
+!            ALLOCATE ( PERT ( MY_NCOLS, MY_NROWS, EMLAYS, N_SPC_DIFF )
+!     &                 , STAT = ALLOCSTAT )
+!            IF ( ALLOCSTAT .NE. 0 ) THEN
+!               XMSG = 'PERT  memory allocation failed'
+!               CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
+!            END IF
 !
-!      IF ( TRIM( RUN_TYPE ) == 'emis_fd' ) THEN
-!         IF ( JDATE == 2008092 .AND.  JTIME >= 200000 ) THEN
-!        Limit perturbation to first four hours of benchmark
-!        (6.2014.slc)
-         IF ( JDATE == 2007161 .AND.  JTIME < 10000 ) THEN
-            ! Allocate PERT Array
-            ALLOCATE ( PERT ( N_SPC_EMIS+1, EMLAYS, MY_NCOLS, MY_NROWS )
-     &                 , STAT = ALLOCSTAT )
-            IF ( ALLOCSTAT .NE. 0 ) THEN
-               XMSG = 'PERT  memory allocation failed'
-               CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
-            END IF
-            ! Always include the PERT = 1.0 to ensure that all emissions
-            ! other than that perturbed are constant.
-            PERT( :,:,:,: ) = 1.0
-            ! Perturb one species in specific location or column
-!            PERT(25,:,:,: ) = 1.0000001   ! ASO4J
-!            PERT(31,:,:,: ) = 1.0001    ! AECJ
-!            PERT(8,:,2:6,17:22 ) = 1.10    ! CO
-            PERT(8,:,:,: ) = 1.10    ! CO
-            WRITE(LOGDEV,*) 'Applying emission perturbation'   !debug, mdt
-            DO V = 1, N_SPC_EMIS
-               DO L = 1, EMLAYS
-                  DO R = 1, MY_NROWS
-                     DO C = 1, MY_NCOLS
-                        VDEMIS(V, L, C, R) = VDEMIS(V, L, C, R) *
-     &                                      PERT( V, L, C, R)
-                     END DO ! Col
-                  END DO ! Row
-               END DO ! Layer
-            END DO ! Species
-         END IF ! Date and time qualification
-!      END IF ! Run type flag
+!         IF ( JDATE == 2007161 .AND.  JTIME <= 5500 ) THEN
+!            ! Allocate PERT Array
+!            ! Always include the PERT = 1.0 (sf test) or 0.0 (abs test) to ensure that all emissions
+!            ! other than that perturbed are constant.
+!            PERT( :,:,:,: ) = 0.d0
+!            EM_SF = 1.0  ! fractional emissions perturbation test
+!!           EM_SF = 0.0  ! absolute emissions perturbation test
+!            WRITE(LOGDEV,*) 'Not applying emission perturbation'
+!            ! Perturb one species in specific location or column
+!            PERT(:,:,1,16 ) = 1.01     ! CO - fractional
+!            PERT(:,:,1,16 ) = 1.d-2    ! CO - absolute
+!            WRITE(LOGDEV,*) 'Applying emission perturbation'   !debug, mdt
+!!            Implement loop to increment specific values of EM_SF for
+!!              fractional test
+!!            DO V = 1, N_SPC_DIFF
+!!               DO L = 1, EMLAYS   ! scaling factor only applies to level 1
+!!                  DO R = 1, MY_NROWS
+!!                     DO C = 1, MY_NCOLS
+!!                        EM_SF(C, R, 1, V) = EM_SF(C, R, 1, V) *
+!!     &                                      PERT( C, R, 1, V)
+!!                     END DO ! Col
+!!                  END DO ! Row
+!!               END DO ! Layer
+!!            END DO ! Species
+!         ELSE
+!            ! Always include the PERT = 1.0 (fractional) or 0.0 (absolute)  to ensure that all emissions
+!            ! other than those perturbed are constant.
+!            PERT( :,:,:,: ) = 0.d0 ! absolute
+!            PERT( :,:,:,: ) = 1.d0 ! fractional
+!            EM_SF = 1.0            ! always
+!         END IF ! Date and time qualification
+!!      END IF ! Run type flag
 
       IF ( FIRST ) THEN
          FIRST = .false.
-! Open checkpoint file for emissions
+! Open checkpoint file for emissions as VDEMIS
          CALL  CHK_FILE_OPEN ( ADJ_EMIS_CHK, MDATE, MTIME, .TRUE., TSTEP )
+C Open for update of emissions as EMIS
+         CALL CHK_FILE_OPEN ( ADJ_EMIST_CHK, MDATE, MTIME, .TRUE., TSTEP )
       END IF
 
       DO S = 1, N_SPC_EMIS+1
@@ -492,15 +513,6 @@ C Write emissions to emission checkpoint file
       CALL CHK_FILE_WRITE ( ADJ_EMIS_CHK, MDATE, MTIME, VDEMIS_CHK )
 
 ! apply emissions scaling factors
-
-!         ALLOCATE ( EM_SF( MY_NCOLS,MY_NROWS,NLAYS,NSPCSD ),
-!     &              STAT = ALLOCSTAT )
-!         IF ( ALLOCSTAT .NE. 0 ) THEN
-!            XMSG = 'EM_SF memory allocation failed'
-!            CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
-!         END IF
-
-         EM_SF = 1.0
 
          IF ( LIPR ) THEN
             DO S = 1, N_SPC_EMIS+1
@@ -629,9 +641,16 @@ C End ACM insert
          END DO
 
          EMIS = 0.0
+!        Below, the em_sf array is multiplied by EMIS wherever EMIS is
+!        used. It doubles the scaling factor to have EMIS multiplied by
+!        the scaling factor here and later. Now, only multiply the
+!        checkpointed emissions here so that the checkpointed emissions
+!        can be used as the finite difference perturbation in the
+!        testing.
          DO L = 1, EMLAYS
             DO V = 1, N_SPC_DIFF
-               EMIS( V,L ) = VDEMIS( DF2EM( V ),L,C,R ) * DTS
+               EMIS( V,L ) = VDEMIS( DF2EM( V ),L,C,R ) * DTS + PERT(C, R, L, V) 
+               EMIS_CHK( C,R,L,V ) = EMIS( V,L ) * EM_SF(C, R, L, V) 
             END DO
          END DO
 
@@ -866,6 +885,9 @@ C For NH3, use bi-directional flux
 C Revert non-molar mixing ratio species and re-order CGRID
 
       CALL REV_CGRID ( CNGRD, MDATE, MTIME, CGRID )
+
+C Write emissions to emission checkpoint file
+      CALL CHK_FILE_WRITE ( ADJ_EMIST_CHK, MDATE, MTIME, EMIS_CHK )
 
       IF ( NDEPV_SPC > 0 ) THEN
 
