@@ -333,10 +333,10 @@ SUBROUTINE Rosenbrock(N,Y,Tstart,Tend, &
    END IF
 
 !~~~>  Unit roundoff (1+Roundoff>1)
-   Roundoff = WLAMCH('E')
+!   Roundoff = WLAMCH('E')
 !   WRITE(*,*) 'Roundoff = ', Roundoff   !debug, mdt
 !   STOP
-!   Roundoff = 1.0E-14
+   Roundoff = 1.0E-14
  
 !~~~>  Lower bound on the step size: (positive value)
    IF (RCNTRL(1) == ZERO) THEN
