@@ -398,6 +398,7 @@ C set auxiliary depv arrays
             XMSG = 'EM_SF memory allocation failed'
             CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
          END IF
+         EM_SF = 1.d0 ! Default
 
 !         ALLOCATE ( VDEMIS_CHK( MY_NCOLS,MY_NROWS,NLAYS,NSPCSD ),
          ALLOCATE ( VDEMIS_CHK( MY_NCOLS,MY_NROWS,NLAYS,N_SPC_EMIS+1 ),
@@ -649,8 +650,8 @@ C End ACM insert
 !        testing.
          DO L = 1, EMLAYS
             DO V = 1, N_SPC_DIFF
-               EMIS( V,L ) = VDEMIS( DF2EM( V ),L,C,R ) * DTS + PERT(C, R, L, V) 
-               EMIS_CHK( C,R,L,V ) = EMIS( V,L ) * EM_SF(C, R, L, V) 
+               EMIS( V,L ) = VDEMIS( DF2EM( V ),L,C,R ) * DTS ! + PERT(C, R, L, V) for absolute
+               EMIS_CHK( C,R,L,V ) = EMIS( V,L ) * EM_SF(C, R, L, V)  
             END DO
          END DO
 
