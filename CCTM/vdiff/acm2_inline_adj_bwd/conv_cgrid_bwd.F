@@ -98,14 +98,21 @@ C----------------------------------------------
 C ROUTINE BODY
 C----------------------------------------------
       if (firstime) then
+        write(*,*) 'Calling conv_cgrid_bwd' ! dbg.7.2014.slc
         CALL CGRID_MAP(NSPCSD, GC_STRT, AE_STRT, NR_STRT, TR_STRT)
         CALL SUBHFILE(MET_CRO_3D, GXOFF, GYOFF,
      &       STRTCOLMC3, ENDCOLMC3, STRTROWMC3, ENDROWMC3)
 
-        nqae = 0
-        nnae = 0
-        nsae = 0
+C create aerosol species pointers to distinguish micro-grams / m**3,
+C # / m**3 (number density), and m**2 / m**3 (surface area) species
+
+        nqae = 0       ! no. of micro-grams / m**3 species
+        nnae = 0       ! no. of  # / m**3 species
+        nsae = 0       ! no. of  m**2 / m**3 species
         off = ae_strt-1
+
+!       debug slc.6.2014
+
         do s = 1, n_ae_spc
           if (ae_spc(s)(1:3) .eq. 'NUM') then
             nnae = nnae+1
@@ -119,7 +126,7 @@ C----------------------------------------------
             molwt(nqae) = ae_molwt(s)
           endif
         end do
-      endif
+      endif           !  if Firstime
 
       IF ( .NOT. INTERPX(MET_CRO_3D, 'DENS', PNAME,
      &     STRTCOLMC3,ENDCOLMC3, STRTROWMC3,ENDROWMC3, 1,NLAYS,
@@ -128,6 +135,17 @@ C----------------------------------------------
          CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
       END IF
 
+C Convert non-molar mixing ratio species and re-order CGRID
+
+! (6.2014)  slc debug
+!      write(*,*) 'n_gc_spc: ', n_gc_spc
+!      write(*,*) 'nqae: ', nqae
+!      write(*,*) 'nnae: ', nnae
+!      write(*,*) 'nsae: ', nsae
+!      write(*,*) 'n_nr_spc: ', n_nr_spc
+!      write(*,*) 'n_tr_spc: ', n_tr_spc
+
+C Tracers - no conversion
       nspcs = n_tr_spc
       if (nspcs .gt. 0) then
         off = tr_strt-1
@@ -142,6 +160,9 @@ C----------------------------------------------
           end do
         end do
       endif
+
+C Non-reactives - no conversion
+
       nspcs = n_nr_spc
       if (nspcs .gt. 0) then
         off = nr_strt-1
@@ -156,6 +177,9 @@ C----------------------------------------------
           end do
         end do
       endif
+
+C m**2/m**3 aerosol -> m**2/mol air
+
       nspcs = nsae
       if (nspcs .gt. 0) then
         do r = 1, my_nrows
@@ -170,6 +194,12 @@ C----------------------------------------------
           end do
         end do
       endif
+
+C number/m**3 aerosol -> ppmv
+C (Don't divide by MGPG, then multiply by 1.0E+6: 1/MGPG = 10**-6
+C cancels out
+C ppm = 10**6)
+
       nspcs = nnae
       if (nspcs .gt. 0) then
         do r = 1, my_nrows
@@ -184,6 +214,11 @@ C----------------------------------------------
           end do
         end do
       endif
+
+C micro-grams/m**3 aerosol -> mol/mol air <- no
+C micro-grams/m**3 aerosol -> ppmv
+C (Don't divide by MGPG, etc. See note above)
+
       nspcs = nqae
       if (nspcs .gt. 0) then
         do r = 1, my_nrows
@@ -199,6 +234,9 @@ C----------------------------------------------
           end do
         end do
       endif
+
+C Gas - no conversion
+
       nspcs = n_gc_spc
       if (nspcs .gt. 0) then
         off = gc_strt-1
