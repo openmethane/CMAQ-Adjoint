@@ -1,4 +1,4 @@
-!***********************************************************************
+!**********************************************************************
 !   Portions of Models-3/CMAQ software were developed or based on      *
 !   information from various groups: Federal Government employees,     *
 !   contractors working on a United States Government contract, and    *
@@ -268,6 +268,57 @@
                CHK%VDESC(S) = 'Variable '//TRIM(CHK%VNAME(S))
             END DO
             INDX = INDX + N_TR_SPC
+
+         CASE ( ADJ_EMIST_CHK )
+            CHK%NLAYS = 1
+            CHK%FDESC(1) = 'Emissions checkpoint file'
+            CHK%FDESC(2) = 'From CMAQ model dyn alloc version CTM'
+            CHK%NVARS = N_GC_DIFF + N_AE_DIFF + N_NR_DIFF + N_TR_DIFF
+            ALLOCATE(CHK%VTYPE(CHK%NVARS))
+            ALLOCATE(CHK%VNAME(CHK%NVARS))
+            ALLOCATE(CHK%UNITS(CHK%NVARS))
+            ALLOCATE(CHK%VDESC(CHK%NVARS))
+            ALLOCATE(CHK%VINDX(CHK%NVARS))
+            INDX = 0
+            DO S = INDX+1, INDX+N_GC_DIFF
+               CHK%VTYPE(S) = M3REAL
+               CHK%VNAME(S) = GC_DIFF(S-INDX)
+               CHK%UNITS(S) = 'mol'
+               CHK%VDESC(S) = 'Variable '//TRIM(CHK%VNAME(S))
+            END DO
+            INDX = INDX + N_GC_DIFF
+!            CHK%VTYPE(INDX+1) = M3REAL
+!            CHK%VNAME(INDX+1) = 'RHOJ'
+!            CHK%UNITS(INDX+1) = 'm*kg/m**3'
+!            CHK%VDESC(INDX+1) = 'Variable '//TRIM(CHK%VNAME(INDX+1))
+!            INDX = INDX + 1
+            DO S = INDX+1, INDX+N_AE_DIFF
+               CHK%VTYPE(S) = M3REAL
+               CHK%VNAME(S) = AE_DIFF(S-INDX)
+               IF ( CHK%VNAME(S)(1:3) == 'NUM' ) THEN
+                  CHK%UNITS(S) = 'number/m**3'
+               ELSE IF ( CHK%VNAME(S)(1:3) == 'SRF' ) THEN
+                  CHK%UNITS(S) = 'm**2/m**3'
+               ELSE
+                  CHK%UNITS(S) = 'micrograms/m**3'
+               END IF
+               CHK%VDESC(S) = 'Variable '//TRIM(CHK%VNAME(S))
+            END DO
+            INDX = INDX + N_AE_DIFF
+            DO S = INDX+1, INDX+N_NR_DIFF
+               CHK%VTYPE(S) = M3REAL
+               CHK%VNAME(S) = NR_DIFF(S-INDX)
+               CHK%UNITS(S) = 'ppmV'
+               CHK%VDESC(S) = 'Variable '//TRIM(CHK%VNAME(S))
+            END DO
+            INDX = INDX + N_NR_DIFF
+            DO S = INDX+1, INDX+N_TR_DIFF
+               CHK%VTYPE(S) = M3REAL
+               CHK%VNAME(S) = TR_DIFF(S-INDX)
+               CHK%UNITS(S) = 'ppmV'
+               CHK%VDESC(S) = 'Variable '//TRIM(CHK%VNAME(S))
+            END DO
+            INDX = INDX + N_TR_DIFF
 
          CASE ( ADJ_HA_RHOJ_CHK )
             CHK%FDESC(1) = 'Horizontal advection RHOJ checkpoint file'
