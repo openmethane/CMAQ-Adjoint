@@ -108,13 +108,19 @@ C Adjoint forcing function - at output time step (unitless)
 !      REAL, ALLOCATABLE :: LGRID_FRC_TOT(:)   ! adjoint forcing at output step from file
 
 C Gradient of cost function wrt emissions
-      REAL, ALLOCATABLE :: LGRID_EM(:, :, :, :)
+!      REAL, ALLOCATABLE :: LGRID_EM(:, :, :, :)
+C Same array but for the calculations inside vdiff where a pointer is
+C required.
+!      REAL, POINTER :: CGRID_BWD_EM(:, :, :, :)
 
 C Gradient of cost function wrt emissions scaling factor
-      REAL, ALLOCATABLE :: LGRID_EM_SF(:, :, :, :)
+!      REAL, ALLOCATABLE :: LGRID_EM_SF(:, :, :, :)
+C Same array but for the calculations inside vdiff where a pointer is
+C required.
+!      REAL, POINTER :: CGRID_BWD_EM_SF(:, :, :, :)
 
 C Gradient of cost function wrt emissions - fully normalized
-      REAL, ALLOCATABLE :: LGRID_EM_NRM(:, :, :, :)
+!      REAL, ALLOCATABLE :: LGRID_EM_NRM(:, :, :, :)
 
 CC Boundary condition scaling factor
 C      REAL, ALLOCATABLE :: BC_SF(:, :, :)
