@@ -43,13 +43,16 @@
 !   - reduced vdiff checkpoint file to just layer 1 of cgrid
 !   Jan 2014 - S.Capps (US EPA) | M.Turner (UC Boulder)
 !   - included emissions checkpointing file
+!   Mar 2014 by Peter Percell, UH:
+!     - replaced ADJ_XADV_CHK and ADJ_YADV_CHK with just ADJ_HADV_CHK
+!     - renamed ADJ_ZADV_CHK to ADJ_VADV_CHK
 !-----------------------------------------------------------------------
 
       IMPLICIT NONE
 
 
 ! Number of checkpoint files
-      INTEGER, PARAMETER                   :: N_CHKS = 10
+      INTEGER, PARAMETER                   :: N_CHKS = 9
 
 ! Checkpoint files ids
       INTEGER, PARAMETER                   :: ADJ_CHEM_CHK = 1
@@ -57,17 +60,15 @@
       INTEGER, PARAMETER                   :: ADJ_VDIFF_CHK = 3
       INTEGER, PARAMETER                   :: ADJ_HA_RHOJ_CHK = 4
       INTEGER, PARAMETER                   :: ADJ_VA_RHOJ_CHK = 5
-      INTEGER, PARAMETER                   :: ADJ_XADV_CHK = 6
-      INTEGER, PARAMETER                   :: ADJ_YADV_CHK = 7
-      INTEGER, PARAMETER                   :: ADJ_ZADV_CHK = 8
-      INTEGER, PARAMETER                   :: ADJ_EMIS_CHK = 9
+      INTEGER, PARAMETER                   :: ADJ_HADV_CHK = 6
+      INTEGER, PARAMETER                   :: ADJ_VADV_CHK = 7
+      INTEGER, PARAMETER                   :: ADJ_EMIS_CHK = 8
       INTEGER, PARAMETER                   :: ADJ_EMIST_CHK = 10
 ! Checkpoint file names
       CHARACTER(16), PARAMETER :: CHK_NAMES(N_CHKS) =
      & ( / 'ADJ_CHEM_CHK   ','ADJ_AERO_CHK   ','ADJ_VDIFF_CHK  ','ADJ_HA_RHOJ_CHK',
-     &     'ADJ_VA_RHOJ_CHK','ADJ_XADV_CHK   ','ADJ_YADV_CHK   ','ADJ_ZADV_CHK   ',
-     &     'ADJ_EMIS_CHK','ADJ_EMIST_CHK' / )
-
+     &     'ADJ_VA_RHOJ_CHK','ADJ_HADV_CHK   ','ADJ_VADV_CHK   ','ADJ_EMIS_CHK',
+     &     'ADJ_EMIST_CHK' / )
 
 ! We cannot include PARMS3.EXT here, define own parameters
       INTEGER, PARAMETER                     :: MXDLEN_ADJ =  80

@@ -68,6 +68,9 @@
 !     - Added TSTEP to chem checkpoint file
 !   Oct 2013 by J.Resler, ICS:
 !     - fixes, cleaning
+!   Mar 2014 by Peter Percell, UH:
+!     - replaced ADJ_XADV_CHK and ADJ_YADV_CHK with just ADJ_HADV_CHK
+!     - renamed ADJ_ZADV_CHK to ADJ_VADV_CHK
 !-----------------------------------------------------------------------
 
       USE GRID_CONF             ! horizontal & vertical domain specifications
@@ -348,8 +351,8 @@
             CHK%UNITS(1) = 'KG/M**2'
             CHK%VDESC(1) = 'advected air density X total Jacobian'
 
-         CASE ( ADJ_XADV_CHK )
-            CHK%FDESC(1) = 'X advection checkpoint file'
+         CASE ( ADJ_HADV_CHK )
+            CHK%FDESC(1) = 'Horizontal advection checkpoint file'
             CHK%FDESC(2) = ' '
             CHK%NVARS = N_GC_ADV + N_AE_ADV + N_NR_ADV + N_TR_ADV + 1
             ALLOCATE(CHK%VTYPE(CHK%NVARS))
@@ -369,11 +372,11 @@
             CHK%VNAME(INDX + 1) = 'RHOJ'
             CHK%VTYPE(1:CHK%NVARS) = M3REAL
             CHK%UNITS(1:CHK%NVARS) = 'Coupled CGRID'
-            CHK%VDESC(1:CHK%NVARS) = 'X advection checkpoint for ' //
+            CHK%VDESC(1:CHK%NVARS) = 'Horizontal advection checkpoint for ' //
      &                                CHK%VNAME(1:CHK%NVARS)
 
-         CASE ( ADJ_YADV_CHK )
-            CHK%FDESC(1) = 'Y advection checkpoint file'
+         CASE ( ADJ_VADV_CHK )
+            CHK%FDESC(1) = 'Vertical advection checkpoint file'
             CHK%FDESC(2) = ' '
             CHK%NVARS = N_GC_ADV + N_AE_ADV + N_NR_ADV + N_TR_ADV + 1
             ALLOCATE(CHK%VTYPE(CHK%NVARS))
@@ -393,31 +396,7 @@
             CHK%VNAME(INDX + 1) = 'RHOJ'
             CHK%VTYPE(1:CHK%NVARS) = M3REAL
             CHK%UNITS(1:CHK%NVARS) = 'Coupled CGRID'
-            CHK%VDESC(1:CHK%NVARS) = 'Y advection checkpoint for ' //
-     &                                CHK%VNAME(1:CHK%NVARS)
-
-         CASE ( ADJ_ZADV_CHK )
-            CHK%FDESC(1) = 'Z advection checkpoint file'
-            CHK%FDESC(2) = ' '
-            CHK%NVARS = N_GC_ADV + N_AE_ADV + N_NR_ADV + N_TR_ADV + 1
-            ALLOCATE(CHK%VTYPE(CHK%NVARS))
-            ALLOCATE(CHK%VNAME(CHK%NVARS))
-            ALLOCATE(CHK%UNITS(CHK%NVARS))
-            ALLOCATE(CHK%VDESC(CHK%NVARS))
-            ALLOCATE(CHK%VINDX(CHK%NVARS))
-            INDX = 0
-            CHK%VNAME(INDX+1:INDX+N_GC_ADV) = GC_ADV(1:N_GC_ADV)
-            INDX = INDX + N_GC_ADV
-            CHK%VNAME(INDX+1:INDX+N_AE_ADV) = AE_ADV(1:N_AE_ADV)
-            INDX = INDX + N_AE_ADV
-            CHK%VNAME(INDX+1:INDX+N_NR_ADV) = NR_ADV(1:N_NR_ADV)
-            INDX = INDX + N_NR_ADV
-            CHK%VNAME(INDX+1:INDX+N_TR_ADV) = TR_ADV(1:N_TR_ADV)
-            INDX = INDX + N_TR_ADV
-            CHK%VNAME(INDX + 1) = 'RHOJ'
-            CHK%VTYPE(1:CHK%NVARS) = M3REAL
-            CHK%UNITS(1:CHK%NVARS) = 'Coupled CGRID'
-            CHK%VDESC(1:CHK%NVARS) = 'Z advection checkpoint for ' //
+            CHK%VDESC(1:CHK%NVARS) = 'Vertical advection checkpoint for ' //
      &                                CHK%VNAME(1:CHK%NVARS)
 
          ! Added to checkpoint emissions (mdt|slc.1.2014)

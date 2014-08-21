@@ -338,9 +338,11 @@
       ! made SOLUT THREADPRIVATE for OPENMP parallelization
       REAL*8      :: CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8
 !!!      REAL*8      :: CHI9, CHI10, CHI11, CHI12, CHI13, CHI14, CHI15
-!!!      REAL*8      :: CHI16, CHI17,       REAL*8      :: PSI1, PSI2, PSI3, PSI4, PSI5, PSI6
+!!!      REAL*8      :: CHI16, CHI17,
+      REAL*8      :: PSI1, PSI2, PSI3, PSI4, PSI5, PSI6
       REAL*8      :: PSI7, PSI8 !!!, PSI9, PSI10, PSI11, PSI12, PSI13
-!!!      REAL*8      :: PSI14, PSI15, PSI16, PSI17,       REAL*8      :: A1, A2, A3, A4, A5, A6, A7, A8
+!!!      REAL*8      :: PSI14, PSI15, PSI16, PSI17,
+      REAL*8      :: A1, A2, A3, A4, A5, A6, A7, A8
 !!!      REAL*8      :: A9, A10, A11, A12, A13, A14, A15, A16, A17
       COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8,
      &               PSI1, PSI2, PSI3, PSI4, PSI5, PSI6,

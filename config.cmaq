@@ -29,11 +29,16 @@
 #-------------------------------------------------------------------------------
  setenv system "`/bin/uname -i`"
  setenv bld_os "`/bin/uname -s``/bin/uname -r | cut -d. -f1`"
+
+# CHANGE: Set appropriate library directory
 #setenv lib_basedir $M3HOME/lib
  setenv lib_basedir /home/wdx/lib
 ######## vvvvv infinity
 #setenv extra_lib "-lrdmacm -libumad -lopa -lmpl -lrt -lpthread -libverbs -ldl"
 #setenv extra_lib "-lrdmacm -libumad "
+
+
+# CHANGE: Set appropriate links to compiler selected above
 
 #> for terra:
  switch ( $COMPILER )

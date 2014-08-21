@@ -1281,7 +1281,7 @@ C *** Set flags to account for mass conservation violations in ISRP3F
       ! To prevent calls to ISO at T & P at which
       !    equilibrium thermodynamics do not govern partitioning
       ! slc.8.2013 - tested in CMAQv.5.0.1 by Jia Xing
-      if (( AIRTEMP .GT. 230.0 )
+      if (( AIRTEMP .GT. 250.0 )
      +       .AND.( AIRPRS .GT. 20000.0 ) ) THEN
          CALL ISOROPIA(wi, rhi, tempi, cntrl, wt, gas, aerliq, aersld,
      +                 scasi, other, TrustIso)
