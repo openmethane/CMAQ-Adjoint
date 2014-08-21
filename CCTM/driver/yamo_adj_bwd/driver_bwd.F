@@ -62,6 +62,12 @@ C Include Files:
       INCLUDE SUBST_AE_SPC      ! aerosol species table
       INCLUDE SUBST_NR_SPC      ! non-reactive species table
       INCLUDE SUBST_TR_SPC      ! tracer species table
+      INCLUDE SUBST_GC_DIFF     ! gas chemistry diffused species table
+      INCLUDE SUBST_AE_DIFF     ! aerosol diffused species table
+      INCLUDE SUBST_NR_DIFF     ! non-reactive diffused species table
+      INCLUDE SUBST_TR_DIFF     ! tracer diffused species table
+
+
 
 C Load the mechanism COMMON ... (next two INCLUDE files)
       INCLUDE SUBST_RXCMMN      ! chemical mechamism reactions COMMON
@@ -112,6 +118,12 @@ C Local Variables:
       INTEGER :: IREP           ! model step number within this output step
 
       INTEGER :: VI             ! variable index in naming array
+
+      INTEGER     N_SPC_DIFF               ! global diffusion species
+      PARAMETER ( N_SPC_DIFF = N_GC_DIFF   ! = N_GC_SPC + 1
+     &                       + N_AE_DIFF
+     &                       + N_NR_DIFF
+     &                       + N_TR_DIFF)
 
       INTERFACE
          SUBROUTINE INIT_LGRID(LGRID, SDATE, STIME, EDATE, ETIME, TSTEP, NSTEPS)
@@ -215,7 +227,7 @@ C Allocate memory for adjoint forcing (6.2014.slc)
 
 ! Allocate emissions sensitivity arrays (mdt|slc.12.2013)
       ALLOCATE(
-     &     LGRID_EM_SF(1:NCOLS, 1:NROWS, 1:NLAYS, 1:NSPCSD),
+     &     LGRID_EM_SF(1:NCOLS, 1:NROWS, 1:NLAYS, 1:N_SPC_DIFF),
      &     STAT = ALLOCSTAT)
       IF ( ALLOCSTAT /= 0 ) THEN
          XMSG = 'Failure allocating LGRID_EMIS_SF'
@@ -223,7 +235,7 @@ C Allocate memory for adjoint forcing (6.2014.slc)
       END IF
 
 !      ALLOCATE(
-!     &     LGRID_EM_NRM(1:NCOLS, 1:NROWS, 1:NLAYS, 1:NSPCSD),
+!     &     LGRID_EM_NRM(1:NCOLS, 1:NROWS, 1:NLAYS, 1:N_SPC_DIFF),
 !     &     STAT = ALLOCSTAT)
 !      IF ( ALLOCSTAT /= 0 ) THEN
 !         XMSG = 'Failure allocating LGRID_EMIS_NRM'
@@ -231,10 +243,10 @@ C Allocate memory for adjoint forcing (6.2014.slc)
 !      END IF
 
       ALLOCATE(
-     &     LGRID_EM(1:NCOLS, 1:NROWS, 1:NLAYS, 1:NSPCSD),
+     &     LGRID_EM(1:NCOLS, 1:NROWS, 1:NLAYS, 1:N_SPC_DIFF),
      &     STAT = ALLOCSTAT)
       IF ( ALLOCSTAT /= 0 ) THEN
-         XMSG = 'Failure allocating LGRID_EMIS'
+         XMSG = 'Failure allocating LGRID_EM'
          CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
       END IF
 
@@ -290,7 +302,7 @@ C Set the current date and time to the end date and time
       JDATE = EDATE
       JTIME = ETIME
 ! dbg.slc.7.2014
-      WRITE(*,*) 'driver, EDATE.ETIME: ', EDATE,ETIME
+!      WRITE(*,*) 'driver, EDATE.ETIME: ', EDATE,ETIME
 
 ! dbg.slc.4.2014
 !    print only specific variable
@@ -320,7 +332,7 @@ C Read adjoint forcing from file
             CALL M3EXIT(PNAME, SDATE, STIME, XMSG, XSTAT1)
          ELSE
             CALL RD_FORCE_FILE(LGRID_FRC_TOT, SDATE, STIME) !, ADJ_FORCE)
-            WRITE(*,*) 'CO forcing at (10,10,1): ',LGRID_FRC_TOT(10,10,1,22)
+!            WRITE(*,*) 'CO forcing at (10,10,1): ',LGRID_FRC_TOT(10,10,1,22)
           END IF
 
          IF ( .NOT. CLOSE3(ADJ_FORCE) ) THEN
@@ -331,14 +343,24 @@ C Read adjoint forcing from file
 C Since offline forcing is based on concentrations averaged over the output time step,
 C   the forcing can simply be allocated evenly to each synchronization time step. (slc.11.2013)
 C        LGRID_FRC and LGRID_FRC_TOT are stored in ADJ_ARRAY_MOD
-         LGRID_FRC = LGRID_FRC_TOT / REAL(NREPS)
-         
+          ! dbg.8.2014.slc
+!         LGRID_FRC = LGRID_FRC_TOT / REAL(NREPS)
          DO IREP = NREPS, 1, -1
             ! (6.2014.slc)
-            LGRID(:,:,1,:) = LGRID(:,:,1,:) + LGRID_FRC(:,:,1,:) 
-            WRITE(*,*) 'Before SCIPROC_BWD, CO forcing at (10,10,1):',LGRID_FRC(10,10,1,22)
+!            only forcing at the end of the hour - 8.2014.slc
+!            LGRID(:,:,1,:) = LGRID(:,:,1,:) + LGRID_FRC(:,:,1,:) 
+            IF ( IREP .EQ. NREPS ) THEN
+               LGRID(:,:,1,:) = LGRID(:,:,1,:) + LGRID_FRC_TOT(:,:,1,:)
+!               WRITE(*,*) 'Before SCIPROC_BWD, CO forcing at (10,10,1):',LGRID_FRC(10,10,1,22)
+            ENDIF 
+!            WRITE(*,*) 'Before SCIPROC_BWD, LGRID(10,10,1,22): ',LGRID(10,10,1,22)
+!            WRITE(*,*) 'Before SCIPROC_BWD, LGRID_EM(10,10,1,16): ',LGRID_EM(10,10,1,16)
+!            WRITE(*,*) 'Before SCIPROC_BWD, LGRID_EM_SF(10,10,1,16): ',LGRID_EM_SF(10,10,1,16)
             CALL SCIPROC_BWD(LGRID, LGRID_EM, LGRID_EM_SF,
      &                       JDATE, JTIME, TSTEP, ASTEP, XFIRST)                     ! science processes
+!            WRITE(*,*) 'After SCIPROC_BWD, LGRID(10,10,1,22): ',LGRID(10,10,1,22)
+!            WRITE(*,*) 'After SCIPROC_BWD, LGRID_EM(10,10,1,16): ',LGRID_EM(10,10,1,16)
+!            WRITE(*,*) 'After SCIPROC_BWD, LGRID_EM_SF(10,10,1,16): ',LGRID_EM_SF(10,10,1,16)
             IF ( TRIM(LGRID_OUTPUT_FREQ) == 'SYNC_STEP' ) THEN
                  CALL WR_ADJ_FILE(LGRID, JDATE, JTIME, ADJ_LGRID)
 !                 WRITE(*,*) 'Size CGRID_BWD_EM: ',size(CGRID_BWD_EM)
@@ -357,11 +379,12 @@ C        LGRID_FRC and LGRID_FRC_TOT are stored in ADJ_ARRAY_MOD
          END DO
          
          IF ( TRIM(LGRID_OUTPUT_FREQ) == 'OUTPUT_STEP' ) THEN
-            WRITE(*,*) 'driver - lgrid(10,10,1,22): ',LGRID(10,10,1,22)
-            WRITE(*,*) 'driver - lgrid_em(10,1,1,22): ',LGRID_EM(10,10,1,22)
-                 WRITE(*,*) 'Size LGRID: ',size(LGRID,4)
-                 WRITE(*,*) 'Size LGRID_EM: ',size(LGRID_EM,4)
-                 WRITE(*,*) 'Size LGRID_EM_SF:',size(LGRID_EM_SF,4)
+!            WRITE(*,*) 'driver - lgrid(10,10,1,22): ',LGRID(10,10,1,22)
+!            WRITE(*,*) 'driver - lgrid_em(10,1,1,16): ',LGRID_EM(10,10,1,16)
+!            WRITE(*,*) 'driver - lgrid_em_sf(10,1,1,16): ',LGRID_EM_SF(10,10,1,16)
+!                 WRITE(*,*) 'Size LGRID: ',size(LGRID,4)
+!                 WRITE(*,*) 'Size LGRID_EM: ',size(LGRID_EM,4)
+!                 WRITE(*,*) 'Size LGRID_EM_SF:',size(LGRID_EM_SF,4)
 !                 WRITE(*,*) 'Size LGRID_EM_NRM:
 !                 ',size(LGRID_EM_NRM,4)
 
