@@ -391,7 +391,6 @@ C set auxiliary depv arrays
 
          CLOSE( 8 )
 
-!         ALLOCATE ( EM_SF( MY_NCOLS,MY_NROWS,NLAYS,NSPCSD ),
          ALLOCATE ( EM_SF( MY_NCOLS,MY_NROWS,EMLAYS,N_SPC_DIFF ),
      &              STAT = ALLOCSTAT )
          IF ( ALLOCSTAT .NE. 0 ) THEN
@@ -400,7 +399,6 @@ C set auxiliary depv arrays
          END IF
          EM_SF = 1.d0 ! Default
 
-!         ALLOCATE ( VDEMIS_CHK( MY_NCOLS,MY_NROWS,NLAYS,NSPCSD ),
          ALLOCATE ( VDEMIS_CHK( MY_NCOLS,MY_NROWS,NLAYS,N_SPC_EMIS+1 ),
      &              STAT = ALLOCSTAT )
          IF ( ALLOCSTAT .NE. 0 ) THEN
@@ -463,7 +461,8 @@ C read & interpolate emissions data => VDEMIS from EMIS_DEFN module
 !            ! Allocate PERT Array
 !            ! Always include the PERT = 1.0 (sf test) or 0.0 (abs test) to ensure that all emissions
 !            ! other than that perturbed are constant.
-!            PERT( :,:,:,: ) = 0.d0
+!            PERT( :,:,:,: ) = 1.d0  ! fractional
+!            ! PERT( :,:,:,: ) = 0.d0  ! absolute
 !            EM_SF = 1.0  ! fractional emissions perturbation test
 !!           EM_SF = 0.0  ! absolute emissions perturbation test
 !            WRITE(LOGDEV,*) 'Not applying emission perturbation'
@@ -495,7 +494,7 @@ C read & interpolate emissions data => VDEMIS from EMIS_DEFN module
       IF ( FIRST ) THEN
          FIRST = .false.
 ! Open checkpoint file for emissions as VDEMIS
-         CALL  CHK_FILE_OPEN ( ADJ_EMIS_CHK, MDATE, MTIME, .TRUE., TSTEP )
+         CALL CHK_FILE_OPEN ( ADJ_EMIS_CHK, MDATE, MTIME, .TRUE., TSTEP )
 C Open for update of emissions as EMIS
          CALL CHK_FILE_OPEN ( ADJ_EMIST_CHK, MDATE, MTIME, .TRUE., TSTEP )
       END IF

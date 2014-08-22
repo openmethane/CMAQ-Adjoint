@@ -97,7 +97,7 @@ C-----------------------------------------------------------------------
 
       VARDESC =
      &     'LGRID output frequency: SYNC_STEP, OUTPUT_STEP or ONCE (at start time)'
-      LGRID_OUTPUT_FREQ = 'OUTPUT_STEP'
+      LGRID_OUTPUT_FREQ = 'SYNC_STEP'
       CALL ENVSTR('ADJ_LGRID_FREQ', VARDESC, LGRID_OUTPUT_FREQ,
      &     LGRID_OUTPUT_FREQ, STATUS)
       IF ( STATUS /= 0 ) WRITE(LOGDEV, '(5X, A)') VARDESC
@@ -268,29 +268,31 @@ C Note: "CF" stands for "cost function units"
             END IF
 
 C Note: "CF" stands for "cost function units"
-            DO S = 1, N_GC_SPC
+!       Only diffused species are calculated as emissions currently. so
+!       the loop is over the diffused species. 
+            DO S = 1, N_GC_DIFF
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = GC_SPC(S)
+               VNAME3D(NVARS3D) = GC_DIFF(S)
                UNITS3D(NVARS3D) = 'CF/(mol/s)'
                VDESC3D(NVARS3D) = 
      &              'Sensitivity of cost function to emissions of ' //
      &              TRIM(VNAME3D(NVARS3D))
             END DO
 
-            NVARS3D = NVARS3D + 1
-            VTYPE3D(NVARS3D) = M3REAL
-            VNAME3D(NVARS3D) = 'RHOJ'
-            UNITS3D(NVARS3D) = 'CF/m*kg/m**3'
-            VDESC3D(NVARS3D) = 
-     &           'Sensitivity of cost function to emissions of  ' //
-     &           TRIM(VNAME3D(NVARS3D))
+!            NVARS3D = NVARS3D + 1
+!            VTYPE3D(NVARS3D) = M3REAL
+!            VNAME3D(NVARS3D) = 'RHOJ'
+!            UNITS3D(NVARS3D) = 'CF/m*kg/m**3'
+!            VDESC3D(NVARS3D) = 
+!     &           'Sensitivity of cost function to emissions of  ' //
+!     &           TRIM(VNAME3D(NVARS3D))
 
 !     Aerosol species - slc.7.2014
-            DO S = 1, N_AE_SPC
+            DO S = 1, N_AE_DIFF
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = AE_SPC(S)
+               VNAME3D(NVARS3D) = AE_DIFF(S)
                IF ( VNAME3D(NVARS3D)(1:3) == 'NUM' ) THEN
                   UNITS3D(NVARS3D) = 'CF/(g/s)'
                ELSE IF ( VNAME3D(NVARS3D)(1:3) == 'SRF' ) THEN
@@ -304,10 +306,10 @@ C Note: "CF" stands for "cost function units"
             END DO
 
 !        Ammonia and semi-volatile compounds
-            DO S = 1, N_NR_SPC
+            DO S = 1, N_NR_DIFF
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = NR_SPC(S)
+               VNAME3D(NVARS3D) = NR_DIFF(S)
                UNITS3D(NVARS3D) = 'CF/(mol/s)'
                VDESC3D(NVARS3D) = 
      &              'Sensitivity of cost function to emissions of ' //
@@ -315,10 +317,10 @@ C Note: "CF" stands for "cost function units"
             END DO
 
 !        Tracer species - slc.7.2014
-            DO S = 1, N_TR_SPC
+            DO S = 1, N_TR_DIFF
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = TR_SPC(S)
+               VNAME3D(NVARS3D) = TR_DIFF(S)
                UNITS3D(NVARS3D) = 'CF/(mol/s)'
                VDESC3D(NVARS3D) = 
      &              'Sensitivity of cost function to emissions of ' //
@@ -349,29 +351,29 @@ C Note: "CF" stands for "cost function units"
             END IF
 
 C Note: "CF" stands for "cost function units"
-            DO S = 1, N_GC_SPC
+            DO S = 1, N_GC_DIFF
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = GC_SPC(S)
+               VNAME3D(NVARS3D) = GC_DIFF(S)
                UNITS3D(NVARS3D) = 'CF'
                VDESC3D(NVARS3D) = 'Sensitivity of cost function to
      %              emissions of ' //
      &              TRIM(VNAME3D(NVARS3D))
             END DO
 
-            NVARS3D = NVARS3D + 1
-            VTYPE3D(NVARS3D) = M3REAL
-            VNAME3D(NVARS3D) = 'RHOJ'
-            UNITS3D(NVARS3D) = 'CF'
-            VDESC3D(NVARS3D) = 'Sensitivity of cost function to
-     &           emissions of  ' //
-     &           TRIM(VNAME3D(NVARS3D))
+!            NVARS3D = NVARS3D + 1
+!            VTYPE3D(NVARS3D) = M3REAL
+!            VNAME3D(NVARS3D) = 'RHOJ'
+!            UNITS3D(NVARS3D) = 'CF'
+!            VDESC3D(NVARS3D) = 'Sensitivity of cost function to
+!     &           emissions of  ' //
+!     &           TRIM(VNAME3D(NVARS3D))
 
 !     Aerosol species - slc.7.2014
-            DO S = 1, N_AE_SPC
+            DO S = 1, N_AE_DIFF
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = AE_SPC(S)
+               VNAME3D(NVARS3D) = AE_DIFF(S)
                IF ( VNAME3D(NVARS3D)(1:3) == 'NUM' ) THEN
                   UNITS3D(NVARS3D) = 'CF'
                ELSE IF ( VNAME3D(NVARS3D)(1:3) == 'SRF' ) THEN
@@ -385,10 +387,10 @@ C Note: "CF" stands for "cost function units"
             END DO
 
 !        Ammonia and semi-volatile compounds
-            DO S = 1, N_NR_SPC
+            DO S = 1, N_NR_DIFF
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = NR_SPC(S)
+               VNAME3D(NVARS3D) = NR_DIFF(S)
                UNITS3D(NVARS3D) = 'CF'
                VDESC3D(NVARS3D) = 'Sensitivity of cost function to
      &              emissions of ' //
@@ -396,10 +398,10 @@ C Note: "CF" stands for "cost function units"
             END DO
 
 !        Tracer species - slc.7.2014
-            DO S = 1, N_TR_SPC
+            DO S = 1, N_TR_DIFF
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = TR_SPC(S)
+               VNAME3D(NVARS3D) = TR_DIFF(S)
                UNITS3D(NVARS3D) = 'CF'
                VDESC3D(NVARS3D) = 'Sensitivity of cost function to
      &              emissions of ' //
@@ -430,7 +432,7 @@ C Note: "CF" stands for "cost function units"
             END IF
 
 C Note: "CF" stands for "cost function units"
-            DO S = 1, N_GC_SPC
+            DO S = 1, N_GC_DIFF
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
                VNAME3D(NVARS3D) = GC_SPC(S)
@@ -439,18 +441,18 @@ C Note: "CF" stands for "cost function units"
      &              TRIM(VNAME3D(NVARS3D))
             END DO
 
-            NVARS3D = NVARS3D + 1
-            VTYPE3D(NVARS3D) = M3REAL
-            VNAME3D(NVARS3D) = 'RHOJ'
-            UNITS3D(NVARS3D) = 'CF/m*kg/m**3'
-            VDESC3D(NVARS3D) = 'Normalized ensitivity of cost function to emissions of ' //
-     &           TRIM(VNAME3D(NVARS3D))
+!            NVARS3D = NVARS3D + 1
+!            VTYPE3D(NVARS3D) = M3REAL
+!            VNAME3D(NVARS3D) = 'RHOJ'
+!            UNITS3D(NVARS3D) = 'CF/m*kg/m**3'
+!            VDESC3D(NVARS3D) = 'Normalized ensitivity of cost function to emissions of ' //
+!     &           TRIM(VNAME3D(NVARS3D))
 
 !     Aerosol species - slc.7.2014
-            DO S = 1, N_AE_SPC
+            DO S = 1, N_AE_DIFF
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = AE_SPC(S)
+               VNAME3D(NVARS3D) = AE_DIFF(S)
                IF ( VNAME3D(NVARS3D)(1:3) == 'NUM' ) THEN
                   UNITS3D(NVARS3D) = 'CF/(g/s)'
                ELSE IF ( VNAME3D(NVARS3D)(1:3) == 'SRF' ) THEN
@@ -463,20 +465,20 @@ C Note: "CF" stands for "cost function units"
             END DO
 
 !        Ammonia and semi-volatile compounds
-            DO S = 1, N_NR_SPC
+            DO S = 1, N_NR_DIFF
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = NR_SPC(S)
+               VNAME3D(NVARS3D) = NR_DIFF(S)
                UNITS3D(NVARS3D) = 'CF/(mol/s)'
                VDESC3D(NVARS3D) = 'Normalized ensitivity of cost function to emissions of ' //
      &              TRIM(VNAME3D(NVARS3D))
             END DO
 
 !        Tracer species - slc.7.2014
-            DO S = 1, N_TR_SPC
+            DO S = 1, N_TR_DIFF
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = TR_SPC(S)
+               VNAME3D(NVARS3D) = TR_DIFF(S)
                UNITS3D(NVARS3D) = 'CF/(mol/s)'
                VDESC3D(NVARS3D) = 'Normalized ensitivity of cost function to emissions of ' //
      &              TRIM(VNAME3D(NVARS3D))
@@ -532,6 +534,7 @@ C-----------------------------------------------------------------------
       END IF
 
       WRITE(*,*) 'WR_ADJ_FILE, ARRAY(10,10,1,22): ',ARRAY(10,10,1,22)
+      WRITE(*,*) 'WR_ADJ_FILE, ARRAY(10,10,1,16): ',ARRAY(10,10,1,16)
       WRITE(*,*) 'JDATE.TIME: ',JDATE, JTIME
 
       IF ( .NOT. WRITE3(ADJ_FILE, ALLVAR3, JDATE, JTIME, ARRAY) ) THEN
@@ -680,18 +683,18 @@ C Get file characteristics of ADJ_FILE
       END IF
 
 !     Debug (6.2014.slc)
-      WRITE(*,*) 'NVARS3D: ',NVARS3D
-      WRITE(*,*) 'VNAME3D(1): ',VNAME3D(1)
-      WRITE(*,*) 'FTYPE3D: ',FTYPE3D
-      WRITE(*,*) 'SDATE3D: ',SDATE3D
+!      WRITE(*,*) 'NVARS3D: ',NVARS3D
+!      WRITE(*,*) 'VNAME3D(1): ',VNAME3D(1)
+!      WRITE(*,*) 'FTYPE3D: ',FTYPE3D
+!      WRITE(*,*) 'SDATE3D: ',SDATE3D
 
-      WRITE(*,*) 'STRTCOL: ',STRTCOL
-      WRITE(*,*) 'ENDCOL: ',ENDCOL
-      WRITE(*,*) 'STRTROW: ',STRTROW
-      WRITE(*,*) 'ENDROW: ',ENDROW
+!      WRITE(*,*) 'STRTCOL: ',STRTCOL
+!      WRITE(*,*) 'ENDCOL: ',ENDCOL
+!      WRITE(*,*) 'STRTROW: ',STRTROW
+!      WRITE(*,*) 'ENDROW: ',ENDROW
 
-      WRITE(*,*) 'JDATE: ',JDATE
-      WRITE(*,*) 'JTIME: ',JTIME
+!      WRITE(*,*) 'JDATE: ',JDATE
+!      WRITE(*,*) 'JTIME: ',JTIME
 
       K = 0
       ! Specify chemical species based on index in *_SPC files 
@@ -711,14 +714,13 @@ C Get file characteristics of ADJ_FILE
 
       ELSE
             
-         LENROW = NROWS - 1
-         LENCOL = NCOLS - 1
+         LENROW = NROWS 
+         LENCOL = NCOLS   
+!         WRITE(*,*) 'LENROW: ',LENROW, ', LENCOL: ',LENCOL
          DO R = 1, LENROW
             DO C = 1, LENCOL
-!              WRITE(*,*) 'C: ',C,' R: ',R
                RARRAY = R + STRTROW - 1
                CARRAY = C + STRTCOL - 1
-!              WRITE(*,*) 'RARRAY: ',RARRAY,' CARRAY: ',CARRAY
                ARRAY(CARRAY, RARRAY, 1, V) = BUFFER(C, R, 1)
             END DO
          END DO

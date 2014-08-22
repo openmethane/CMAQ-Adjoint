@@ -163,11 +163,7 @@ C-----------------------------------------------------------------------
 
       CALL COUPLE(LGRID, JDATE, JTIME, TSTEP)
 
-      WRITE(*,*) 'sciproc, before VDIFF_BWD - lgrid(10,10,1,22):',LGRID(10,10,1,22)
-      WRITE(*,*) 'sciproc, before VDIFF_BWD - lgrid_em(10,10,1,22):',LGRID_EM(10,10,1,22)
       CALL VDIFF_BWD(LGRID, LGRID_EM, LGRID_EM_SF, JDATE, JTIME, TSTEP)
-      WRITE(*,*) 'sciproc, after VDIFF_BWD - lgrid(10,10,1,22): ',LGRID(10,10,1,22)
-      WRITE(*,*) 'sciproc, after VDIFF_BWD - lgrid_em(10,10,1,22): ',LGRID_EM(10,10,1,22)
 
       RETURN
       END

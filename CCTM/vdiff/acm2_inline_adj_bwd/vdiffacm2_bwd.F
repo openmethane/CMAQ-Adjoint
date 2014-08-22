@@ -247,19 +247,8 @@ C-----------------------------------------------------------------------
          ! CCRID_BWD_EM or CGRID_EM_SF_BWD through every subroutine,
          ! just allocate them here. The first time only is necessary
          ! because they are kept in the adj_array_mod module.
-!         N_COL_CGRID = SIZE ( CGRID_BWD,1 )
-!         WRITE(*,*) 'N_COL_CGRID: ',N_COL_CGRID
-!         N_ROW_CGRID = SIZE ( CGRID_BWD,2 )
-!         WRITE(*,*) 'N_ROW_CGRID: ',N_ROW_CGRID
-!         N_LAY_CGRID = SIZE ( CGRID_BWD,3 )
-!         WRITE(*,*) 'N_LAY_CGRID: ',N_LAY_CGRID
          N_SPC_CGRID = SIZE ( CGRID_BWD,4 )
-         write(*,*) 'n_spc_diff: ',N_SPC_DIFF
-!         WRITE(*,*) 'N_SPC_CGRID: ',N_SPC_CGRID
 
-!     &        CGRID_EM_BWD(N_COL_CGRID,N_ROW_CGRID,N_LAY_CGRID,N_SPC_CGRID ),
-!     &        CGRID_EM_SF_BWD(N_COL_CGRID,N_ROW_CGRID,N_LAY_CGRID,N_SPC_CGRID ),
- 
          ALLOCATE(
      &        CGRID( 1:NCOLS,1:NROWS,1:1,1:N_SPC_CGRID ),
      &        CNGRD_BWD( N_SPC_CGRID,NLAYS,MY_NCOLS,MY_NROWS ),
@@ -428,8 +417,6 @@ C EDDYV returned = Kz, where Kz is in m**2/sec
 C Read emissions from checkpoint file
       CALL CHK_FILE_READ ( ADJ_EMIS_CHK, MDATE, MTIME, VDEMIS_VD )
       CALL CHK_FILE_READ ( ADJ_EMIST_CHK, MDATE, MTIME, EMIST )
-      write(*,*) 'vdemis_vd(10,10,1,8): ',vdemis_vd(10,10,1,8)
-      write(*,*) 'emist(10,10,1,16): ',emist(10,10,1,16)
 
 C----------------------------------------------
 C RESET GLOBAL ADJOINT VARIABLES
@@ -456,62 +443,49 @@ C----------------------------------------------
 
       N_SPC_CGRID = SIZE ( CGRID_BWD,4 )
       N_SPC_LGRID_EM = SIZE (cgrid_em_bwd, 4)
-      WRITE(*,*) '4th dim cgrid_bwd: ',N_SPC_CGRID, N_SPC_LGRID_EM
-!      N_SPC_CGRID = SIZE ( CGRID_EM_BWD,4 )
-!      WRITE(*,*) '4th dim cgrid_em_bwd: ',N_SPC_CGRID
-!      N_SPC_CGRID = SIZE ( CGRID_EM_SF_BWD,4 )
-!      WRITE(*,*) '4th dim cgrid_em_sf_bwd: ',N_SPC_CGRID
 
        ! Recalculate emissions from checkpoint file (mdt|slc.1.2014)
-       IF ( JDATE == 2007161 .AND.  JTIME < 10000 ) THEN
-          ! Allocate PERT Array
-          ALLOCATE ( PERT ( MY_NCOLS, MY_NROWS, EMLAYS, N_SPC_DIFF )
-     &                 , STAT = ALLOCSTAT )
-          IF ( ALLOCSTAT .NE. 0 ) THEN
-             XMSG = 'PERT  memory allocation failed'
-             CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
-          END IF
-          ! Always include the PERT = 1.0 to ensure that all
-          ! emissions
-          ! other than that perturbed are constant.
-          PERT( :,:,:,: ) = 1.0
+!       IF ( JDATE == 2007161 .AND.  JTIME < 10000 ) THEN
+!          ! Allocate PERT Array
+!!          ALLOCATE ( PERT ( MY_NCOLS, MY_NROWS, EMLAYS, N_SPC_DIFF )
+!     &                 , STAT = ALLOCSTAT )
+!          IF ( ALLOCSTAT .NE. 0 ) THEN
+!             XMSG = 'PERT  memory allocation failed'
+!             CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
+!          END IF
+!          ! Always include the PERT = 1.0 to ensure that all
+!          ! emissions
+!          ! other than that perturbed are constant.
+!          PERT( :,:,:,: ) = 1.0
+!          EM_SF = 1.0
+!!          WRITE(LOGDEV,*) 'Not applying emission perturbation'
+!         ! Perturb one species in specific location or column
+!!          PERT(25,:,:,: ) = 1.0000001   ! ASO4J
+!!          PERT(31,:,:,: ) = 1.0001    ! AECJ
+!!          PERT(8,:,2:6,17:22 ) = 1.10    ! CO
+!!          PERT(:,:,1,16 ) = 1.10    ! CO
+!          WRITE(LOGDEV,*) 'Applying emission perturbation'
+!!debug,mdt
+!          DO V = 1, N_SPC_DIFF
+!             DO L = 1, EMLAYS   ! scaling factor only applies to level 1
+!                DO R = 1, MY_NROWS
+!                   DO C = 1, MY_NCOLS
+!                      EM_SF(C, R, 1, V) = EM_SF(C, R, 1, V) *
+!     &                                    PERT( C, R, 1, V)
+!                   END DO ! Col
+!                END DO ! Row
+!             END DO ! Layer
+!          END DO ! Species
+!       ELSE
+!          ! Always include em_sf  = 1.0 to ensure that all emissions
+!          ! other than that perturbed are constant.
           EM_SF = 1.0
-!          WRITE(LOGDEV,*) 'Not applying emission perturbation'
-         ! Perturb one species in specific location or column
-!          PERT(25,:,:,: ) = 1.0000001   ! ASO4J
-!          PERT(31,:,:,: ) = 1.0001    ! AECJ
-!          PERT(8,:,2:6,17:22 ) = 1.10    ! CO
-          PERT(:,:,1,16 ) = 1.10    ! CO
-          WRITE(LOGDEV,*) 'Applying emission perturbation'
-!debug,mdt
-          DO V = 1, N_SPC_DIFF
-             DO L = 1, EMLAYS   ! scaling factor only applies to level 1
-                DO R = 1, MY_NROWS
-                   DO C = 1, MY_NCOLS
-                      EM_SF(C, R, 1, V) = EM_SF(C, R, 1, V) *
-     &                                    PERT( C, R, 1, V)
-                   END DO ! Col
-                END DO ! Row
-             END DO ! Layer
-          END DO ! Species
-       ELSE
-          ! Always include em_sf  = 1.0 to ensure that all emissions
-          ! other than that perturbed are constant.
-          EM_SF = 1.0
-       END IF ! Date and time qualification
+!       END IF ! Date and time qualification
 
 
-      write(*,*) 'before rev_em_bwd, cgrid_em_bwd(10,10,1,16):',
-     &           cgrid_em_bwd(10,10,1,16)
-      write(*,*) 'before rev_em_bwd, cgrid_em_sf_bwd(10,10,1,16):',
-     &           cgrid_em_sf_bwd(10,10,1,16)
       call rev_cgrid_bwd( cngrd_bwd, mdate, mtime, cgrid_bwd )
       call rev_em_bwd( cngrd_em_bwd, mdate, mtime, cgrid_em_bwd )
       call rev_em_bwd( cngrd_em_sf_bwd, mdate, mtime, cgrid_em_sf_bwd )
-      write(*,*) 'after rev_em_bwd, cngrd_em_bwd(16,1,10,10):',
-     &           cngrd_em_bwd(16,1,10,10)
-      write(*,*) 'after rev_em_bwd, cngrd_em_sf_bwd(16,1,10,10):',
-     &           cngrd_em_sf_bwd(16,1,10,10)
       do r = 1, my_nrows
         do c = 1, my_ncols
           dtlim = dtsec
@@ -565,10 +539,10 @@ C----------------------------------------------
           end do
           
           ! dbg.slc.7.2014
-          if (c == 10 .and. r == 10 ) then
-             write(*,*) 'current minus checkpointed CO emis (10,10): ', emis(16,1)-EMIST(10,10,1,16)
-             write(*,*) 'emis: ', emis(16,1) 
-          endif  
+!          if (c == 10 .and. r == 10 ) then
+!             write(*,*) 'current minus checkpointed CO emis (10,10): ', emis(16,1)-EMIST(10,10,1,16)
+!             write(*,*) 'emis: ', emis(16,1) 
+!          endif  
           
           do l = 1, nlays
             eddy(l) = seddy(l,c,r)
@@ -585,11 +559,6 @@ C----------------------------------------------
             do v = 1, n_spc_diff
               conc_bwd(v,l) = conc_bwd(v,l)+cngrd_bwd(diff_map(v),l,c,r)
               cngrd_bwd(diff_map(v),l,c,r) = 0.
-              if (r == 1 .AND. c == 1 .AND. l == 1 .AND. v == 16) then
-                 write(*,*) 'first addition: ',cngrd_em_bwd(v,l,c,r)
-                 write(*,*) 'before first addition: ',conc_em_bwd(v,l)
-                 write(*,*) 'first em_sf adj: ',cngrd_em_sf_bwd(v,l,c,r)
-              endif
               conc_em_bwd(v,l) = conc_em_bwd(v,l)+cngrd_em_bwd(v,l,c,r)
               cngrd_em_bwd(v,l,c,r) = 0.
               conc_em_sf_bwd(v,l) = conc_em_sf_bwd(v,l)+cngrd_em_sf_bwd(v,l,c,r)
@@ -678,13 +647,6 @@ C----------------------------------------------
 !                   and CNGRD_EM_BWD_SF (6.2014.slc|mdt)
               conc_em_sf_bwd(v,1) = conc_em_sf_bwd(v,1) + emis(v,1) 
      &                      * dd_bwd(v,1)
-              if (r == 10 .AND. c == 10 .AND. v == 16) then
-                 write(*,*) 'second addition:',em_sf(c,r,m,v)*dd_bwd(v,1)
-                 write(*,*) 'added to em_sf: ',emis(v,m)*dd_bwd(v,1)
-                 write(*,*) 'em_sf: ',em_sf(c,r,m,v)
-                 write(*,*) 'dd_bwd: ',dd_bwd(v,1)
-                 write(*,*) 'emis: ',emis(v,1)
-              endif
               conc_em_bwd(v,1) = conc_em_bwd(v,1) + em_sf(c,r,m,v)
      &                      * dd_bwd(v,1)
               conc_bwd(v,2) = conc_bwd(v,2)+dd_bwd(v,1)*lfac1
@@ -729,14 +691,7 @@ C----------------------------------------------
                   if ( l .le. emlays ) then
                     conc_em_sf_bwd(v,l) = conc_em_sf_bwd(v,l) + emis(v,l)
      &                                 * dd_bwd(v,l)
-!      Layer index is always 1 (=m) for em_sf because it is only defined for layer 1
-                    if (r == 1 .AND. c == 1 .AND. v == 16) then
-                       write(*,*) 'second addition:',em_sf(c,r,m,v)*dd_bwd(v,1)
-                       write(*,*) 'added to em_sf: ',emis(v,l)*dd_bwd(v,1)
-                       write(*,*) 'em_sf: ',em_sf(c,r,m,v)
-                       write(*,*) 'dd_bwd: ',dd_bwd(v,l)
-                       write(*,*) 'emis: ',emis(v,l)
-                    endif 
+!!      Layer index is always 1 (=m) for em_sf because it is only defined for layer 1
                     conc_em_bwd(v,l) = conc_em_bwd(v,l) + em_sf(c,r,m,v)
      &                                 * dd_bwd(v,l)
                   end if
@@ -794,15 +749,9 @@ C----------------------------------------------
           end do
           do l = 1, nlays
             do v = 1, n_spc_diff
-              cngrd_bwd(v,l,c,r) = cngrd_bwd(v,l,c,r)+conc_bwd(v,l)
+              cngrd_bwd(diff_map(v),l,c,r) = cngrd_bwd(diff_map(v),l,c,r)+conc_bwd(v,l)
               conc_bwd(v,l) = 0.
-!              if (r == 1 .AND. c == 1 .AND. l == 1 .AND. v == 1) then
-!                 write(*,*) 'before final summation:',cngrd_em_bwd(diff_map(v),l,c,r)
-!              endif
               cngrd_em_bwd(v,l,c,r) = cngrd_em_bwd(v,l,c,r)+conc_em_bwd(v,l)
-!              if (r == 1 .AND. c == 1 .AND. l == 1 .AND. v == 1) then
-!                 write(*,*) 'after final summation:',cngrd_em_bwd(diff_map(v),l,c,r)
-!              endif
               conc_em_bwd(v,l) = 0.
               cngrd_em_sf_bwd(v,l,c,r) = cngrd_em_sf_bwd(v,l,c,r)+conc_em_sf_bwd(v,l)
               conc_em_sf_bwd(v,l) = 0.
@@ -811,18 +760,8 @@ C----------------------------------------------
         end do
       end do
               
-      write(*,*) 'before conv_cgrid_bwd, cngrd_em_bwd(16,1,10,10):',
-     &           cngrd_em_bwd(16,1,10,10)
-      write(*,*) 'before conv_cgrid_bwd, cngrd_em_sf_bwd(16,1,10,10):',
-     &           cngrd_em_sf_bwd(16,1,10,10)
-      
       call conv_cgrid_bwd( cgrid_bwd, mdate, mtime, cngrd_bwd )
       call conv_em_bwd( cgrid_em_bwd, mdate, mtime, cngrd_em_bwd )
       call conv_em_bwd( cgrid_em_sf_bwd, mdate, mtime, cngrd_em_sf_bwd )
-
-      write(*,*) 'after conv_em_bwd, cgrid_em_bwd(10,10,1,16):',
-     &           cgrid_em_bwd(10,10,1,16)
-      write(*,*) 'after conv_em_bwd, cgrid_em_sf_bwd(10,10,1,16):',
-     &           cgrid_em_sf_bwd(10,10,1,16)
 
       end subroutine vdiff_bwd
