@@ -24,6 +24,7 @@
 # source ./setcase_test
 
 #> Set M3DATA:
+# CHANGE: set to the location of the data
  set M3DATA = /work/CLIMSIM/rpe/cmaq_adj/test_data
 
 #> Check that M3DATA is set:
@@ -34,9 +35,11 @@
  echo " "; echo " Input data path, M3DATA set to $M3DATA"; echo " "
 
 #> Set the working directory:
+# CHANGE: set to the scripts directory 
  set BASE     = ~/cucmaqadj/cmaq_adj/scripts
 
 #> Application name (no default)
+# CHANGE: provide preferred name for identifying run
  set APPL     = adj_test
 
  if ( ! $?APPL ) then
@@ -45,6 +48,7 @@
  endif
 
 #> Run mode: "ser" or "par" (default is par)
+# CHANGE: uncomment if serial run is desired
 #set RM       = ser
  if ( ! $?RM ) then
     echo 'RM (run mode) was not set; this will be a parallel run'
@@ -54,15 +58,16 @@
     exit 1
  endif
 
- set YR = 7
- set YER = 07
- set YEAR = 2007
- set MONTH = 06             # does not cross months yet
- set FIRSTDAY  = 20070610   # first day YYYYMMDD
- set DAY1 = 10              # first day
- set EDAY = 13              # end day
- set IDAY = 10              # day for initial conditions
+ set YR = 8
+ set YER = 08
+ set YEAR = 2008
+ set MONTH = 04             # does not cross months yet
+ set FIRSTDAY  = 20080401   # first day YYYYMMDD
+ set DAY1 = 01              # first day
+ set EDAY = 03              # end day
+ set IDAY = 01              # day for initial conditions
 
+# CHANGE: provide location consistent with build script
  set APPL_CASE = par_fwd
  set CFG  = adj_bnmk
  set EXEC = $BASE/../BLD_${APPL_CASE}/ADJOINT_FWD
@@ -70,6 +75,7 @@
  cd $BASE; date; cat ${CFG}; echo "    "; set echo
 
 #> horizontal domain decomposition
+# CHANGE: set number of processors to be consistent with queue request
  if ( $RM == 'ser' ) then
     setenv NPCOL_NPROW "1 1"; set NPROCS   = 1 # single processor setting
  else
@@ -135,15 +141,12 @@
 #> stop on inconsistent input file [ T | Y | F | N ]
  setenv FL_ERR_STOP F
 
-#> set floor file (neg concs)
- setenv FLOOR_FILE $BASE/FLOOR_${APPL_CASE}
-
 #> horizontal grid defn; check GRIDDESC file for GRID_NAME options
- setenv GRIDDESC $M3DATA/other/GRIDDESC
- setenv GRID_NAME CMAQ-BENCHMARK 
+ setenv GRIDDESC $M3DATA/GRIDDESC3
+ setenv GRID_NAME C_36_OAQPS 
 
 #> species for standard conc
- setenv CONC_SPCS "O3 NO ANO3I ANO3J NO2 FORM ISOP ANH4J ASO4I ASO4J"
+ setenv CONC_SPCS "O3 NO NO2 FORM ISOP"
 
 #> layer range for standard conc
  setenv CONC_BLEV_ELEV " 1 4"
@@ -159,11 +162,11 @@
 
 #> input files and directories
 
- set OCEANpath = ${M3DATA}/other
- set OCEANfile = surf_BENCHMARK.ncf
+ set OCEANpath = ${M3DATA}/emis/2008
+ set OCEANfile = us36_surf.ncf
 
- set GC_BCpath = $M3DATA/bcon
- set GC_BCfile = BCON_CMAQ-BENCHMARK_profile
+ set GC_BCpath = ${M3DATA}/bcon
+ set GC_BCfile = BCON_cb05cl_ae5_aq_default_24L_36US 
 
 #set TR_EMpath =
 #set TR_EMfile =
@@ -174,25 +177,25 @@ if ( $MONTH == 01 ) then
 else if ( $MONTH == 02 ) then
  set juladd = 31
 else if ( $MONTH == 03 ) then
- set juladd = 59  #60
+ set juladd = 60  #59
 else if ( $MONTH == 04 ) then
- set juladd = 90  #91
+ set juladd = 91  #90
 else if ( $MONTH == 05 ) then
- set juladd = 120 #121
+ set juladd = 121 #120
 else if ( $MONTH == 06 ) then
- set juladd = 151 #152
+ set juladd = 152 #151
 else if ( $MONTH == 07 ) then
- set juladd = 181 #182
+ set juladd = 182 #181
 else if ( $MONTH == 08 ) then
- set juladd = 212 #213
+ set juladd = 213 #212
 else if ( $MONTH == 09 ) then
- set juladd = 243 #244
+ set juladd = 244 #243
 else if ( $MONTH == 10 ) then
- set juladd = 273 #274
+ set juladd = 274 #273
 else if ( $MONTH == 11 ) then
- set juladd = 304 #305
+ set juladd = 305 #304
 else if ( $MONTH == 12 ) then
- set juladd = 334 #335
+ set juladd = 335 #334
 else
  echo " MONTH MUST BE BETWEEN 1-12 "
  exit (1)
@@ -227,18 +230,18 @@ while ( $day <= $eday )
 #> set ancillary log file name extensions
  setenv CTM_APPL $APPL_CASE.$FLDATE
 
-#> set log file [ default = unit 6 ]; uncomment to write standard output to a log
- setenv LOGFILE $OUTDIR/$APPL_CASE.$FLDATE.log
-
 #> remove existing output files?
 #set DISP = delete
 #set DISP = update
  set DISP = keep
 
 #> output files and directories
-#> Change OUTDIR to job-specific location.
+#> CHANGE: set OUTDIR to job-specific location.
  set OUTDIR   = /work/CLIMSIM/slc/data/cmaqadj_bnmk/official_testcase/model_output 
  if ( ! -d "$OUTDIR" ) mkdir -p $OUTDIR
+
+ #> set log file [ default = unit 6 ]; uncomment to write standard output to a log
+ setenv LOGFILE $OUTDIR/$APPL_CASE.$FLDATE.log
 
  set CONCfile  = CONC.${FLDATE}    # CTM_CONC_1
  set ACONCfile = ACONC.${FLDATE}   # CTM_ACONC_1
@@ -258,6 +261,9 @@ while ( $day <= $eday )
  set RJ1file   = RJ_1.${FLDATE}    # CTM_RJ_1
  set RJ2file   = RJ_2.${FLDATE}    # CTM_RJ_2
 
+#> set floor file (neg concs)
+ setenv FLOOR_FILE $OUTDIR/FLOOR_${APPL_CASE}
+
  setenv ADJ_CHEM_CHK "$OUTDIR/CHEM_CHK.${FLDATE} -v"
  setenv ADJ_VDIFF_CHK "$OUTDIR/VDIFF_CHK.${FLDATE} -v"
  setenv ADJ_AERO_CHK "$OUTDIR/AERO_CHK.${FLDATE} -v"
@@ -265,16 +271,18 @@ while ( $day <= $eday )
  setenv ADJ_VA_RHOJ_CHK "$OUTDIR/VA_RHOJ_CHK.${FLDATE} -v"
  setenv ADJ_HADV_CHK "$OUTDIR/HADV_CHK.${FLDATE} -v"
  setenv ADJ_VADV_CHK "$OUTDIR/VADV_CHK.${FLDATE} -v"
+ setenv ADJ_EMIS_CHK "$OUTDIR/EMIS_CHK.${FLDATE} -v"
+ setenv ADJ_EMIST_CHK "$OUTDIR/EMIST_CHK.${FLDATE} -v"
 
  setenv CTM_XFIRST_OUT $OUTDIR/XFIRST.${FLDATE}
 
  setenv EMISDATE ${YEAR}${MONTH}${STDAT}
- set EMISpath  = ${M3DATA}/emis
- set EMISfile = emis_CMAQ-BENCHMARK_${EMISDATE}.ncf
+ set EMISpath  = ${M3DATA}/emis/2008
+ set EMISfile = emis_mole_all_${EMISDATE}_36US1_cmaq_cb05_soa_2008af_08b2.ncf
 
  if ( $FLDATE == $FIRSTDAY ) then
    set GC_ICpath = $M3DATA/icon
-   set GC_ICfile = ICON_CMAQ-BENCHMARK_profile 
+   set GC_ICfile = ICON_cb05cl_ae5_aq_default_24L_36US 
    setenv CTM_XFIRST_IN
  else
    set GC_ICpath = $OUTDIR
@@ -282,7 +290,7 @@ while ( $day <= $eday )
    setenv CTM_XFIRST_IN $OUTDIR/XFIRST.${yesterday}
  endif
 
- set METpath   = $M3DATA/mcip 
+ set METpath   = $M3DATA/met/M_04_2008 
  set extn      = $YER$MONTH$STDAT
  set GC2file = GRIDCRO2D_${extn}
  set GD2file = GRIDDOT2D_${extn}
@@ -296,7 +304,7 @@ while ( $day <= $eday )
 
 #> 7-level photolysis data w/ file header
  set JVALpath  = $M3DATA/jproc
- set JVALfile  = JTABLE_2006213 
+ set JVALfile  = JTABLE_${STDATE}
 
  set AE_ICpath = $GC_ICpath
  set NR_ICpath = $GC_ICpath
@@ -313,6 +321,7 @@ while ( $day <= $eday )
  set TR_BCfile = $GC_BCfile
 
 #> input and output files and directories (boilerplate)
+# CHANGE: set to the appropriate in_out.q file, usually in the BASE directory 
  source /home/slc/cucmaqadj/cmaq_adj/scripts/in_out.q
  if ( $status ) exit 1
 
@@ -360,7 +369,8 @@ while ( $day <= $eday )
 #> Executable call for single PE
     time $EXEC
  else
-#> Executable call for multiple PE, set location of MPIRUN script
+#> Executable call for multiple PE
+# CHANGE: set location of MPIRUN script
 #    set MPIRUN = /opt/mpich/bin/mpirun
 #    set TASKMAP = $HOME/loc/machines
 #    cat $TASKMAP
