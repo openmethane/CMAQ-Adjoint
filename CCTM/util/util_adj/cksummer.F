@@ -82,10 +82,10 @@ C Local variables:
 
       CHARACTER( 16 ), SAVE :: PNAME = 'CKSUMMER'
       CHARACTER( 96 ) :: XMSG = ' '
-!     CHARACTER( 16 ), SAVE :: OUTNAME = 'FLOOR_FILE'
+      CHARACTER( 16 ), SAVE :: OUTNAME = 'FLOOR_FILE'
       CHARACTER( 16 ) :: APPL = 'CTM_APPL'
       CHARACTER( 48 ) :: EQNAME
-      CHARACTER(  6 ) :: PRESTR = 'FLOOR_'
+!      CHARACTER(  6 ) :: PRESTR = 'FLOOR_'
       CHARACTER(  3 ) :: CMYPE
       CHARACTER( 96 ), SAVE :: DEVNAME ! Name of output file.
 
@@ -117,21 +117,22 @@ C Get CGRID offsets
 !        GCELLS = SUBST_GLOBAL_SUM ( FLOAT( MY_NCOLS * MY_NROWS * NLAYS ) )
          LCELLS = FLOAT( MY_NCOLS * MY_NROWS * NLAYS )
 
-!        CALL ENVSTR( OUTNAME, 'Floor file', PNAME, DEVNAME, STATUS )
-!        IF ( STATUS .NE. 0 ) WRITE( LOGDEV,'(5X, A)' ) 'Floor file'
-!        IF ( STATUS .EQ. 1 ) THEN
-!           XMSG = 'Environment variable improperly formatted'
-!           CALL M3EXIT( PNAME, JDATE, JTIME, XMSG, XSTAT2 )
-!           ELSE IF ( STATUS .EQ. -1 ) THEN
-!           XMSG = 'Environment variable set, but empty ... Using default:'
-!           WRITE( LOGDEV,'(5X, A, I9)' ) XMSG, JTIME
-!           ELSE IF ( STATUS .EQ. -2 ) THEN
-!           XMSG = 'Environment variable not set ... Using default:'
-!           WRITE( LOGDEV,'(5X, A, I9)' ) XMSG, JTIME
-!           END IF
-         CALL NAMEVAL ( APPL, EQNAME )
-         WRITE( CMYPE,'(I3.3)' ) MYPE
-         DEVNAME = PRESTR // CMYPE // '.' // EQNAME( 1:TRIMLEN( EQNAME ) )
+        CALL ENVSTR( OUTNAME, 'Floor file', PNAME, DEVNAME, STATUS )
+        IF ( STATUS .NE. 0 ) WRITE( LOGDEV,'(5X, A)' ) 'Floor file'
+        IF ( STATUS .EQ. 1 ) THEN
+           XMSG = 'Environment variable improperly formatted'
+           CALL M3EXIT( PNAME, JDATE, JTIME, XMSG, XSTAT2 )
+           ELSE IF ( STATUS .EQ. -1 ) THEN
+           XMSG = 'Environment variable set, but empty ... Using default:'
+           WRITE( LOGDEV,'(5X, A, I9)' ) XMSG, JTIME
+           ELSE IF ( STATUS .EQ. -2 ) THEN
+           XMSG = 'Environment variable not set ... Using default:'
+           WRITE( LOGDEV,'(5X, A, I9)' ) XMSG, JTIME
+        END IF
+!        redirect floor file to outdir - 12.2014.slc
+!         CALL NAMEVAL ( APPL, EQNAME )
+!         WRITE( CMYPE,'(I3.3)' ) MYPE
+!         DEVNAME = PRESTR // CMYPE // '.' // EQNAME( 1:TRIMLEN( EQNAME ) )
 
          END IF
 
