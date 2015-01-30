@@ -139,6 +139,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
          LOGDEV = INIT3( )
 
          IF( MECHNAME .NE. 'CB05CL_AE5_AQ' .AND.
+     &       MECHNAME .NE. 'CB05CL_AE5_AQ_NOAERO' .AND.
      &       MECHNAME .NE. 'CB05CL_AE5CA_AQ' .AND.
      &       MECHNAME .NE. 'CB05CL_AE5ST_AQ' ) THEN
              MSG = 'This version of the EBI solver can only be used with'
