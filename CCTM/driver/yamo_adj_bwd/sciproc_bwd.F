@@ -52,8 +52,8 @@ C Arguments:
       REAL, POINTER :: LGRID_EM(:, :, :, :) ! adjoint variable
       REAL, POINTER :: LGRID_EM_SF(:, :, :, :) ! adjoint variable
 !      REAL, POINTER :: LGRID_EM_NRM(:, :, :, :) ! adjoint variable
-      REAL, POINTER :: LGRID_FRC(:, :, :, :) ! adjoint variable
-      REAL, POINTER :: LGRID_FRC_TOT(:, :, :, :) ! adjoint variable
+!      REAL, POINTER :: LGRID_FRC(:, :, :, :) ! adjoint variable
+!      REAL, POINTER :: LGRID_FRC_TOT(:, :, :, :) ! adjoint variable
       INTEGER, INTENT(IN OUT) :: JDATE ! current model date, coded YYYYDDD
       INTEGER, INTENT(IN OUT) :: JTIME ! current model time, coded HHMMSS
       INTEGER, INTENT(IN) :: TSTEP(2) ! time step vector (HHMMSS)
@@ -151,15 +151,15 @@ C-----------------------------------------------------------------------
 
       CALL CHEM_BWD(LGRID, JDATE, JTIME, TSTEP)
 
-!      CALL CLDPROC_BWD(LGRID, JDATE, JTIME, TSTEP)
+      CALL CLDPROC_BWD(LGRID, JDATE, JTIME, TSTEP)
 
       CALL DECOUPLE(LGRID, SDATE, STIME, TSTEP)
 
-!      CALL HDIFF_BWD(LGRID, JDATE, JTIME, TSTEP)
+      CALL HDIFF_BWD(LGRID, JDATE, JTIME, TSTEP)
 
       CALL ZADV_BWD(LGRID, JDATE, JTIME, TSTEP)
 
-!      CALL HADV_BWD(LGRID, JDATE, JTIME, TSTEP, ASTEP, XFIRST)
+      CALL HADV_BWD(LGRID, JDATE, JTIME, TSTEP, ASTEP, XFIRST)
 
       CALL COUPLE(LGRID, JDATE, JTIME, TSTEP)
 
