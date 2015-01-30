@@ -98,7 +98,8 @@ C----------------------------------------------
 C ROUTINE BODY
 C----------------------------------------------
       if (firstime) then
-        write(*,*) 'Calling conv_cgrid_bwd' ! dbg.7.2014.slc
+        firstime = .FALSE.
+        !write(*,*) 'Calling conv_cgrid_bwd' ! dbg.7.2014.slc
         CALL CGRID_MAP(NSPCSD, GC_STRT, AE_STRT, NR_STRT, TR_STRT)
         CALL SUBHFILE(MET_CRO_3D, GXOFF, GYOFF,
      &       STRTCOLMC3, ENDCOLMC3, STRTROWMC3, ENDROWMC3)

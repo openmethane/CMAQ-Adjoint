@@ -86,11 +86,18 @@ C Local Variables:
 
       INTEGER, ALLOCATABLE, SAVE :: ASTEP(:) ! advection time steps
       LOGICAL, ALLOCATABLE, SAVE :: XFIRST(:)
-      REAL, POINTER :: LGRID(:, :, :, :)
-      REAL, POINTER :: LGRID_FRC(:, :, :, :)
-      REAL, POINTER :: LGRID_FRC_TOT(:, :, :, :)
-      REAL, POINTER :: LGRID_EM(:, :, :, :)
-      REAL, POINTER :: LGRID_EM_SF(:, :, :, :)
+      REAL, ALLOCATABLE :: LGRID_FRC(:, :, :, :)
+      REAL, ALLOCATABLE :: LGRID_FRC_TOT(:, :, :, :)
+      REAL, ALLOCATABLE :: LGRID(:, :, :, :)
+      REAL, ALLOCATABLE :: LGRID_EM(:, :, :, :)
+      REAL, ALLOCATABLE :: LGRID_EM_SF(:, :, :, :)
+      !REAL, ALLOCATABLE, TARGET :: PCGRID_EM(:, :, :, :)
+      !REAL, ALLOCATABLE, TARGET :: PCGRID_EM_SF(:, :, :, :)
+      ! Transfer of data from the read adjoint forcing routine to LGRID was not working with 
+      !    with the pointer declaration.
+      !REAL, POINTER :: LGRID(:, :, :, :)
+      !REAL, POINTER :: LGRID_EM(:, :, :, :)
+      !REAL, POINTER :: LGRID_EM_SF(:, :, :, :)
 !      REAL, POINTER :: LGRID_EM_NRM(:, :, :, :)
       
       INTEGER :: ALLOCSTAT
@@ -126,9 +133,9 @@ C Local Variables:
      &                       + N_TR_DIFF)
 
       INTERFACE
-         SUBROUTINE INIT_LGRID(LGRID, SDATE, STIME, EDATE, ETIME, TSTEP, NSTEPS)
+         SUBROUTINE INIT_LGRID(SDATE, STIME, EDATE, ETIME, TSTEP, NSTEPS)
             IMPLICIT NONE
-            REAL, POINTER :: LGRID(:, :, :, :)
+            !REAL, POINTER :: LGRID(:, :, :, :)
             INTEGER, INTENT(OUT) :: SDATE
             INTEGER, INTENT(OUT) :: STIME
             INTEGER, INTENT(OUT) :: EDATE
@@ -152,9 +159,12 @@ C Local Variables:
          SUBROUTINE SCIPROC_BWD(LGRID, LGRID_EM, LGRID_EM_SF, 
      &                          JDATE, JTIME, TSTEP, ASTEP, XFIRST)
             IMPLICIT NONE
-            REAL, POINTER          :: LGRID(:, :, :, :)
-            REAL, POINTER          :: LGRID_EM(:, :, :, :) ! adjoint variable
-            REAL, POINTER          :: LGRID_EM_SF(:, :, :, :) ! adjoint variable
+            REAL, INTENT(INOUT)          :: LGRID(:, :, :, :)
+            REAL, INTENT(INOUT)          :: LGRID_EM(:, :, :, :) ! adjoint variable
+            REAL, INTENT(INOUT)          :: LGRID_EM_SF(:, :, :, :) ! adjoint variable
+            !REAL, POINTER          :: LGRID(:, :, :, :)
+            !REAL, POINTER          :: LGRID_EM(:, :, :, :) ! adjoint variable
+            !REAL, POINTER          :: LGRID_EM_SF(:, :, :, :) ! adjoint variable
             INTEGER, INTENT(INOUT) :: JDATE, JTIME
             INTEGER, INTENT(IN)    :: TSTEP(2)
             INTEGER, INTENT(IN)    :: ASTEP(:)
@@ -197,6 +207,34 @@ C Initialize PCGRID
          CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT2)
       END IF
 
+! Allocate emissions sensitivity arrays (mdt|slc.12.2013)
+!      ALLOCATE(
+!     &     PCGRID_EM_SF(1:NCOLS, 1:NROWS, 1:NLAYS, 1:N_SPC_DIFF),
+!     &     STAT = ALLOCSTAT)
+!      IF ( ALLOCSTAT /= 0 ) THEN
+!         XMSG = 'Failure allocating LGRID_EMIS_SF'
+!         CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
+!      END IF
+
+!      ALLOCATE(
+!     &     PCGRID_EM(1:NCOLS, 1:NROWS, 1:NLAYS, 1:N_SPC_DIFF),
+!     &     STAT = ALLOCSTAT)
+!      IF ( ALLOCSTAT /= 0 ) THEN
+!         XMSG = 'Failure allocating LGRID_EM'
+!         CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
+!      END IF
+
+!      PCGRID_EM    = PCGRID
+!      PCGRID_EM_SF = PCGRID
+       
+!      LGRID => PCGRID(1:NCOLS, 1:NROWS, :, :)
+!      LGRID_EM => PCGRID_EM(1:NCOLS, 1:NROWS, :, :)
+!      LGRID_EM_SF => PCGRID_EM_SF(1:NCOLS, 1:NROWS, :, :)
+
+!      WRITE(*,*) 'In driver'
+!      WRITE(*,*) 'NCOLS: ',NCOLS,' NROWS: ',NROWS
+!      WRITE(*,*) 'NLAYS: ',NLAYS,'NSPCSD: ',NSPCSD
+
 C Allocate memory
       ALLOCATE(
      &     LGRID(1:NCOLS, 1:NROWS, 1:NLAYS, 1:NSPCSD),
@@ -234,14 +272,6 @@ C Allocate memory for adjoint forcing (6.2014.slc)
          CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
       END IF
 
-!      ALLOCATE(
-!     &     LGRID_EM_NRM(1:NCOLS, 1:NROWS, 1:NLAYS, 1:N_SPC_DIFF),
-!     &     STAT = ALLOCSTAT)
-!      IF ( ALLOCSTAT /= 0 ) THEN
-!         XMSG = 'Failure allocating LGRID_EMIS_NRM'
-!         CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
-!      END IF
-
       ALLOCATE(
      &     LGRID_EM(1:NCOLS, 1:NROWS, 1:NLAYS, 1:N_SPC_DIFF),
      &     STAT = ALLOCSTAT)
@@ -261,7 +291,7 @@ C initialize the LGRID array.
       LGRID_FRC(:, :, :, :) = 0.0
       LGRID_FRC_TOT(:, :, :, :) = 0.0
       
-      CALL INIT_LGRID(LGRID, SDATE, STIME, EDATE, ETIME, TSTEP, NSTEPS)
+      CALL INIT_LGRID(SDATE, STIME, EDATE, ETIME, TSTEP, NSTEPS)
 
 C Verify input file header consistency with COORD.EXT and run duration
       CALL FLCHECK(SDATE, STIME, TSTEP(1))
@@ -332,7 +362,8 @@ C Read adjoint forcing from file
             CALL M3EXIT(PNAME, SDATE, STIME, XMSG, XSTAT1)
          ELSE
             CALL RD_FORCE_FILE(LGRID_FRC_TOT, SDATE, STIME) !, ADJ_FORCE)
-!            WRITE(*,*) 'CO forcing at (10,10,1): ',LGRID_FRC_TOT(10,10,1,22)
+!            WRITE(*,*) 'Shape(LGRID_FRC_TOT): ',shape(LGRID_FRC_TOT)
+!            WRITE(*,*) 'O3 forcing at (1,1,1): ',LGRID_FRC_TOT(1,1,1,4)
           END IF
 
          IF ( .NOT. CLOSE3(ADJ_FORCE) ) THEN
@@ -343,29 +374,22 @@ C Read adjoint forcing from file
 C Since offline forcing is based on concentrations averaged over the output time step,
 C   the forcing can simply be allocated evenly to each synchronization time step. (slc.11.2013)
 C        LGRID_FRC and LGRID_FRC_TOT are stored in ADJ_ARRAY_MOD
-          ! dbg.8.2014.slc
-!         LGRID_FRC = LGRID_FRC_TOT / REAL(NREPS)
+         ! dbg.8.2014.slc
+         LGRID_FRC = LGRID_FRC_TOT / REAL(NREPS)
          DO IREP = NREPS, 1, -1
             ! (6.2014.slc)
-!            only forcing at the end of the hour - 8.2014.slc
-!            LGRID(:,:,1,:) = LGRID(:,:,1,:) + LGRID_FRC(:,:,1,:) 
-            IF ( IREP .EQ. NREPS ) THEN
-               LGRID(:,:,1,:) = LGRID(:,:,1,:) + LGRID_FRC_TOT(:,:,1,:)
-!               WRITE(*,*) 'Before SCIPROC_BWD, CO forcing at (10,10,1):',LGRID_FRC(10,10,1,22)
-            ENDIF 
-!            WRITE(*,*) 'Before SCIPROC_BWD, LGRID(10,10,1,22): ',LGRID(10,10,1,22)
-!            WRITE(*,*) 'Before SCIPROC_BWD, LGRID_EM(10,10,1,16): ',LGRID_EM(10,10,1,16)
-!            WRITE(*,*) 'Before SCIPROC_BWD, LGRID_EM_SF(10,10,1,16): ',LGRID_EM_SF(10,10,1,16)
+!           force at each synchronization step (slc.1.2015)
+            LGRID(:,:,1,:) = LGRID(:,:,1,:) + LGRID_FRC(:,:,1,:) 
+
+            ! Call the adjoint sweep of scientific processes 
             CALL SCIPROC_BWD(LGRID, LGRID_EM, LGRID_EM_SF,
      &                       JDATE, JTIME, TSTEP, ASTEP, XFIRST)                     ! science processes
-!            WRITE(*,*) 'After SCIPROC_BWD, LGRID(10,10,1,22): ',LGRID(10,10,1,22)
-!            WRITE(*,*) 'After SCIPROC_BWD, LGRID_EM(10,10,1,16): ',LGRID_EM(10,10,1,16)
-!            WRITE(*,*) 'After SCIPROC_BWD, LGRID_EM_SF(10,10,1,16): ',LGRID_EM_SF(10,10,1,16)
+
             IF ( TRIM(LGRID_OUTPUT_FREQ) == 'SYNC_STEP' ) THEN
                  CALL WR_ADJ_FILE(LGRID, JDATE, JTIME, ADJ_LGRID)
-!                 WRITE(*,*) 'Size CGRID_BWD_EM: ',size(CGRID_BWD_EM)
-!                 WRITE(*,*) 'Size CGRID_BWD_EM_SF: ',size(CGRID_BWD_EM_SF)
-!                 WRITE(*,*) 'Size CGRID_BWD_EM_NRM: ',size(CGRID_BWD_EM_NRM)
+!                 WRITE(*,*) 'Shape CGRID_BWD_EM: ',shape(CGRID_BWD_EM)
+!                 WRITE(*,*) 'Shape CGRID_BWD_EM_SF: ',shape(CGRID_BWD_EM_SF)
+!                 WRITE(*,*) 'Shape CGRID_BWD_EM_NRM: ',shape(CGRID_BWD_EM_NRM)
 !                 LGRID_EM = CGRID_BWD_EM
                  CALL WR_ADJ_FILE(LGRID_EM, JDATE, JTIME, 
      &                            ADJ_LGRID_EM)
@@ -379,14 +403,13 @@ C        LGRID_FRC and LGRID_FRC_TOT are stored in ADJ_ARRAY_MOD
          END DO
          
          IF ( TRIM(LGRID_OUTPUT_FREQ) == 'OUTPUT_STEP' ) THEN
-!            WRITE(*,*) 'driver - lgrid(10,10,1,22): ',LGRID(10,10,1,22)
-!            WRITE(*,*) 'driver - lgrid_em(10,1,1,16): ',LGRID_EM(10,10,1,16)
-!            WRITE(*,*) 'driver - lgrid_em_sf(10,1,1,16): ',LGRID_EM_SF(10,10,1,16)
-!                 WRITE(*,*) 'Size LGRID: ',size(LGRID,4)
-!                 WRITE(*,*) 'Size LGRID_EM: ',size(LGRID_EM,4)
-!                 WRITE(*,*) 'Size LGRID_EM_SF:',size(LGRID_EM_SF,4)
-!                 WRITE(*,*) 'Size LGRID_EM_NRM:
-!                 ',size(LGRID_EM_NRM,4)
+            !WRITE(*,*) 'driver - lgrid(50,50,1,4): ',LGRID(50,50,1,4)
+            !WRITE(*,*) 'driver - lgrid_em(50,50,1,1): ',LGRID_EM(50,50,1,1)
+            !WRITE(*,*) 'driver - lgrid_em_sf(50,50,1,1): ',LGRID_EM_SF(50,50,1,1)
+!                 WRITE(*,*) 'Shape LGRID_FRC: ',shape(LGRID_FRC)
+!                 WRITE(*,*) 'Shape LGRID: ',shape(LGRID)
+!                 WRITE(*,*) 'Shape LGRID_EM: ',shape(LGRID_EM)
+!                 WRITE(*,*) 'Shape LGRID_EM_SF:',shape(LGRID_EM_SF)
 
             CALL WR_ADJ_FILE(LGRID, JDATE, JTIME, ADJ_LGRID)
 !            LGRID_EM = CGRID_BWD_EM
