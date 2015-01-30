@@ -97,7 +97,7 @@ C-----------------------------------------------------------------------
 
       VARDESC =
      &     'LGRID output frequency: SYNC_STEP, OUTPUT_STEP or ONCE (at start time)'
-      LGRID_OUTPUT_FREQ = 'SYNC_STEP'
+      LGRID_OUTPUT_FREQ = 'OUTPUT_STEP'
       CALL ENVSTR('ADJ_LGRID_FREQ', VARDESC, LGRID_OUTPUT_FREQ,
      &     LGRID_OUTPUT_FREQ, STATUS)
       IF ( STATUS /= 0 ) WRITE(LOGDEV, '(5X, A)') VARDESC
@@ -256,7 +256,7 @@ C Note: "CF" stands for "cost function units"
                FDESC3D(K) = ' '
             END DO
 
-            NLAYS3D = NLAYS
+            NLAYS3D = 1 !NLAYS
             NVARS3D = 0
 
             IF ( TRIM(LGRID_OUTPUT_FREQ) == 'SYNC_STEP' ) THEN
@@ -339,7 +339,7 @@ C Note: "CF" stands for "cost function units"
                FDESC3D(K) = ' '
             END DO
 
-            NLAYS3D = NLAYS
+            NLAYS3D = 1 ! NLAYS - only surface value
             NVARS3D = 0
 
             IF ( TRIM(LGRID_OUTPUT_FREQ) == 'SYNC_STEP' ) THEN
@@ -420,7 +420,7 @@ C Note: "CF" stands for "cost function units"
                FDESC3D(K) = ' '
             END DO
 
-            NLAYS3D = NLAYS
+            NLAYS3D = 1 ! NLAYS
             NVARS3D = 0
 
             IF ( TRIM(LGRID_OUTPUT_FREQ) == 'SYNC_STEP' ) THEN
@@ -533,9 +533,9 @@ C-----------------------------------------------------------------------
          LOGDEV = INIT3()
       END IF
 
-      WRITE(*,*) 'WR_ADJ_FILE, ARRAY(10,10,1,22): ',ARRAY(10,10,1,22)
-      WRITE(*,*) 'WR_ADJ_FILE, ARRAY(10,10,1,16): ',ARRAY(10,10,1,16)
-      WRITE(*,*) 'JDATE.TIME: ',JDATE, JTIME
+!      WRITE(*,*) 'WR_ADJ_FILE, ARRAY(10,10,1,1): ',ARRAY(10,10,1,1)
+!      WRITE(*,*) 'WR_ADJ_FILE, ARRAY(10,10,1,4): ',ARRAY(10,10,1,4)
+!      WRITE(*,*) 'JDATE.TIME: ',JDATE, JTIME
 
       IF ( .NOT. WRITE3(ADJ_FILE, ALLVAR3, JDATE, JTIME, ARRAY) ) THEN
          XMSG = 'Could not write to ' // TRIM(ADJ_FILE)
@@ -700,7 +700,9 @@ C Get file characteristics of ADJ_FILE
       ! Specify chemical species based on index in *_SPC files 
       ! in cmaq_adj/ICL directory
 
-      V = 22 ! CO (NSPC index) 
+!!! CHANGE: indicate the species to force through the NSPC index value
+      !V = 22 ! CO (NSPC index) 
+      V = 4 ! O3 (NSPC index)
 
 !     Because ADJ_FORCE will only have one variable,
 !        this one variable should be extracted.
@@ -719,9 +721,10 @@ C Get file characteristics of ADJ_FILE
 !         WRITE(*,*) 'LENROW: ',LENROW, ', LENCOL: ',LENCOL
          DO R = 1, LENROW
             DO C = 1, LENCOL
-               RARRAY = R + STRTROW - 1
-               CARRAY = C + STRTCOL - 1
-               ARRAY(CARRAY, RARRAY, 1, V) = BUFFER(C, R, 1)
+!               RARRAY = R + STRTROW - 1
+!               CARRAY = C + STRTCOL - 1
+!               ARRAY(CARRAY, RARRAY, 1, V) = BUFFER(C, R, 1)
+               ARRAY(C, R, 1, V) = BUFFER(C, R, 1)
             END DO
          END DO
 
