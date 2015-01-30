@@ -18,7 +18,7 @@ C   permissions subject to the above restrictions.                     *
 C***********************************************************************
 
 C:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      SUBROUTINE INIT_LGRID(LGRID, SDATE, STIME, EDATE, ETIME, TSTEP, NSTEPS)
+      SUBROUTINE INIT_LGRID(SDATE, STIME, EDATE, ETIME, TSTEP, NSTEPS)
 
 C-----------------------------------------------------------------------
 C Function:
@@ -46,7 +46,7 @@ C External Functions (not already declared by IODECL3.EXT):
       INTEGER, EXTERNAL :: SEC2TIME, TIME2SEC
 
 C Arguments:
-      REAL, POINTER :: LGRID(:, :, :, :)
+      !REAL, POINTER :: LGRID(:, :, :, :)
       INTEGER, INTENT(OUT) :: SDATE ! start date, format YYYYDDD
       INTEGER, INTENT(OUT) :: STIME ! start time, format HHMMSS
       INTEGER, INTENT(OUT) :: EDATE ! end date, format YYYYDDD
@@ -107,8 +107,9 @@ C Get file characteristics of CTM_CONC_1
 C Set the output time step, TSTEP(1), and number of output steps, NSTEPS, to
 C the values used for the forward simulation
       TSTEP(1) = TSTEP3D
+!     dbg.slc.1.2015
       NSTEPS = MXREC3D - 1
-!     Limit execution to one hour for debugging - dbg.slc.7.2014
+!     Optional: Limit execution to one hour for debugging - dbg.slc.7.2014
 !      NSTEPS = 1
 
 C Set start date and time and end date and time
