@@ -9,7 +9,6 @@
 # v.1.3 Changed the crop and timber forcing to depend on cumulative W126 rather than hourly O3
 # v.1.4 Converted the timber biomass forcing to tons per grid cell
 # v.1.5 Converted the crop biomass forcing calculation to match the timber method, eliminating NaNs
-# v.1.6 Added maximum daily 8-hour average calculation
 
 
 from netCDF4 import Dataset
@@ -255,99 +254,6 @@ class health:
         forc_mort_bin_avg = mortadjepifile.createVariable('mort_adj_epi_avg','f8',('rows','cols'))
         forc_mort_bin_avg[:] = mort_adj_episode_avg
         mortadjepifile.close()
-
-
-class MDA8:
-    def O3window:
-        # To calculate the maximum daily 8-hour average ozone concentration.
-        
-        seas = [5,6,7,8,9]
-        # Calculate the max of 8-hour average O3 concentration
-        for mn in seas:
-            o3LST = mn_o3(mn)
-            ltime, lrow, lcol = (o3LST.shape)
-            day8hravgO3 = np.zeros([ltime, lrow, lcol])
-            for hr in range(1, ltime):
-                endhr = 7 + hr
-                day8hravgO3 = np.mean(o3LST[hr:endhr,:,:],axis=0)
-            mndays = ltime / 24 + 1
-            for dd in range(1, mndays):
-                firsthr = 24*(dd - 1)
-                lasthr  = 24*( dd )
-                day8hravgO3hrly = o3LST[firsthr:lasthr,:,:]
-                day8hravgO3max = np.zeros([24, lrow, lcol])
-                bin8hravgO3max = np.zeros([24, lrow, lcol])
-                print day8hravgO3mx.shape
-                O38hravgmaxind = np.argmax(day8hravgO3hrly, axis=0)  # Select indices of daily max values
-                for rowind in range(0,246):
-                    for colind in range(0,396):
-                        for hrind in range(0,24):
-                            if hrind == O38hravgmaxind[rowind,colind]:
-                                bin8hravgO3max[hrind,rowind,colind] = 1
-        
-                day8hravgO3max = bin8hravgO3max * day8hravgO3hrly
-                if dd == 1:
-                    O3month8hravgmx = day8hravgO3max
-                else:
-                    O3month8hravgmx = np.concatenate((O3mon8hravgmx,day8hravgO3max),axis=0)
-                O3mon8hravgmx = O3month8hravgmx
-
-            if mn == seas[0]:
-                O3season8hravgmx = O3mon8hravgmxmx
-            else:
-                O3season8hravgmx = np.concatenate((O3seas8hravgmax,O3mon8hravgmxmx),axis=0)
-            O3seas8hravgmax = O3season8hravgmx
-
-
-        # Produce the tflag variable
-        for mn in range(5,11):
-            tflagseas = mn_tflag(mn)
-            if mn == seas[0]:
-                tflagall = tflagseas
-            else:
-                tflagall = np.concatenate((tflagseasall,tflagseas), axis = 0)
-            tflagseasall = tflagall
-
-        # Produce five-month average
-        # ppm - average accounting only for the filled values (1 / day)
-        #fivemnmean = np.sum(O3seashrmax) / ( np.prod(O3seashrmax.shape) / 24 )
-        lhrs, lrow, lcol = O3seas8hravgmax.shape
-        ldays = lhrs/24
-        fivemnHrMaxMeanppb = np.zeros([lrow,lcol])
-        # Need average of five month daily max 8-hr average in each grid cell
-        fivemn8HrMaxMeanppb = 1000*np.sum(O3seas8hravgmax,axis=0) / ldays
-
-        # Also need to know which hours had maximum daily 1-hr concentration
-        ltime, lrow, lcol = O3seas8hravgmax.shape
-        seas8hrO3bin = np.zeros([ltime, lrow, lcol])
-        seas8hrones = np.ones([ltime, lrow, lcol])
-        seas8hrzeros = np.zeros([ltime, lrow, lcol])
-        seas8hrO3bin = np.where(O3seas8hravgmax > 0.0, seas8hrones, seas8hrzeros)
-
-        # Write to process separately
-        seas8hrO3binpath = '/work/CLIMSIM/slc/data/cost_fn/force_8hravg_max_bin.ncf'
-        seas8hrO3binfile = Dataset(seas8hrO3binpath, 'w', format='NETCDF3_64BIT')
-
-        # Make dimensions for file
-        seas8hrO3binfile.createDimension('rows',lrow)
-        seas8hrO3binfile.createDimension('cols',lcol)
-        seas8hrO3binfile.createDimension('allhrs',ltime)
-
-        seas8hrO3binfile.sync()
-
-        # Create variables
-        forc_8hravg_bin = seas8hrO3binfile.createVariable('mda8_bin','f8',('allhrs','rows','cols'))
-        forc_8hravg_bin[:] = seas8hrO3bin
-
-        max8hravg = seas8hrO3binfile.createVariable('MeanMax8HrAvg','f8',('rows','cols'))
-        max8hravg[:] = fivemn8HrMaxMeanppb
-
-        seasO3binfile.close()
-  
-        ### # Find index of maximum 6-month average; print time window associated.      
-        # maxfivemnmean = np.argmax(fivemnmean)              
-        ### Based on OAQPS hourly max values in LST, the five month mean of 1 hr max values is greatest May 7 - Oct 7 (days 127-307)
-        ### This encompasses the JJA window for W126. 
 
 class ecosystem:
     def crop_ryl_adj (seas):
