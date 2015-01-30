@@ -180,9 +180,9 @@ C 3D point source emissions (N_SPC_EMIS+1 serves as the null map for PTEM_MAP)
             CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
          END IF
          
-         WRITE(*,*) 'N_SPC_EMIS: ',N_SPC_EMIS,', EMLAYS: ',EMLAYS 
-         WRITE(*,*) 'MY_NCOLS: ',MY_NCOLS,', MY_NROWS: ',MY_NROWS
-         WRITE(*,*) 'VDEMIS: ',VDEMIS
+!         WRITE(*,*) 'N_SPC_EMIS: ',N_SPC_EMIS,', EMLAYS: ',EMLAYS 
+!         WRITE(*,*) 'MY_NCOLS: ',MY_NCOLS,', MY_NROWS: ',MY_NROWS
+!         WRITE(*,*) 'VDEMIS: ',VDEMIS
 
          ALLOCATE ( VDEMIS ( N_SPC_EMIS+1,EMLAYS,MY_NCOLS,MY_NROWS ),
      &              STAT = STATUS )
