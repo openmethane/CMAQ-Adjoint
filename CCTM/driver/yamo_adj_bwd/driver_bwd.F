@@ -263,9 +263,9 @@ C Allocate memory for adjoint forcing (6.2014.slc)
          CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
       END IF
 
-! Allocate emissions sensitivity arrays (mdt|slc.12.2013)
+! Allocate emissions sensitivity arrays (mdt|slc.2.2015)
       ALLOCATE(
-     &     LGRID_EM_SF(1:NCOLS, 1:NROWS, 1:NLAYS, 1:N_SPC_DIFF),
+     &     LGRID_EM_SF(1:NCOLS, 1:NROWS, 1, 1:N_SPC_DIFF),
      &     STAT = ALLOCSTAT)
       IF ( ALLOCSTAT /= 0 ) THEN
          XMSG = 'Failure allocating LGRID_EMIS_SF'
@@ -273,7 +273,7 @@ C Allocate memory for adjoint forcing (6.2014.slc)
       END IF
 
       ALLOCATE(
-     &     LGRID_EM(1:NCOLS, 1:NROWS, 1:NLAYS, 1:N_SPC_DIFF),
+     &     LGRID_EM(1:NCOLS, 1:NROWS, 1, 1:N_SPC_DIFF),
      &     STAT = ALLOCSTAT)
       IF ( ALLOCSTAT /= 0 ) THEN
          XMSG = 'Failure allocating LGRID_EM'
