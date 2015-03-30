@@ -48,15 +48,18 @@ C Include Files:
       INCLUDE SUBST_IODECL      ! I/O definitions and declarations
 
 C Arguments:
+!      REAL, INTENT(INOUT) :: LGRID(:, :, :, :) ! adjoint variable
+!      REAL, INTENT(INOUT) :: LGRID_EM(:, :, :, :) ! adjoint variable
+!      REAL, INTENT(INOUT) :: LGRID_EM_SF(:, :, :, :) ! adjoint variable
       REAL, POINTER :: LGRID(:, :, :, :) ! adjoint variable
       REAL, POINTER :: LGRID_EM(:, :, :, :) ! adjoint variable
       REAL, POINTER :: LGRID_EM_SF(:, :, :, :) ! adjoint variable
 !      REAL, POINTER :: LGRID_EM_NRM(:, :, :, :) ! adjoint variable
 !      REAL, POINTER :: LGRID_FRC(:, :, :, :) ! adjoint variable
 !      REAL, POINTER :: LGRID_FRC_TOT(:, :, :, :) ! adjoint variable
-      INTEGER, INTENT(IN OUT) :: JDATE ! current model date, coded YYYYDDD
-      INTEGER, INTENT(IN OUT) :: JTIME ! current model time, coded HHMMSS
-      INTEGER, INTENT(IN) :: TSTEP(2) ! time step vector (HHMMSS)
+      INTEGER :: JDATE ! current model date, coded YYYYDDD
+      INTEGER :: JTIME ! current model time, coded HHMMSS
+      INTEGER :: TSTEP(2) ! time step vector (HHMMSS)
                                       !   TSTEP(1) = local output step
                                       !   TSTEP(2) = sciproc sync. step (chem)
       INTEGER, INTENT(IN) :: ASTEP(:) ! layer advection time step
@@ -147,11 +150,11 @@ C-----------------------------------------------------------------------
       CALL NEXTIME(JDATE, JTIME, -TSTEP(2))
       WRITE(LOGDEV, '(/ 5X, A, I8, I7.6)') NMSG, JDATE, JTIME
 
-      CALL AERO_BWD(LGRID, JDATE, JTIME, TSTEP)
+!      CALL AERO_BWD(LGRID, JDATE, JTIME, TSTEP)
 
       CALL CHEM_BWD(LGRID, JDATE, JTIME, TSTEP)
 
-      CALL CLDPROC_BWD(LGRID, JDATE, JTIME, TSTEP)
+!      CALL CLDPROC_BWD(LGRID, JDATE, JTIME, TSTEP)
 
       CALL DECOUPLE(LGRID, SDATE, STIME, TSTEP)
 

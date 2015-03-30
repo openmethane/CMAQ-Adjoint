@@ -108,7 +108,7 @@ C Local Variables:
       REAL :: RK22(NCOLS+1, NROWS+1, NLAYS) ! initially used as RHOJ
                                 ! at x2 cell face, then finally as 22 eddy diff. factor
 
-      REAL, TARGET :: CGRID_BWD(0:NCOLS+1, 0:NROWS+1, NLAYS, N_SPC_DIFF) ! working array
+      REAL, TARGET :: CGRID_BWD_H(0:NCOLS+1, 0:NROWS+1, NLAYS, N_SPC_DIFF) ! working array
 #ifdef parallel
       REAL, POINTER :: SEND(:, :, :, :)
       REAL, POINTER :: RECV(:, :, :, :)
@@ -243,31 +243,31 @@ C sure boundary values are initialized with a valid real number (value doesn't
 C matter)
       IF ( W_BND_PE ) THEN      ! West boundary
          RK11(1, :, :) = 0.0
-         CGRID_BWD(0, :, :, :) = 0.0
+         CGRID_BWD_H(0, :, :, :) = 0.0
       END IF
       IF ( E_BND_PE ) THEN      ! East boundary
          RK11(NCOLS+1, :, :) = 0.0
-         CGRID_BWD(NCOLS+1, :, :, :) = 0.0
+         CGRID_BWD_H(NCOLS+1, :, :, :) = 0.0
       END IF
       IF ( S_BND_PE ) THEN      ! South boundary
          RK22(:, 1, :) = 0.0
-         CGRID_BWD(:, 0, :, :) = 0.0
+         CGRID_BWD_H(:, 0, :, :) = 0.0
       END IF
       IF ( N_BND_PE ) THEN      ! North boundary
          RK22(:, NROWS+1, :) = 0.0
-         CGRID_BWD(:, NROWS+1, :, :) = 0.0
+         CGRID_BWD_H(:, NROWS+1, :, :) = 0.0
       END IF
 
 C Load working array
       DO S = 1, N_SPC_DIFF
          D2C = DIFF_MAP(S)
-         CGRID_BWD(1:NCOLS, 1:NROWS, 1:NLAYS, S) =
+         CGRID_BWD_H(1:NCOLS, 1:NROWS, 1:NLAYS, S) =
      &        LGRID(1:NCOLS, 1:NROWS, 1:NLAYS, D2C)
       END DO
 
       DO N = 1, NSTEPS
 
-C Get values of CGRID_BWD in columns 0 & NCOLS+1 and rows 0 and NROWS+1 from
+C Get values of CGRID_BWD_H in columns 0 & NCOLS+1 and rows 0 and NROWS+1 from
 C other processors, as needed
 
 #ifdef parallel
@@ -283,23 +283,23 @@ C             size of 2nd dimension in arrays,
 C             size of 3rd dimension in arrays,
 C             direction to receive from: NSEW)
 
-         SEND => CGRID_BWD(1:NCOLS, 1:1, :, :)
-         RECV => CGRID_BWD(1:NCOLS, NROWS+1:NROWS+1, :, :)
+         SEND => CGRID_BWD_H(1:NCOLS, 1:1, :, :)
+         RECV => CGRID_BWD_H(1:NCOLS, NROWS+1:NROWS+1, :, :)
          CALL SWAP4D(SEND, RECV, NCOLS, 1, NLAYS, N_SPC_DIFF,
      &        NCOLS, 1, NLAYS, NORTH)
 
-         SEND => CGRID_BWD(1:1, 1:NROWS, :, :)
-         RECV => CGRID_BWD(NCOLS+1:NCOLS+1, 1:NROWS, :, :)
+         SEND => CGRID_BWD_H(1:1, 1:NROWS, :, :)
+         RECV => CGRID_BWD_H(NCOLS+1:NCOLS+1, 1:NROWS, :, :)
          CALL SWAP4D(SEND, RECV, 1, NROWS, NLAYS, N_SPC_DIFF,
      &        1, NROWS, NLAYS, EAST)
 
-         SEND => CGRID_BWD(1:NCOLS, NROWS:NROWS, :, :)
-         RECV => CGRID_BWD(1:NCOLS, 0:0, :, :)
+         SEND => CGRID_BWD_H(1:NCOLS, NROWS:NROWS, :, :)
+         RECV => CGRID_BWD_H(1:NCOLS, 0:0, :, :)
          CALL SWAP4D(SEND, RECV, NCOLS, 1, NLAYS, N_SPC_DIFF,
      &        NCOLS, 1, NLAYS, SOUTH)
 
-         SEND => CGRID_BWD(NCOLS:NCOLS, 1:NROWS, :, :)
-         RECV => CGRID_BWD(0:0, 1:NROWS, :, :)
+         SEND => CGRID_BWD_H(NCOLS:NCOLS, 1:NROWS, :, :)
+         RECV => CGRID_BWD_H(0:0, 1:NROWS, :, :)
          CALL SWAP4D(SEND, RECV, 1, NROWS, NLAYS, N_SPC_DIFF,
      &        1, NROWS, NLAYS, WEST)
 #endif
@@ -309,36 +309,36 @@ C Do the gridded computation for horizontal diffusion
             DO L = 1, NLAYS
                DO R = 1, NROWS
                   DO C = 1, NCOLS
-                     CONC_BWD(C, R, L, S) = RHOJ(C, R, L) * CGRID_BWD(C, R, L, S)
+                     CONC_BWD(C, R, L, S) = RHOJ(C, R, L) * CGRID_BWD_H(C, R, L, S)
      &                    + DTDX1S
      &                    * ( RK11(C+1, R, L)
-     &                    * ( CGRID_BWD(C+1, R, L, S) - CGRID_BWD(C, R, L, S) )
+     &                    * ( CGRID_BWD_H(C+1, R, L, S) - CGRID_BWD_H(C, R, L, S) )
      &                    - RK11(C, R, L)
-     &                    * ( CGRID_BWD(C, R, L, S) - CGRID_BWD(C-1, R, L, S) ) )
+     &                    * ( CGRID_BWD_H(C, R, L, S) - CGRID_BWD_H(C-1, R, L, S) ) )
      &                    + DTDX2S
      &                    * ( RK22(C, R+1, L)
-     &                    * ( CGRID_BWD(C, R+1, L, S) - CGRID_BWD(C, R, L, S) )
+     &                    * ( CGRID_BWD_H(C, R+1, L, S) - CGRID_BWD_H(C, R, L, S) )
      &                    - RK22(C, R, L)
-     &                    * ( CGRID_BWD(C, R, L, S) - CGRID_BWD(C, R-1, L, S) ) )
+     &                    * ( CGRID_BWD_H(C, R, L, S) - CGRID_BWD_H(C, R-1, L, S) ) )
                   END DO
                END DO
             END DO
          END DO
 
-C Update CGRID_BWD from CONC_BWD
+C Update CGRID_BWD_H from CONC_BWD
          DO S = 1, N_SPC_DIFF
-            CGRID_BWD(1:NCOLS, 1:NROWS, 1:NLAYS, S) =
+            CGRID_BWD_H(1:NCOLS, 1:NROWS, 1:NLAYS, S) =
      &           CONC_BWD(1:NCOLS, 1:NROWS, 1:NLAYS, S) /
      &           RHOJ(1:NCOLS, 1:NROWS, 1:NLAYS)
          END DO
 
       END DO                    ! NSTEPS
 
-C Update LGRID from CGRID_BWD
+C Update LGRID from CGRID_BWD_H
       DO S = 1, N_SPC_DIFF
          D2C = DIFF_MAP(S)
          LGRID(1:NCOLS, 1:NROWS, 1:NLAYS, D2C) =
-     &        CGRID_BWD(1:NCOLS, 1:NROWS, 1:NLAYS, S)
+     &        CGRID_BWD_H(1:NCOLS, 1:NROWS, 1:NLAYS, S)
       END DO
 
       END SUBROUTINE HDIFF_BWD

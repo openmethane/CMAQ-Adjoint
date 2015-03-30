@@ -95,6 +95,9 @@ C
 CC debug, mdt :: use mode merging?
 C      LOGICAL :: USE_MM = .TRUE.
 C
+C Adjoint forcing vertical dimension
+      INTEGER, PARAMETER :: NLAYS_FRC=1   ! Number of layers forced from file
+      
 C *** For now, keep this declaration outside of module & pass b/t subroutines
 CC Gradient of cost function (unitless)
 C      REAL, ALLOCATABLE :: LGRID(:, :, :, :)  ! adjoint accumulation variable

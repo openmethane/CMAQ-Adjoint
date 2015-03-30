@@ -42,7 +42,7 @@ C-----------------------------------------------------------------------
       REAL, ALLOCATABLE, SAVE :: VDEMIS( :,:,:,: ) ! total emissions array
 
       INTEGER, SAVE :: N_SPC_EMIS ! global emissions species
-      INTEGER, SAVE :: EMLAYS     ! no. of emis integration layers
+      INTEGER, PUBLIC, SAVE :: EMLAYS     ! no. of emis integration layers
                                   ! EMLAYS must be .LT. NLAYS
       INTEGER,          SAVE :: EMLYRS     ! no. of layers on base emis input file -
                                            ! a 2d file if inline, otherwise a 3d file
