@@ -72,8 +72,6 @@ C-----------------------------------------------------------------------
 !     LOGDEV = INIT3()
       LOGDEV = SETUP_LOGDEV()
 
-      EMLAYS = 0
-
 C Open the tracer emissions file
 
       IF ( N_TR_EMIS .GT. 0 ) THEN
@@ -243,6 +241,8 @@ C Assume units = mol/s across gas and non-reactive species classes
 1007     FORMAT( / 10X, 'Tracer Emissions Processing in',
      &              1X, 'Vertical diffusion ...' )
       END IF
+
+      EMLAYS = 1
 
       RETURN
       END

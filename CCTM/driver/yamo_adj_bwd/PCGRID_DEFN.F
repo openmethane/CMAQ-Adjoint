@@ -53,10 +53,19 @@ C-----------------------------------------------------------------------
 
       USE GRID_CONF           ! horizontal & vertical domain specifications
       USE CGRID_SPCS          ! CGRID species number and offsets
+      USE EMIS_DEFN, ONLY: EMLAYS
 
       IMPLICIT NONE
 
+      INCLUDE SUBST_GC_DIFF   ! gas chemistry species table
+      INCLUDE SUBST_AE_DIFF   ! aerosol species table
+      INCLUDE SUBST_NR_DIFF   ! non-reactive species table
+      INCLUDE SUBST_TR_DIFF   ! tracer species table
+
       REAL, ALLOCATABLE, SAVE, TARGET :: PCGRID( :,:,:,: )
+      REAL, ALLOCATABLE, SAVE, TARGET :: PLGRID( :,:,:,: )
+      REAL, ALLOCATABLE, SAVE, TARGET :: PLGRID_EM( :,:,:,: )
+      REAL, ALLOCATABLE, SAVE, TARGET :: PLGRID_EM_SF( :,:,:,: )
 
       CONTAINS
          FUNCTION PCGRID_INIT () RESULT ( SUCCESS )
@@ -70,6 +79,8 @@ C-----------------------------------------------------------------------
          LOGICAL, SAVE :: FIRSTIME = .TRUE.
          CHARACTER( 120 ) :: XMSG = ' '
 
+         INTEGER :: N_SPC_DIFF
+
 C PCGRID extents
          INTEGER :: LCOL
          INTEGER :: HCOL
@@ -81,6 +92,9 @@ C PCGRID extents
          IF ( FIRSTIME ) THEN
             FIRSTIME = .FALSE.
             LOGDEV = INIT3()
+            
+            ! 3.2015.slc - to define the depth of the LGRID_EM* arrays
+            EMLAYS = 1
 
 #ifdef parallel
             LCOL = 1 - NTHIK
@@ -94,7 +108,18 @@ C PCGRID extents
             HROW = NROWS
 #endif
 
+            N_SPC_DIFF = N_GC_DIFF   ! = N_GC_SPC + 1
+     &                       + N_AE_DIFF
+     &                       + N_NR_DIFF
+     &                       + N_TR_DIFF
+            
             ALLOCATE ( PCGRID( LCOL:HCOL,LROW:HROW,NLAYS,NSPCSD ),
+     &                 STAT = ALLOCSTAT )
+            ALLOCATE ( PLGRID( LCOL:HCOL,LROW:HROW,NLAYS,NSPCSD ),
+     &                 STAT = ALLOCSTAT )
+            ALLOCATE ( PLGRID_EM( LCOL:HCOL,LROW:HROW,EMLAYS,N_SPC_DIFF ),
+     &                 STAT = ALLOCSTAT )
+            ALLOCATE ( PLGRID_EM_SF( LCOL:HCOL,LROW:HROW,EMLAYS,N_SPC_DIFF ),
      &                 STAT = ALLOCSTAT )
 
             IF ( ALLOCSTAT .NE. 0 ) THEN
@@ -104,6 +129,9 @@ C PCGRID extents
                END IF
 
             PCGRID = 0.0
+            PLGRID = 0.0
+            PLGRID_EM = 0.0
+            PLGRID_EM_SF = 0.0
 !           PCGRID = -999.999
 
             ELSE

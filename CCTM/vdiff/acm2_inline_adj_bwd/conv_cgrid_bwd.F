@@ -67,7 +67,9 @@ C==============================================
 C==============================================
 C define local variables
 C==============================================
-      LOGICAL, SAVE :: FIRSTIME = .TRUE.
+      LOGICAL, SAVE :: FIRSTTIME = .TRUE.
+
+      INTEGER, SAVE :: LOGDEV
 
       CHARACTER( 16 ), SAVE :: PNAME = 'CONV_CGRID_BWD'
       CHARACTER( 96 ) :: XMSG = ' '
@@ -97,9 +99,12 @@ C==============================================
 C----------------------------------------------
 C ROUTINE BODY
 C----------------------------------------------
-      if (firstime) then
-        firstime = .FALSE.
-        !write(*,*) 'Calling conv_cgrid_bwd' ! dbg.7.2014.slc
+      write(*,*) 'FIRSTTIME: ',FIRSTTIME
+      if (firsttime) then
+        FIRSTTIME = .FALSE.
+
+        LOGDEV = INIT3()
+
         CALL CGRID_MAP(NSPCSD, GC_STRT, AE_STRT, NR_STRT, TR_STRT)
         CALL SUBHFILE(MET_CRO_3D, GXOFF, GYOFF,
      &       STRTCOLMC3, ENDCOLMC3, STRTROWMC3, ENDROWMC3)
@@ -267,7 +272,12 @@ C***************************************************************
 C----------------------------------------------
 C ROUTINE BODY
 C----------------------------------------------
-      if (firstime) then
+      if (firsttime) then
+        ! dbg.2.2015.slc
+        FIRSTTIME = .FALSE.
+        LOGDEV = INIT3()
+!        write(*,*) 'rev_cgrid_bwd, first time, ae_spc: ',n_ae_spc 
+        
         CALL CGRID_MAP(NSPCSD, GC_STRT, AE_STRT, NR_STRT, TR_STRT)
         CALL SUBHFILE(MET_CRO_3D, GXOFF, GYOFF,
      &       STRTCOLMC3, ENDCOLMC3, STRTROWMC3, ENDROWMC3)
@@ -298,6 +308,8 @@ C----------------------------------------------
          CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
       END IF
 
+      ! dbg.2.2015.slc
+      !write(*,*) 'rev_cgrid_bwd, before transposing array'
       nspcs = n_tr_spc
       if (nspcs .gt. 0) then
         off = tr_strt-1

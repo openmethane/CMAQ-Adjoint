@@ -156,11 +156,12 @@ C ACM Local Variables
       REAL :: DTLIM, DTS, DTACM, RZ, DELC, LFAC1, LFAC2
 
       INTEGER :: C, R, L, V     ! loop induction variables
-      INTEGER, PARAMETER :: M = 1 ! em_sf dimension length (e.g., for layers)
+      ! Now use EMLAYS instead to be consistent (dbg.2.2015.slc)
+      !INTEGER, PARAMETER :: M = 1 ! em_sf dimension length (e.g., for layers)
       INTEGER :: MDATE, MTIME, MSTEP ! internal simulation date&time
 
       ! For comparing recalculated emissions to the checkpointed ones
-      REAL :: EMIST( NCOLS, NROWS, M, N_SPC_DIFF )   ! emissions from checkpoint subexpression
+      REAL :: EMIST( NCOLS, NROWS, NLAYS, N_SPC_DIFF )   ! emissions from checkpoint subexpression
                            
                                                 ! array in vert. mixing
 
@@ -175,8 +176,8 @@ C==============================================
 C define local adjoint variables
 C==============================================
       real :: conc_bwd(n_spc_diff,nlays)
-      real :: conc_em_bwd(n_spc_diff,nlays)
-      real :: conc_em_sf_bwd(n_spc_diff,nlays)
+      real :: conc_em_bwd(n_spc_diff,emlays)
+      real :: conc_em_sf_bwd(n_spc_diff,emlays)
       real :: dd_bwd(n_spc_diff,nlays)
       real :: delc_bwd
       real :: uu_bwd(n_spc_diff,nlays)
@@ -250,17 +251,17 @@ C-----------------------------------------------------------------------
          N_SPC_CGRID = SIZE ( CGRID_BWD,4 )
 
          ALLOCATE(
-     &        CGRID( 1:NCOLS,1:NROWS,1:1,1:N_SPC_CGRID ),
-     &        CNGRD_BWD( N_SPC_CGRID,NLAYS,MY_NCOLS,MY_NROWS ),
-     &        CNGRD_EM_BWD( N_SPC_DIFF,NLAYS,MY_NCOLS,MY_NROWS ),
-     &        CNGRD_EM_SF_BWD( N_SPC_DIFF,NLAYS,MY_NCOLS,MY_NROWS ),
+     &        CGRID( 1:NCOLS,1:NROWS,1:NLAYS,1:N_SPC_CGRID ),
+     &        CNGRD_BWD( 1:N_SPC_CGRID,1:NLAYS,1:MY_NCOLS,1:MY_NROWS ),
+     &        CNGRD_EM_BWD( 1:N_SPC_DIFF,1:EMLAYS,1:MY_NCOLS,1:MY_NROWS ),
+     &        CNGRD_EM_SF_BWD( 1:N_SPC_DIFF,1:EMLAYS,1:MY_NCOLS,1:MY_NROWS ),
      &        STAT = ALLOCSTAT )
          IF ( ALLOCSTAT .NE. 0 ) THEN
             XMSG = 'Failure allocating CGRID, CNGRD_BWD'
             CALL M3EXIT( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
          END IF
 
-         ALLOCATE ( EM_SF( MY_NCOLS,MY_NROWS,NLAYS,N_SPC_DIFF ),
+         ALLOCATE ( EM_SF( 1:MY_NCOLS,1:MY_NROWS,1:EMLAYS,1:N_SPC_DIFF ),
      &              STAT = ALLOCSTAT )
          IF ( ALLOCSTAT .NE. 0 ) THEN
             XMSG = 'EM_SF memory allocation failed'
@@ -272,7 +273,7 @@ C-----------------------------------------------------------------------
             CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
          END IF
 
-         ALLOCATE ( VDEMIS_VD( MY_NCOLS,MY_NROWS,NLAYS,N_SPC_EMIS+1 ), 
+         ALLOCATE ( VDEMIS_VD( 1:MY_NCOLS,1:MY_NROWS,1:NLAYS,1:N_SPC_EMIS+1 ), 
      &              STAT = ALLOCSTAT )
          IF ( ALLOCSTAT .NE. 0 ) THEN
             XMSG = 'VDEMIS_VD memory allocation failed'
@@ -555,14 +556,18 @@ C----------------------------------------------
           pol(nh3_so2) = pvdd(nh3_so2,c,r)/depvcr(nh3_hit)
           pol(nh3_nh3) = pvdd(nh3_nh3,c,r)/depvcr(nh3_hit)
           pol(hono_no2) = pvdd(hono_no2,c,r)/depvcr(hono_hit)
+          ! Split do loop into two - treat emissions only up to EMLAYS (dbg.2.2015.slc)
           do l = 1, nlays
             do v = 1, n_spc_diff
               conc_bwd(v,l) = conc_bwd(v,l)+cngrd_bwd(diff_map(v),l,c,r)
               cngrd_bwd(diff_map(v),l,c,r) = 0.
-              conc_em_bwd(v,l) = conc_em_bwd(v,l)+cngrd_em_bwd(v,l,c,r)
-              cngrd_em_bwd(v,l,c,r) = 0.
-              conc_em_sf_bwd(v,l) = conc_em_sf_bwd(v,l)+cngrd_em_sf_bwd(v,l,c,r)
-              cngrd_em_sf_bwd(v,l,c,r) = 0.
+              ! only apply at layers that have emissions (dbg.2.2015.slc)
+              if ( l .le. emlays ) then
+                 conc_em_bwd(v,l) = conc_em_bwd(v,l)+cngrd_em_bwd(v,l,c,r)
+                 cngrd_em_bwd(v,l,c,r) = 0.
+                 conc_em_sf_bwd(v,l) = conc_em_sf_bwd(v,l)+cngrd_em_sf_bwd(v,l,c,r)
+                 cngrd_em_sf_bwd(v,l,c,r) = 0.
+              endif
             end do
           end do
           do nl = nlp, 1, -1
@@ -647,7 +652,7 @@ C----------------------------------------------
 !                   and CNGRD_EM_BWD_SF (6.2014.slc|mdt)
               conc_em_sf_bwd(v,1) = conc_em_sf_bwd(v,1) + emis(v,1) 
      &                      * dd_bwd(v,1)
-              conc_em_bwd(v,1) = conc_em_bwd(v,1) + em_sf(c,r,m,v)
+              conc_em_bwd(v,1) = conc_em_bwd(v,1) + em_sf(c,r,1,v)
      &                      * dd_bwd(v,1)
               conc_bwd(v,2) = conc_bwd(v,2)+dd_bwd(v,1)*lfac1
               conc_bwd(v,1) = conc_bwd(v,1)-dd_bwd(v,1)*lfac1
@@ -691,8 +696,7 @@ C----------------------------------------------
                   if ( l .le. emlays ) then
                     conc_em_sf_bwd(v,l) = conc_em_sf_bwd(v,l) + emis(v,l)
      &                                 * dd_bwd(v,l)
-!!      Layer index is always 1 (=m) for em_sf because it is only defined for layer 1
-                    conc_em_bwd(v,l) = conc_em_bwd(v,l) + em_sf(c,r,m,v)
+                    conc_em_bwd(v,l) = conc_em_bwd(v,l) + em_sf(c,r,l,v)
      &                                 * dd_bwd(v,l)
                   end if
                 end do
@@ -751,10 +755,13 @@ C----------------------------------------------
             do v = 1, n_spc_diff
               cngrd_bwd(diff_map(v),l,c,r) = cngrd_bwd(diff_map(v),l,c,r)+conc_bwd(v,l)
               conc_bwd(v,l) = 0.
-              cngrd_em_bwd(v,l,c,r) = cngrd_em_bwd(v,l,c,r)+conc_em_bwd(v,l)
-              conc_em_bwd(v,l) = 0.
-              cngrd_em_sf_bwd(v,l,c,r) = cngrd_em_sf_bwd(v,l,c,r)+conc_em_sf_bwd(v,l)
-              conc_em_sf_bwd(v,l) = 0.
+              ! only apply at layers that have emissions (dbg.2.2015.slc)
+              if ( l .le. emlays ) then
+                 cngrd_em_bwd(v,l,c,r) = cngrd_em_bwd(v,l,c,r)+conc_em_bwd(v,l)
+                 conc_em_bwd(v,l) = 0.
+                 cngrd_em_sf_bwd(v,l,c,r) = cngrd_em_sf_bwd(v,l,c,r)+conc_em_sf_bwd(v,l)
+                 conc_em_sf_bwd(v,l) = 0.
+              endif
             end do
           end do
         end do

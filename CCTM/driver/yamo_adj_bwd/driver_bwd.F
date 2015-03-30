@@ -46,7 +46,7 @@ C-----------------------------------------------------------------------
 
       USE PCGRID_DEFN           ! inherits HGRD_DEFN and CGRID_SPCS
       USE VGRD_DEFN             ! vertical layer specifications
-      USE CGRID_SPCS            ! CGRID species number and offsets
+      !USE CGRID_SPCS            ! CGRID species number and offsets
       USE ADJOINT_FILES         ! adjoint file data and functions
       USE ADJ_ARRAY_MOD         ! adjoint sensitivity arrays
       USE CHK_FILES_DEFS        ! adjoint checkpoint files definition
@@ -62,10 +62,10 @@ C Include Files:
       INCLUDE SUBST_AE_SPC      ! aerosol species table
       INCLUDE SUBST_NR_SPC      ! non-reactive species table
       INCLUDE SUBST_TR_SPC      ! tracer species table
-      INCLUDE SUBST_GC_DIFF     ! gas chemistry diffused species table
-      INCLUDE SUBST_AE_DIFF     ! aerosol diffused species table
-      INCLUDE SUBST_NR_DIFF     ! non-reactive diffused species table
-      INCLUDE SUBST_TR_DIFF     ! tracer diffused species table
+      !INCLUDE SUBST_GC_DIFF     ! gas chemistry diffused species table
+      !INCLUDE SUBST_AE_DIFF     ! aerosol diffused species table
+      !INCLUDE SUBST_NR_DIFF     ! non-reactive diffused species table
+      !INCLUDE SUBST_TR_DIFF     ! tracer diffused species table
 
 
 
@@ -88,16 +88,9 @@ C Local Variables:
       LOGICAL, ALLOCATABLE, SAVE :: XFIRST(:)
       REAL, ALLOCATABLE :: LGRID_FRC(:, :, :, :)
       REAL, ALLOCATABLE :: LGRID_FRC_TOT(:, :, :, :)
-      REAL, ALLOCATABLE :: LGRID(:, :, :, :)
-      REAL, ALLOCATABLE :: LGRID_EM(:, :, :, :)
-      REAL, ALLOCATABLE :: LGRID_EM_SF(:, :, :, :)
-      !REAL, ALLOCATABLE, TARGET :: PCGRID_EM(:, :, :, :)
-      !REAL, ALLOCATABLE, TARGET :: PCGRID_EM_SF(:, :, :, :)
-      ! Transfer of data from the read adjoint forcing routine to LGRID was not working with 
-      !    with the pointer declaration.
-      !REAL, POINTER :: LGRID(:, :, :, :)
-      !REAL, POINTER :: LGRID_EM(:, :, :, :)
-      !REAL, POINTER :: LGRID_EM_SF(:, :, :, :)
+      REAL, POINTER :: LGRID(:, :, :, :)
+      REAL, POINTER :: LGRID_EM(:, :, :, :)
+      REAL, POINTER :: LGRID_EM_SF(:, :, :, :)
 !      REAL, POINTER :: LGRID_EM_NRM(:, :, :, :)
       
       INTEGER :: ALLOCSTAT
@@ -126,11 +119,11 @@ C Local Variables:
 
       INTEGER :: VI             ! variable index in naming array
 
-      INTEGER     N_SPC_DIFF               ! global diffusion species
-      PARAMETER ( N_SPC_DIFF = N_GC_DIFF   ! = N_GC_SPC + 1
-     &                       + N_AE_DIFF
-     &                       + N_NR_DIFF
-     &                       + N_TR_DIFF)
+      !INTEGER     N_SPC_DIFF               ! global diffusion species
+      !PARAMETER ( N_SPC_DIFF = N_GC_DIFF   ! = N_GC_SPC + 1
+      !&                       + N_AE_DIFF
+      !&                       + N_NR_DIFF
+      !&                       + N_TR_DIFF)
 
       INTERFACE
          SUBROUTINE INIT_LGRID(SDATE, STIME, EDATE, ETIME, TSTEP, NSTEPS)
@@ -159,12 +152,12 @@ C Local Variables:
          SUBROUTINE SCIPROC_BWD(LGRID, LGRID_EM, LGRID_EM_SF, 
      &                          JDATE, JTIME, TSTEP, ASTEP, XFIRST)
             IMPLICIT NONE
-            REAL, INTENT(INOUT)          :: LGRID(:, :, :, :)
-            REAL, INTENT(INOUT)          :: LGRID_EM(:, :, :, :) ! adjoint variable
-            REAL, INTENT(INOUT)          :: LGRID_EM_SF(:, :, :, :) ! adjoint variable
-            !REAL, POINTER          :: LGRID(:, :, :, :)
-            !REAL, POINTER          :: LGRID_EM(:, :, :, :) ! adjoint variable
-            !REAL, POINTER          :: LGRID_EM_SF(:, :, :, :) ! adjoint variable
+            !REAL, INTENT(INOUT)          :: LGRID(:, :, :, :)
+            !REAL, INTENT(INOUT)          :: LGRID_EM(:, :, :, :) ! adjoint variable
+            !REAL, INTENT(INOUT)          :: LGRID_EM_SF(:, :, :, :) ! adjoint variable
+            REAL, POINTER          :: LGRID(:, :, :, :)
+            REAL, POINTER          :: LGRID_EM(:, :, :, :) ! adjoint variable
+            REAL, POINTER          :: LGRID_EM_SF(:, :, :, :) ! adjoint variable
             INTEGER, INTENT(INOUT) :: JDATE, JTIME
             INTEGER, INTENT(IN)    :: TSTEP(2)
             INTEGER, INTENT(IN)    :: ASTEP(:)
@@ -227,9 +220,9 @@ C Initialize PCGRID
 !      PCGRID_EM    = PCGRID
 !      PCGRID_EM_SF = PCGRID
        
-!      LGRID => PCGRID(1:NCOLS, 1:NROWS, :, :)
-!      LGRID_EM => PCGRID_EM(1:NCOLS, 1:NROWS, :, :)
-!      LGRID_EM_SF => PCGRID_EM_SF(1:NCOLS, 1:NROWS, :, :)
+      LGRID => PLGRID(1:NCOLS, 1:NROWS, :, :)
+      LGRID_EM => PLGRID_EM(1:NCOLS, 1:NROWS, :, :)
+      LGRID_EM_SF => PLGRID_EM_SF(1:NCOLS, 1:NROWS, :, :)
 
 !      WRITE(*,*) 'In driver'
 !      WRITE(*,*) 'NCOLS: ',NCOLS,' NROWS: ',NROWS
@@ -237,7 +230,6 @@ C Initialize PCGRID
 
 C Allocate memory
       ALLOCATE(
-     &     LGRID(1:NCOLS, 1:NROWS, 1:NLAYS, 1:NSPCSD),
      &     ASTEP(1:NLAYS),
      &     XFIRST(1:NLAYS),
      &     STAT = ALLOCSTAT)
@@ -248,7 +240,7 @@ C Allocate memory
 
 C Allocate memory for adjoint forcing (6.2014.slc)
       ALLOCATE(
-     &     LGRID_FRC(1:NCOLS, 1:NROWS, 1:NLAYS, 1:NSPCSD),
+     &     LGRID_FRC(1:NCOLS, 1:NROWS, 1:NLAYS_FRC, 1:NSPCSD),
      &     STAT = ALLOCSTAT)
       IF ( ALLOCSTAT /= 0 ) THEN
          XMSG = 'Failure allocating LGRID_FRC, ASTEP, XFIRST'
@@ -256,37 +248,15 @@ C Allocate memory for adjoint forcing (6.2014.slc)
       END IF
 
       ALLOCATE(
-     &     LGRID_FRC_TOT(1:NCOLS, 1:NROWS, 1:NLAYS, 1:NSPCSD),
+     &     LGRID_FRC_TOT(1:NCOLS, 1:NROWS, 1:NLAYS_FRC, 1:NSPCSD),
      &     STAT = ALLOCSTAT)
       IF ( ALLOCSTAT /= 0 ) THEN
          XMSG = 'Failure allocating LGRID_FRC_TOT'
          CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
       END IF
 
-! Allocate emissions sensitivity arrays (mdt|slc.12.2013)
-      ALLOCATE(
-     &     LGRID_EM_SF(1:NCOLS, 1:NROWS, 1:NLAYS, 1:N_SPC_DIFF),
-     &     STAT = ALLOCSTAT)
-      IF ( ALLOCSTAT /= 0 ) THEN
-         XMSG = 'Failure allocating LGRID_EMIS_SF'
-         CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
-      END IF
-
-      ALLOCATE(
-     &     LGRID_EM(1:NCOLS, 1:NROWS, 1:NLAYS, 1:N_SPC_DIFF),
-     &     STAT = ALLOCSTAT)
-      IF ( ALLOCSTAT /= 0 ) THEN
-         XMSG = 'Failure allocating LGRID_EM'
-         CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
-      END IF
-
 C Determine the simulation time period and time stepping constants;
 C initialize the LGRID array.
-      LGRID(:, :, :, :) = 0.0
-      LGRID_EM(:, :, :, :) = 0.0
-      LGRID_EM_SF(:, :, :, :) = 0.0
-!      WRITE(*,*) 'driver - lgrid_em(1,1,1,1): ',LGRID_EM(1,1,1,1)
-!      LGRID_EM_NRM(:, :, :, :) = 0.0
       
       LGRID_FRC(:, :, :, :) = 0.0
       LGRID_FRC_TOT(:, :, :, :) = 0.0

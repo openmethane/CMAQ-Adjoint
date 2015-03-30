@@ -34,7 +34,7 @@ C Parameters
       CHARACTER(16), PARAMETER :: INIT_EM_1       = 'INIT_EM_1'
       CHARACTER(16), PARAMETER :: INIT_EM_SF_1    = 'INIT_EM_SF_1'
       CHARACTER(16), PARAMETER :: ADJ_LGRID       = 'ADJ_LGRID'
-!      CHARACTER(16), PARAMETER :: ADJ_FORCE       = 'ADJ_FORCE'
+      CHARACTER(16), PARAMETER :: ADJ_FORCE       = 'ADJ_FORCE'
       CHARACTER(16), PARAMETER :: ADJ_LGRID_EM_SF = 'ADJ_LGRID_EM_SF'
       CHARACTER(16), PARAMETER :: ADJ_LGRID_EM    = 'ADJ_LGRID_EM'
       CHARACTER(16), PARAMETER :: ADJ_LGRID_EM_NRM= 'ADJ_LGRID_EM_NRM'
@@ -514,7 +514,7 @@ C Include Files:
 #include      SUBST_IODECL      # I/O definitions and declarations
 
 C Arguments:
-      REAL, INTENT(IN) :: ARRAY(:,:,:,:)
+      REAL, POINTER :: ARRAY(:,:,:,:)
       INTEGER, INTENT(IN) :: JDATE ! current model date, coded YYYYDDD
       INTEGER, INTENT(IN) :: JTIME ! current model time, coded HHMMSS
       CHARACTER(16), INTENT(IN) :: ADJ_FILE
@@ -646,7 +646,7 @@ C Arguments:
 
       INTEGER, PARAMETER :: NLAYS_FRC = 1
 
-      REAL, INTENT(OUT) :: ARRAY(NCOLS,NROWS,NLAYS,NSPCSD)
+      REAL, INTENT(OUT) :: ARRAY(:,:,:,:)
       INTEGER, INTENT(IN) :: JDATE ! current model date, coded YYYYDDD
       INTEGER, INTENT(IN) :: JTIME ! current model time, coded HHMMSS
 !      CHARACTER(16), INTENT(IN) :: ADJ_FORCE
@@ -675,6 +675,9 @@ C Get local window in global domain
          ENDCOL = STRTCOL + NCOLS - 1
          STRTROW = ROWSX_PE(1, MYPE+1)
          ENDROW = STRTROW + NROWS - 1
+         
+         BUFFER = 0.d0
+         ARRAY  = 0.d0
 
 C Get file characteristics of ADJ_FILE
       IF ( .NOT. DESC3(ADJ_FORCE) ) THEN
@@ -706,6 +709,7 @@ C Get file characteristics of ADJ_FILE
 
 !     Because ADJ_FORCE will only have one variable,
 !        this one variable should be extracted.
+!        It may also only be at one level, which is indicated by NLAYS_FRC.
 !        The assignment is where V equals the species denoted above.
       IF ( .NOT. XTRACT3(ADJ_FORCE, VNAME3D(1),
      &     1, NLAYS_FRC, STRTROW, ENDROW, STRTCOL, ENDCOL,

@@ -177,7 +177,7 @@ C-----------------------------------------------------------------------
          USE PMEM_DEFN                            ! defines PM emissions species
          USE PTMAP, ONLY: N_SPC_PTPM, PTPM_MAP    ! defines emissions file(s) PM mapping
 
-         USE SUBST_MODULES                        ! stenex (for BARRIER)
+         !USE SUBST_MODULES                        ! stenex (for BARRIER)
 !        USE SUBST_UTIL_MODULE                    ! stenex
      
          INCLUDE SUBST_RXCMMN    ! to get mech name
