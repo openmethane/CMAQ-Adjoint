@@ -28,6 +28,7 @@ C   Jul 2010 by Peter Percell at UH-IMAQS: created for adjoint/4dvar
 
       USE GRID_CONF           ! horizontal & vertical domain specifications
       USE CGRID_SPCS          ! CGRID species number and offsets
+      USE EMIS_DEFN, ONLY : EMSENSL
 
 C==============================================
 C all entries are defined explicitly
@@ -63,15 +64,17 @@ C==============================================
 C==============================================
 C define arguments
 C==============================================
-      REAL, POINTER :: CGRID_EM_BWD(:,:,:,:)
+      REAL, POINTER       :: CGRID_EM_BWD(:,:,:,:)
       INTEGER      JDATE        ! current model date, coded YYYYDDD
       INTEGER      JTIME        ! current model time, coded HHMMSS
-      REAL :: CNGRD_EM_BWD(:,:,:,:)
+      REAL, INTENT(INOUT) :: CNGRD_EM_BWD(:,:,:,:)
 
 C==============================================
 C define local variables
 C==============================================
       LOGICAL, SAVE :: FIRSTIME = .TRUE.
+
+      INTEGER, SAVE :: LOGDEV
 
       CHARACTER( 16 ), SAVE :: PNAME = 'CONV_CGRID_EM_BWD'
       CHARACTER( 96 ) :: XMSG = ' '
@@ -108,7 +111,10 @@ C----------------------------------------------
 C ROUTINE BODY
 C----------------------------------------------
       if (firstime) then
-        write(*,*) 'Calling conv_cgrid_em_bwd' ! dbg.7.2014.slc
+        firstime = .FALSE.
+        !write(*,*) 'conv_cgrid_em_bwd, firstime' ! dbg.7.2014.slc
+
+        LOGDEV = INIT3()
         
         CALL SUBHFILE(MET_CRO_3D, GXOFF, GYOFF,
      &       STRTCOLMC3, ENDCOLMC3, STRTROWMC3, ENDROWMC3)
@@ -142,6 +148,8 @@ C # / m**3 (number density), and m**2 / m**3 (surface area) species
 !        end do
       endif           !  if Firstime
 
+      ! dbg.2.2015.slc
+      
       IF ( .NOT. INTERPX(MET_CRO_3D, 'DENS', PNAME,
      &     STRTCOLMC3,ENDCOLMC3, STRTROWMC3,ENDROWMC3, 1,NLAYS,
      &     JDATE, JTIME, DENS) ) THEN
@@ -152,12 +160,8 @@ C # / m**3 (number density), and m**2 / m**3 (surface area) species
 C Convert non-molar mixing ratio species and re-order CGRID
 
 ! (6.2014)  slc debug
-!      write(*,*) 'n_gc_diff: ', n_gc_diff
-!      write(*,*) 'nqae: ', nqae
-!      write(*,*) 'nnae: ', nnae
-!      write(*,*) 'nsae: ', nsae
-!      write(*,*) 'n_nr_diff: ', n_nr_diff
-!      write(*,*) 'n_tr_diff: ', n_tr_diff
+      !write(logdev,*) 'before transpose, sum(cngrd_em_bwd): ',sum(cngrd_em_bwd)
+      !write(logdev,*) 'before transpose, size(cgrid_em_bwd): ',size(cgrid_em_bwd)
 
 C Tracers - no conversion
       nspcs = n_tr_diff
@@ -166,7 +170,7 @@ C Tracers - no conversion
         off = N_GC_DIFF + N_AE_DIFF + N_NR_DIFF - 1
         do r = 1, my_nrows
           do c = 1, my_ncols
-            do l = 1, nlays
+            do l = 1, emsensl
               do v = 1, nspcs
                 cgrid_em_bwd(c,r,l,off+v) = cgrid_em_bwd(c,r,l,off+v)+cngrd_em_bwd(off+v,l,c,r)
                 cngrd_em_bwd(off+v,l,c,r) = 0.
@@ -184,7 +188,7 @@ C Non-reactives - no conversion
         off = N_GC_DIFF + N_AE_DIFF - 1
         do r = 1, my_nrows
           do c = 1, my_ncols
-            do l = 1, nlays
+            do l = 1, emsensl
               do v = 1, nspcs
                 cgrid_em_bwd(c,r,l,off+v) = cgrid_em_bwd(c,r,l,off+v)+cngrd_em_bwd(off+v,l,c,r)
                 cngrd_em_bwd(off+v,l,c,r) = 0.
@@ -200,7 +204,7 @@ C m**2/m**3 aerosol -> m**2/mol air
       if (nspcs .gt. 0) then
         do r = 1, my_nrows
           do c = 1, my_ncols
-            do l = 1, nlays
+            do l = 1, emsensl
               conv = maogpkg/dens(c,r,l)
               do v = 1, nspcs
                 cgrid_em_bwd(c,r,l,sae(v)) = cgrid_em_bwd(c,r,l,sae(v))+cngrd_em_bwd(sae(v),l,c,r)*conv
@@ -220,7 +224,7 @@ C ppm = 10**6)
       if (nspcs .gt. 0) then
         do r = 1, my_nrows
           do c = 1, my_ncols
-            do l = 1, nlays
+            do l = 1, emsensl
               conv = maoavo1000/dens(c,r,l)
               do v = 1, nspcs
                 cgrid_em_bwd(c,r,l,nae(v)) = cgrid_em_bwd(c,r,l,nae(v))+cngrd_em_bwd(nae(v),l,c,r)*conv
@@ -239,7 +243,7 @@ C (Don't divide by MGPG, etc. See note above)
       if (nspcs .gt. 0) then
         do r = 1, my_nrows
           do c = 1, my_ncols
-            do l = 1, nlays
+            do l = 1, emsensl
               fac = maogpkg/dens(c,r,l)
               do v = 1, nspcs
                 conv = fac/molwt(v)
@@ -259,7 +263,7 @@ C Gas - no conversion
         off = 0
         do r = 1, my_nrows
           do c = 1, my_ncols
-            do l = 1, nlays
+            do l = 1, emsensl
               do v = 1, nspcs
                 cgrid_em_bwd(c,r,l,off+v) = cgrid_em_bwd(c,r,l,off+v)+cngrd_em_bwd(off+v,l,c,r)
                 cngrd_em_bwd(off+v,l,c,r) = 0.
@@ -284,6 +288,7 @@ C----------------------------------------------
 C ROUTINE BODY
 C----------------------------------------------
       if (firstime) then
+        firstime = .FALSE.
 !        CALL CGRID_MAP(NSPCSD, GC_STRT, AE_STRT, NR_STRT, TR_STRT)
         CALL SUBHFILE(MET_CRO_3D, GXOFF, GYOFF,
      &       STRTCOLMC3, ENDCOLMC3, STRTROWMC3, ENDROWMC3)
@@ -320,12 +325,20 @@ C----------------------------------------------
          CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
       END IF
 
+! (6.2014)  slc debug
+      !write(logdev,*) 'before transpose, sum(cgrid_em_bwd): ',sum(cgrid_em_bwd)
+      !write(logdev,*) 'before transpose, shape(cgrid_em_bwd): ',shape(cgrid_em_bwd)
+      !write(logdev,*) 'before transpose, shape(cngrd_em_bwd): ',shape(cngrd_em_bwd)
+      !write(logdev,*) 'tr_diff: ',n_tr_diff
+      !write(logdev,*) 'nr_diff: ',n_nr_diff
+      !write(logdev,*) 'gc_diff: ',n_gc_diff      
+
       nspcs = n_tr_diff
       if (nspcs .gt. 0) then
 !        off = tr_strt-1
         off = N_GC_DIFF + N_AE_DIFF + N_NR_DIFF - 1
         do v = 1, nspcs
-          do l = 1, nlays
+          do l = 1, emsensl
             do r = 1, my_nrows
               do c = 1, my_ncols
                 cngrd_em_bwd(off+v,l,c,r) = cngrd_em_bwd(off+v,l,c,r)+cgrid_em_bwd(c,r,l,off+v)
@@ -335,12 +348,13 @@ C----------------------------------------------
           end do
         end do
       endif
+      
       nspcs = n_nr_diff
       if (nspcs .gt. 0) then
 !        off = nr_strt-1
         off = N_GC_DIFF + N_AE_DIFF - 1
         do v = 1, nspcs
-          do l = 1, nlays
+          do l = 1, emsensl
             do r = 1, my_nrows
               do c = 1, my_ncols
                 cngrd_em_bwd(off+v,l,c,r) = cngrd_em_bwd(off+v,l,c,r)+cgrid_em_bwd(c,r,l,off+v)
@@ -353,7 +367,7 @@ C----------------------------------------------
       nspcs = nsae
       if (nspcs .gt. 0) then
         do v = 1, nspcs
-          do l = 1, nlays
+          do l = 1, emsensl
             do r = 1, my_nrows
               do c = 1, my_ncols
                 conv = gpkgoma*dens(c,r,l)
@@ -367,7 +381,7 @@ C----------------------------------------------
       nspcs = nnae
       if (nspcs .gt. 0) then
         do v = 1, nspcs
-          do l = 1, nlays
+          do l = 1, emsensl
             do r = 1, my_nrows
               do c = 1, my_ncols
                 conv = avooma_001*dens(c,r,l)
@@ -382,7 +396,7 @@ C----------------------------------------------
       if (nspcs .gt. 0) then
         do v = 1, nspcs
           fac = gpkgoma*molwt(v)
-          do l = 1, nlays
+          do l = 1, emsensl
             do r = 1, my_nrows
               do c = 1, my_ncols
                 conv = fac*dens(c,r,l)
@@ -398,7 +412,7 @@ C----------------------------------------------
 !        off = gc_strt-1
         off = 0
         do v = 1, nspcs
-          do l = 1, nlays
+          do l = 1, emsensl
             do r = 1, my_nrows
               do c = 1, my_ncols
                 cngrd_em_bwd(off+v,l,c,r) = cngrd_em_bwd(off+v,l,c,r)+cgrid_em_bwd(c,r,l,off+v)

@@ -281,14 +281,14 @@ C-----------------------------------------------------------------------
             CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
          END IF
 
-         ALLOCATE ( VDEMIS_VD( MY_NCOLS,MY_NROWS,NLAYS,N_SPC_EMIS+1 ), 
+         ALLOCATE ( VDEMIS_VD( 1:MY_NCOLS,1:MY_NROWS,1:NLAYS,1:N_SPC_EMIS+1 ), 
      &              STAT = ALLOCSTAT )
          IF ( ALLOCSTAT .NE. 0 ) THEN
             XMSG = 'VDEMIS_VD memory allocation failed'
             CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
          END IF
 
-         write(*,*) 'before opening ADJ_VDIFF_CHK at JDATE & JTIME'
+         !write(*,*) 'before opening ADJ_VDIFF_CHK at JDATE & JTIME'
          !dbg.slc.7.2014
 C Open checkpoint file as read-only
          CALL CHK_FILE_OPEN ( ADJ_VDIFF_CHK, JDATE, JTIME, .FALSE. )
@@ -320,11 +320,11 @@ C set vertical layer definitions from COORD.EXT
 !         END IF
 
          ! dbg.slc.7.2014
-         write(*,*) 'before reading ADJ_VDIFF_CHK'
+         !write(*,*) 'before reading ADJ_VDIFF_CHK'
 C Read vertical diffusion checkpoint at sync step
          CALL CHK_FILE_READ ( ADJ_VDIFF_CHK, JDATE, JTIME, CGRID )
          ! dbg.slc.7.2014
-         write(*,*) 'after reading ADJ_VDIFF_CHK'       
+         !write(*,*) 'after reading ADJ_VDIFF_CHK'       
 
          IF ( .NOT. DEPV_INIT ( JDATE, JTIME, TSTEP( 1 ) ) ) THEN
             XMSG = 'Failure initializing deposition velocities module'
@@ -412,6 +412,7 @@ C read & interpolate deposition velocities
 
 C EDDYV returned = Kz, where Kz is in m**2/sec
 
+      !write(*,*) 'before calculating SEDDY, vdiff' ! dbg.6.2015.slc
       DO R = 1, MY_NROWS
          DO C = 1, MY_NCOLS
             DO L = 1, NLAYS
@@ -424,8 +425,10 @@ C EDDYV returned = Kz, where Kz is in m**2/sec
       IF ( IFACM .EQ. 0 ) CONVCT = .FALSE.   ! no ACM
 
 C Read emissions from checkpoint file
+      !write(*,*) 'before reading CHK files, vdiff' ! dbg.6.2015.slc
       CALL CHK_FILE_READ ( ADJ_EMIS_CHK, MDATE, MTIME, VDEMIS_VD )
       CALL CHK_FILE_READ ( ADJ_EMIST_CHK, MDATE, MTIME, EMIST )
+      !write(*,*) 'after reading CHK files, vdiff' ! dbg.6.2015.slc
 
 C----------------------------------------------
 C RESET GLOBAL ADJOINT VARIABLES
@@ -456,7 +459,7 @@ C----------------------------------------------
        ! Recalculate emissions from checkpoint file (mdt|slc.1.2014)
 !       IF ( JDATE == 2007161 .AND.  JTIME < 10000 ) THEN
 !          ! Allocate PERT Array
-!!          ALLOCATE ( PERT ( MY_NCOLS, MY_NROWS, EMLAYS, N_SPC_DIFF )
+!!          ALLOCATE ( PERT ( MY_NCOLS, MY_NROWS, EMSENSL, N_SPC_DIFF )
 !     &                 , STAT = ALLOCSTAT )
 !          IF ( ALLOCSTAT .NE. 0 ) THEN
 !             XMSG = 'PERT  memory allocation failed'
@@ -548,10 +551,10 @@ C----------------------------------------------
           end do
           
           ! dbg.slc.7.2014
-!          if (c == 10 .and. r == 10 ) then
-!             write(*,*) 'current minus checkpointed CO emis (10,10): ', emis(16,1)-EMIST(10,10,1,16)
-!             write(*,*) 'emis: ', emis(16,1) 
-!          endif  
+          !if (c == 5 .and. r == 2 ) then
+          !   write(logdev,*) 'current minus checkpointed CO emis (5,5): ', emis(16,1)-EMIST(5,2,1,16)
+          !   write(logdev,*) 'NO2 emis: ', emis(1,1) 
+          !endif  
           
           do l = 1, nlays
             eddy(l) = seddy(l,c,r)
@@ -643,8 +646,11 @@ C----------------------------------------------
             else
               call tri_bwd( cc,bb,ee,dd_bwd,uu_bwd )
             endif
+            !write(LOGDEV,*) 'NO2 dd_bwd(1,1): ',dd_bwd(1,1)            
             do v = 1, n_spc_diff
 
+!!! Eliminated duplicate application of scaling factor in forward; 
+!!!     now making adjoint congruent(dbg.7.2015.slc)
 !           From vdiffacm2.F (forward code) as a reference for the emissions-related 
 !              sensitivity calculations FOR LEVEL ONE (6.2014.slc|mdt)
 !              Because the species indices used in the forward code for EMIS and EM_SF require

@@ -1063,23 +1063,25 @@ C Possible report to REPRTLAY
 
             END DO    ! end loop on sources S
 
-            IF ( PT3DFRAC .AND. WRTIME ) THEN     ! Write out layer fractions
-               IF ( .NOT. WRITE3_DISTR( PLAYNAME( N ), 'LFRAC', WDATE, WTIME,
-     &                                  MY_NSRC( N ), EMLYRS, LFRAC ) ) THEN
-                  XMSG = 'Error writing "LFRAC" to file "' //
-     &                    PLAYNAME( N )( 1:LEN_TRIM( PLAYNAME( N ) ) ) // '."'
-                  CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT2 )
-               END IF
-               IF ( .NOT. WRITE3_DISTR( PLAYNAME( N ), 'ZPLUME', WDATE, WTIME,
-     &                                  MY_NSRC( N ), EMLYRS, ZPLUM ) ) THEN
-                  XMSG = 'Error writing "ZPLUM" to file "' //
-     &                    PLAYNAME( N )( 1:LEN_TRIM( PLAYNAME( N ) ) ) // '."'
-                  CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT2 )
-               END IF
-            WRITE( LOGDEV,94030 )
-     &            'Timestep written to', TRIM( PLAYNAME( N ) ),
-     &            'for date and time', WDATE, WTIME
-            END IF
+!!      Commenting out because of confusion over write3_distr
+!(slc.1.2014)
+!            IF ( PT3DFRAC .AND. WRTIME ) THEN     ! Write out layer fractions
+!               IF ( .NOT. WRITE3_DISTR( PLAYNAME( N ), 'LFRAC', WDATE, WTIME,
+!     &                                  MY_NSRC( N ), EMLYRS, LFRAC ) ) THEN
+!                  XMSG = 'Error writing "LFRAC" to file "' //
+!     &                    PLAYNAME( N )( 1:LEN_TRIM( PLAYNAME( N ) ) ) // '."'
+!                  CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT2 )
+!               END IF
+!               IF ( .NOT. WRITE3_DISTR( PLAYNAME( N ), 'ZPLUME', WDATE, WTIME,
+!     &                                  MY_NSRC( N ), EMLYRS, ZPLUM ) ) THEN
+!                  XMSG = 'Error writing "ZPLUM" to file "' //
+!     &                    PLAYNAME( N )( 1:LEN_TRIM( PLAYNAME( N ) ) ) // '."'
+!                  CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT2 )
+!               END IF
+!            WRITE( LOGDEV,94030 )
+!     &            'Timestep written to', TRIM( PLAYNAME( N ) ),
+!     &            'for date and time', WDATE, WTIME
+!            END IF
 
 D           write( logdev,* ) '   Max ZPLM(', n, ' ):', mxzplm
 

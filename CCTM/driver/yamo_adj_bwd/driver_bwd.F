@@ -63,10 +63,10 @@ C Include Files:
       INCLUDE SUBST_AE_SPC      ! aerosol species table
       INCLUDE SUBST_NR_SPC      ! non-reactive species table
       INCLUDE SUBST_TR_SPC      ! tracer species table
-      INCLUDE SUBST_GC_DIFF     ! gas chemistry diffused species table
-      INCLUDE SUBST_AE_DIFF     ! aerosol diffused species table
-      INCLUDE SUBST_NR_DIFF     ! non-reactive diffused species table
-      INCLUDE SUBST_TR_DIFF     ! tracer diffused species table
+      !INCLUDE SUBST_GC_DIFF     ! gas chemistry diffused species table
+      !INCLUDE SUBST_AE_DIFF     ! aerosol diffused species table
+      !INCLUDE SUBST_NR_DIFF     ! non-reactive diffused species table
+      !INCLUDE SUBST_TR_DIFF     ! tracer diffused species table
 
 
 
@@ -87,9 +87,14 @@ C Local Variables:
 
       INTEGER, ALLOCATABLE, SAVE :: ASTEP(:) ! advection time steps
       LOGICAL, ALLOCATABLE, SAVE :: XFIRST(:)
+      REAL, ALLOCATABLE :: LGRID_FRC(:, :, :, :)
+      REAL, ALLOCATABLE :: LGRID_FRC_TOT(:, :, :, :)
+      !REAL, ALLOCATABLE, TARGET :: ADJGRID(:, :, :, :)
+      !REAL, ALLOCATABLE, TARGET :: ADJGRID_EM(:, :, :, :)
+      !REAL, ALLOCATABLE, TARGET :: ADJGRID_EM_SF(:, :, :, :)
+      !REAL, ALLOCATABLE, TARGET :: PCGRID_EM(:, :, :, :)
+      !REAL, ALLOCATABLE, TARGET :: PCGRID_EM_SF(:, :, :, :)
       REAL, POINTER :: LGRID(:, :, :, :)
-      REAL, POINTER :: LGRID_FRC(:, :, :, :)
-      REAL, POINTER :: LGRID_FRC_TOT(:, :, :, :)
       REAL, POINTER :: LGRID_EM(:, :, :, :)
       REAL, POINTER :: LGRID_EM_SF(:, :, :, :)
 !      REAL, POINTER :: LGRID_EM_NRM(:, :, :, :)
@@ -121,21 +126,25 @@ C Local Variables:
       INTEGER :: VI             ! variable index in naming array
 
       INTEGER     N_SPC_DIFF               ! global diffusion species
-      PARAMETER ( N_SPC_DIFF = N_GC_DIFF   ! = N_GC_SPC + 1
+      PARAMETER ( N_SPC_DIFF = N_GC_DIFF   
      &                       + N_AE_DIFF
      &                       + N_NR_DIFF
      &                       + N_TR_DIFF)
 
       INTERFACE
-         SUBROUTINE INIT_LGRID(LGRID, SDATE, STIME, EDATE, ETIME, TSTEP, NSTEPS)
+         SUBROUTINE INIT_LGRID(SDATE, STIME, EDATE, ETIME, TSTEP, NSTEPS,
+     &                      LGRID, LGRID_EM, LGRID_EM_SF)
             IMPLICIT NONE
-            REAL, POINTER :: LGRID(:, :, :, :)
+            !REAL, POINTER :: LGRID(:, :, :, :)
             INTEGER, INTENT(OUT) :: SDATE
             INTEGER, INTENT(OUT) :: STIME
             INTEGER, INTENT(OUT) :: EDATE
             INTEGER, INTENT(OUT) :: ETIME
             INTEGER, INTENT(OUT) :: TSTEP(2)
             INTEGER, INTENT(OUT) :: NSTEPS
+            REAL, POINTER :: LGRID(:, :, :, :)
+            REAL, POINTER :: LGRID_EM(:, :, :, :)
+            REAL, POINTER :: LGRID_EM_SF(:, :, :, :)
          END SUBROUTINE INIT_LGRID
          SUBROUTINE SYNCSTEP(JDATE, JTIME, TSTEP, NSTEPS, NREPS)
             IMPLICIT NONE
@@ -153,6 +162,9 @@ C Local Variables:
          SUBROUTINE SCIPROC_BWD(LGRID, LGRID_EM, LGRID_EM_SF, 
      &                          JDATE, JTIME, TSTEP, ASTEP, XFIRST)
             IMPLICIT NONE
+            !REAL, INTENT(INOUT)          :: LGRID(:, :, :, :)
+            !REAL, INTENT(INOUT)          :: LGRID_EM(:, :, :, :) ! adjoint variable
+            !REAL, INTENT(INOUT)          :: LGRID_EM_SF(:, :, :, :) ! adjoint variable
             REAL, POINTER          :: LGRID(:, :, :, :)
             REAL, POINTER          :: LGRID_EM(:, :, :, :) ! adjoint variable
             REAL, POINTER          :: LGRID_EM_SF(:, :, :, :) ! adjoint variable
@@ -293,7 +305,7 @@ C Create new adjoint output files and open for update
          CALL WR_ADJ_FILE(LGRID, EDATE, ETIME, ADJ_LGRID)
          CALL WR_ADJ_FILE(LGRID_EM, EDATE, ETIME, ADJ_LGRID_EM)
          CALL WR_ADJ_FILE(LGRID_EM_SF, EDATE, ETIME, ADJ_LGRID_EM_SF)
-!         CALL WR_ADJ_FILE(LGRID_EM_NRM, EDATE, ETIME, ADJ_LGRID_EM_NRM)
+!         CALL WR_ADJ_FILE(ADJGRID_EM_NRM, EDATE, ETIME, ADJ_LGRID_EM_NRM)
       END IF
 
 C Read XFIRST from the file CTM_XFIRST_IN
@@ -322,7 +334,9 @@ C final time)
       DO STEP_NUM = NSTEPS, 1, -1 ! output time step loop
          SDATE = JDATE
          STIME = JTIME
+         !write(*,*) 'Start of driver do loop, date_time: ', SDATE,STIME
          CALL NEXTIME(SDATE, STIME, -TSTEP(1))
+         write(*,*) 'after nextime, date_time: ', SDATE,STIME
 
 C If the sync step does not need to be constant for this run, get a
 C synchronization step, TSTEP(2), and number of repetitions per output
@@ -340,7 +354,8 @@ C Read adjoint forcing from file
             CALL M3EXIT(PNAME, SDATE, STIME, XMSG, XSTAT1)
          ELSE
             CALL RD_FORCE_FILE(LGRID_FRC_TOT, SDATE, STIME) !, ADJ_FORCE)
-!            WRITE(*,*) 'CO forcing at (10,10,1): ',LGRID_FRC_TOT(10,10,1,22)
+!            WRITE(*,*) 'Shape(LGRID_FRC_TOT): ',shape(LGRID_FRC_TOT)
+!            WRITE(*,*) 'O3 forcing at (1,1,1): ',LGRID_FRC_TOT(1,1,1,4)
           END IF
 
          IF ( .NOT. CLOSE3(ADJ_FORCE) ) THEN
@@ -351,29 +366,40 @@ C Read adjoint forcing from file
 C Since offline forcing is based on concentrations averaged over the output time step,
 C   the forcing can simply be allocated evenly to each synchronization time step. (slc.11.2013)
 C        LGRID_FRC and LGRID_FRC_TOT are stored in ADJ_ARRAY_MOD
-          ! dbg.8.2014.slc
-!         LGRID_FRC = LGRID_FRC_TOT / REAL(NREPS)
+         ! dbg.8.2014.slc
+         LGRID_FRC = LGRID_FRC_TOT / REAL(NREPS)
          DO IREP = NREPS, 1, -1
             ! (6.2014.slc)
 !            only forcing at the end of the hour - 8.2014.slc
-!            LGRID(:,:,1,:) = LGRID(:,:,1,:) + LGRID_FRC(:,:,1,:) 
-            IF ( IREP .EQ. NREPS ) THEN
-               LGRID(:,:,1,:) = LGRID(:,:,1,:) + LGRID_FRC_TOT(:,:,1,:)
-!               WRITE(*,*) 'Before SCIPROC_BWD, CO forcing at (10,10,1):',LGRID_FRC(10,10,1,22)
-            ENDIF 
-!            WRITE(*,*) 'Before SCIPROC_BWD, LGRID(10,10,1,22): ',LGRID(10,10,1,22)
-!            WRITE(*,*) 'Before SCIPROC_BWD, LGRID_EM(10,10,1,16): ',LGRID_EM(10,10,1,16)
-!            WRITE(*,*) 'Before SCIPROC_BWD, LGRID_EM_SF(10,10,1,16): ',LGRID_EM_SF(10,10,1,16)
+            WRITE(LOGDEV,*) 'Before addition, sum LGRID: ', 
+     &                 SUM(LGRID),' LGRID_FRC: ',SUM(LGRID_FRC), MYPE
+            !WRITE(*,*) MYPE, ' Shape LGRID_FRC: ',shape(LGRID_FRC)
+            !WRITE(*,*) MYPE, ' Shape LGRID: ',shape(LGRID)
+            !WRITE(*,*) 'Before addition on ',MYPE,', LGRID(1,1,1,4): ', LGRID(1,1,1,4)
+            !WRITE(*,*) 'Before addition on ',MYPE,', LGRID_FRC(1,1,1,4): ', LGRID_FRC(1,1,1,4)
+            LGRID(:,:,1,:) = LGRID(:,:,1,:) + LGRID_FRC(:,:,1,:) 
+!            IF ( IREP .EQ. NREPS ) THEN
+!               dbg.1.2015.slc - applying forcing at every time step
+!               LGRID(:,:,1,:) = LGRID(:,:,1,:) + LGRID_FRC_TOT(:,:,1,:)
+!            ENDIF 
+            WRITE(LOGDEV,*) 'Sum LGRID: ', SUM(LGRID),' LGRID_FRC: ',SUM(LGRID_FRC), MYPE
+!            WRITE(*,*) 'Shape LGRID: ',shape(LGRID)
+!            WRITE(*,*) 'Shape LGRID_EM: ',shape(LGRID_EM)
+            WRITE(LOGDEV,*) 'Sum LGRID_EM_SF: ',sum(LGRID_EM_SF)
+
             CALL SCIPROC_BWD(LGRID, LGRID_EM, LGRID_EM_SF,
      &                       JDATE, JTIME, TSTEP, ASTEP, XFIRST)                     ! science processes
-!            WRITE(*,*) 'After SCIPROC_BWD, LGRID(10,10,1,22): ',LGRID(10,10,1,22)
-!            WRITE(*,*) 'After SCIPROC_BWD, LGRID_EM(10,10,1,16): ',LGRID_EM(10,10,1,16)
-!            WRITE(*,*) 'After SCIPROC_BWD, LGRID_EM_SF(10,10,1,16): ',LGRID_EM_SF(10,10,1,16)
+            
+            write(LOGDEV,*) 'after SCIPROC_BWD in driver'
+            write(LOGDEV,*) 'sum(lgrid): ',sum(lgrid)
+!            write(*,*) 'sum(lgrid_em): ',sum(lgrid_em)
+            write(LOGDEV,*) 'sum(lgrid_em_sf): ',sum(lgrid_em_sf)
+        
             IF ( TRIM(LGRID_OUTPUT_FREQ) == 'SYNC_STEP' ) THEN
                  CALL WR_ADJ_FILE(LGRID, JDATE, JTIME, ADJ_LGRID)
-!                 WRITE(*,*) 'Size CGRID_BWD_EM: ',size(CGRID_BWD_EM)
-!                 WRITE(*,*) 'Size CGRID_BWD_EM_SF: ',size(CGRID_BWD_EM_SF)
-!                 WRITE(*,*) 'Size CGRID_BWD_EM_NRM: ',size(CGRID_BWD_EM_NRM)
+                 !WRITE(*,*) 'Shape LGRID: ',shape(LGRID)
+                 !WRITE(*,*) 'Shape LGRID_EM: ',shape(LGRID_EM)
+                 !WRITE(*,*) 'Shape LGRID_EM_SF: ',shape(LGRID_EM_SF)
 !                 LGRID_EM = CGRID_BWD_EM
                  CALL WR_ADJ_FILE(LGRID_EM, JDATE, JTIME, 
      &                            ADJ_LGRID_EM)
@@ -387,14 +413,10 @@ C        LGRID_FRC and LGRID_FRC_TOT are stored in ADJ_ARRAY_MOD
          END DO
          
          IF ( TRIM(LGRID_OUTPUT_FREQ) == 'OUTPUT_STEP' ) THEN
-!            WRITE(*,*) 'driver - lgrid(10,10,1,22): ',LGRID(10,10,1,22)
-!            WRITE(*,*) 'driver - lgrid_em(10,1,1,16): ',LGRID_EM(10,10,1,16)
-!            WRITE(*,*) 'driver - lgrid_em_sf(10,1,1,16): ',LGRID_EM_SF(10,10,1,16)
-!                 WRITE(*,*) 'Size LGRID: ',size(LGRID,4)
-!                 WRITE(*,*) 'Size LGRID_EM: ',size(LGRID_EM,4)
-!                 WRITE(*,*) 'Size LGRID_EM_SF:',size(LGRID_EM_SF,4)
-!                 WRITE(*,*) 'Size LGRID_EM_NRM:
-!                 ',size(LGRID_EM_NRM,4)
+!                 WRITE(*,*) 'Shape LGRID_FRC: ',shape(LGRID_FRC)
+!                 WRITE(*,*) 'Shape LGRID: ',shape(LGRID)
+!                 WRITE(*,*) 'Shape LGRID_EM: ',shape(LGRID_EM)
+!                 WRITE(*,*) 'Shape LGRID_EM_SF:',shape(LGRID_EM_SF)
 
             CALL WR_ADJ_FILE(LGRID, JDATE, JTIME, ADJ_LGRID)
 !            LGRID_EM = CGRID_BWD_EM
@@ -426,9 +448,13 @@ C Write the final values of XFIRST to the file CTM_XFIRST_OUT
       END IF
 
 C Close checkpoint files
+      !write(*,*) 'before CHK_FILE_CLOSE'
       CALL CHK_FILE_CLOSE
+      !write(*,*) 'after CHK_FILE_CLOSE'
 
 C Clean up communications
+      !write(*,*) 'before PAR_TERM'
       CALL PAR_TERM(PNAME, JDATE, JTIME, CLOCK)
+      !write(*,*) 'after PAR_TERM'
 
       END PROGRAM DRIVER_BWD

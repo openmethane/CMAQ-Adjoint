@@ -314,6 +314,7 @@ C sub-steps.
             END DO
             NSS = SS
 
+!            write(*,*) 'in ZADV_BWD, shape(LGRID): ',shape(lgrid)
 C Update concentrations of trace species
             DO SPC = 1, N_SPC_ADV
                A2C = ADV_MAP( SPC )

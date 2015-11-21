@@ -67,7 +67,9 @@ C==============================================
 C==============================================
 C define local variables
 C==============================================
-      LOGICAL, SAVE :: FIRSTIME = .TRUE.
+      LOGICAL, SAVE :: FIRSTTIME = .TRUE.
+
+      INTEGER, SAVE :: LOGDEV
 
       CHARACTER( 16 ), SAVE :: PNAME = 'CONV_CGRID_BWD'
       CHARACTER( 96 ) :: XMSG = ' '
@@ -97,12 +99,27 @@ C==============================================
 C----------------------------------------------
 C ROUTINE BODY
 C----------------------------------------------
-      if (firstime) then
-        write(*,*) 'Calling conv_cgrid_bwd' ! dbg.7.2014.slc
+      !write(*,*) 'FIRSTTIME: ',FIRSTTIME
+      if (firsttime) then
+        FIRSTTIME = .FALSE.
+
+        LOGDEV = INIT3()
+
+        !write(LOGDEV,*) 'FIRSTTIME: ',FIRSTTIME
+        !write(LOGDEV,*) 'conv_cgrid_bwd, firsttime, NSPCSD: ', NSPCSD ! dbg.7.2014.slc
         CALL CGRID_MAP(NSPCSD, GC_STRT, AE_STRT, NR_STRT, TR_STRT)
+        !write(LOGDEV,*) 'conv_cgrid_bwd, after CGRID_MAP, GC_STRT: ', GC_STRT ! dbg.7.2014.slc
+        !write(LOGDEV,*) 'conv_cgrid_bwd, MET_CRO_3D: ', MET_CRO_3D ! dbg.7.2014.slc
+
         CALL SUBHFILE(MET_CRO_3D, GXOFF, GYOFF,
      &       STRTCOLMC3, ENDCOLMC3, STRTROWMC3, ENDROWMC3)
 
+        !write(LOGDEV,*) 'conv_cgrid_bwd, after SUBHFILE'
+        !write(LOGDEV,*) 'conv_cgrid_bwd, n_ae_spc: ',n_ae_spc
+        !write(LOGDEV,*) 'conv_cgrid_bwd, nqae: ',NQAE
+        !write(LOGDEV,*) 'conv_cgrid_bwd, nnae: ',NNAE
+        !write(LOGDEV,*) 'conv_cgrid_bwd, nsae: ',NSAE
+      
 C create aerosol species pointers to distinguish micro-grams / m**3,
 C # / m**3 (number density), and m**2 / m**3 (surface area) species
 
@@ -126,7 +143,10 @@ C # / m**3 (number density), and m**2 / m**3 (surface area) species
             molwt(nqae) = ae_molwt(s)
           endif
         end do
-      endif           !  if Firstime
+      endif           !  if Firsttime
+
+      ! dbg.2.2015.slc
+      !write(*,*) 'conv_cgrid_bwd, after first time'
 
       IF ( .NOT. INTERPX(MET_CRO_3D, 'DENS', PNAME,
      &     STRTCOLMC3,ENDCOLMC3, STRTROWMC3,ENDROWMC3, 1,NLAYS,
@@ -138,12 +158,14 @@ C # / m**3 (number density), and m**2 / m**3 (surface area) species
 C Convert non-molar mixing ratio species and re-order CGRID
 
 ! (6.2014)  slc debug
-!      write(*,*) 'n_gc_spc: ', n_gc_spc
-!      write(*,*) 'nqae: ', nqae
-!      write(*,*) 'nnae: ', nnae
-!      write(*,*) 'nsae: ', nsae
-!      write(*,*) 'n_nr_spc: ', n_nr_spc
-!      write(*,*) 'n_tr_spc: ', n_tr_spc
+      !write(*,*) 'n_gc_spc: ', n_gc_spc
+      !write(LOGDEV,*) 'shape(CGRID_BWD)',shape(CGRID_BWD)
+      !write(LOGDEV,*) 'sum(CNGRD_BWD)',sum(CNGRD_BWD)
+      !write(*,*) 'nqae: ', nqae
+      !write(*,*) 'nnae: ', nnae
+      !write(*,*) 'nsae: ', nsae
+      !write(*,*) 'n_nr_spc: ', n_nr_spc
+      !write(*,*) 'n_tr_spc: ', n_tr_spc
 
 C Tracers - no conversion
       nspcs = n_tr_spc
@@ -252,6 +274,10 @@ C Gas - no conversion
         end do
       endif
 
+      ! dbg.2.2015.slc
+      !write(LOGDEV,*) 'after transpose, sum(cgrid_bwd):',sum(cgrid_bwd)
+      !write(LOGDEV,*) 'after transpose, shape(cngrd_bwd):',shape(cngrd_bwd)
+
       return
 
 C:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -266,7 +292,18 @@ C***************************************************************
 C----------------------------------------------
 C ROUTINE BODY
 C----------------------------------------------
-      if (firstime) then
+      if (firsttime) then
+        ! dbg.2.2015.slc
+        FIRSTTIME = .FALSE.
+        LOGDEV = INIT3()
+        !write(LOGDEV,*) 'my_nrows: ',my_nrows,' my_ncols: ',my_ncols
+        !write(LOGDEV,*) 'shape(cngrd_bwd): ',shape(cngrd_bwd)
+        !write(LOGDEV,*) 'shape(cgrid_bwd): ',shape(cgrid_bwd)
+        !write(*,*) 'n_tr_spc: ',n_tr_spc,' n_nr_spc: ',n_nr_spc
+        !write(*,*) 'n_gc_spc: ',n_gc_spc,' nlays: ',nlays
+        !write(*,*) 'GC_STRT: ', GC_STRT
+        !write(*,*) 'NR_STRT: ', NR_STRT
+        
         CALL CGRID_MAP(NSPCSD, GC_STRT, AE_STRT, NR_STRT, TR_STRT)
         CALL SUBHFILE(MET_CRO_3D, GXOFF, GYOFF,
      &       STRTCOLMC3, ENDCOLMC3, STRTROWMC3, ENDROWMC3)
@@ -297,6 +334,10 @@ C----------------------------------------------
          CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
       END IF
 
+      ! dbg.2.2015.slc
+      !write(logdev,*) 'conv_cgrid_bwd, shape(cngrd_bwd): ',shape(cngrd_bwd)
+      !write(logdev,*) 'conv_cgrid_bwd, sum(cgrid_bwd): ',sum(cgrid_bwd)
+      !write(logdev,*) 'conv_cgrid_bwd, sum(cgrid_bwd(73)): ',sum(cgrid_bwd(:,:,:,73))
       nspcs = n_tr_spc
       if (nspcs .gt. 0) then
         off = tr_strt-1
@@ -311,6 +352,8 @@ C----------------------------------------------
           end do
         end do
       endif
+      ! dbg.2.2015.slc
+      !write(*,*) 'rev_cgrid_bwd, before n_nr_spc: ',n_nr_spc
       nspcs = n_nr_spc
       if (nspcs .gt. 0) then
         off = nr_strt-1
@@ -382,5 +425,8 @@ C----------------------------------------------
           end do
         end do
       endif
+      !write(logdev,*) 'after transpose, sum(cngrd_bwd): ',sum(cngrd_bwd)
+      !write(logdev,*) 'after transpose, cngrd_bwd(73): ',sum(cngrd_bwd(73,:,:,:))
+      !write(logdev,*) 'after transpose, shape(cgrid_bwd): ',shape(cgrid_bwd)
 
       end subroutine conv_cgrid_bwd

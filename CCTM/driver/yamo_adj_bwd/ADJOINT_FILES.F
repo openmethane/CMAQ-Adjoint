@@ -34,7 +34,7 @@ C Parameters
       CHARACTER(16), PARAMETER :: INIT_EM_1       = 'INIT_EM_1'
       CHARACTER(16), PARAMETER :: INIT_EM_SF_1    = 'INIT_EM_SF_1'
       CHARACTER(16), PARAMETER :: ADJ_LGRID       = 'ADJ_LGRID'
-!      CHARACTER(16), PARAMETER :: ADJ_FORCE       = 'ADJ_FORCE'
+      CHARACTER(16), PARAMETER :: ADJ_FORCE       = 'ADJ_FORCE'
       CHARACTER(16), PARAMETER :: ADJ_LGRID_EM_SF = 'ADJ_LGRID_EM_SF'
       CHARACTER(16), PARAMETER :: ADJ_LGRID_EM    = 'ADJ_LGRID_EM'
       CHARACTER(16), PARAMETER :: ADJ_LGRID_EM_NRM= 'ADJ_LGRID_EM_NRM'
@@ -98,7 +98,7 @@ C-----------------------------------------------------------------------
 
       VARDESC =
      &     'LGRID output frequency: SYNC_STEP, OUTPUT_STEP or ONCE (at start time)'
-      LGRID_OUTPUT_FREQ = 'SYNC_STEP'
+      LGRID_OUTPUT_FREQ = 'OUTPUT_STEP'
       CALL ENVSTR('ADJ_LGRID_FREQ', VARDESC, LGRID_OUTPUT_FREQ,
      &     LGRID_OUTPUT_FREQ, STATUS)
       IF ( STATUS /= 0 ) WRITE(LOGDEV, '(5X, A)') VARDESC
@@ -271,11 +271,15 @@ C Note: "CF" stands for "cost function units"
 C Note: "CF" stands for "cost function units"
 !       Only diffused species are calculated as emissions currently. so
 !       the loop is over the diffused species. 
+
+            ! dbg.1.2015.slc
+            !write(*,*) 'N_*_DIFF, GC: ',N_GC_DIFF,' AE: ',N_AE_DIFF
+            !write(*,*) 'NR: ',N_NR_DIFF,' TR: ',N_TR_DIFF 
             DO S = 1, N_GC_DIFF
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
                VNAME3D(NVARS3D) = GC_DIFF(S)
-               UNITS3D(NVARS3D) = 'CF/(mol/s)'
+               UNITS3D(NVARS3D) = 'CF/(ppmv/s)'
                VDESC3D(NVARS3D) = 
      &              'Sensitivity of cost function to emissions of ' //
      &              TRIM(VNAME3D(NVARS3D))
@@ -515,7 +519,7 @@ C Include Files:
 #include      SUBST_IODECL      # I/O definitions and declarations
 
 C Arguments:
-      REAL, INTENT(IN) :: ARRAY(:,:,:,:)
+      REAL, POINTER :: ARRAY(:,:,:,:)
       INTEGER, INTENT(IN) :: JDATE ! current model date, coded YYYYDDD
       INTEGER, INTENT(IN) :: JTIME ! current model time, coded HHMMSS
       CHARACTER(16), INTENT(IN) :: ADJ_FILE
@@ -534,9 +538,9 @@ C-----------------------------------------------------------------------
          LOGDEV = INIT3()
       END IF
 
-      WRITE(*,*) 'WR_ADJ_FILE, ARRAY(10,10,1,22): ',ARRAY(10,10,1,22)
-      WRITE(*,*) 'WR_ADJ_FILE, ARRAY(10,10,1,16): ',ARRAY(10,10,1,16)
-      WRITE(*,*) 'JDATE.TIME: ',JDATE, JTIME
+      !WRITE(LOGDEV,*) 'WR_ADJ_FILE, sum(ARRAY): ',sum(ARRAY)
+      !WRITE(LOGDEV,*) 'WR_ADJ_FILE, shape(ARRAY): ',shape(ARRAY)
+      !WRITE(LOGDEV,*) 'JDATE.TIME: ',JDATE, JTIME
 
       IF ( .NOT. WRITE3(ADJ_FILE, ALLVAR3, JDATE, JTIME, ARRAY) ) THEN
          XMSG = 'Could not write to ' // TRIM(ADJ_FILE)
@@ -562,8 +566,6 @@ C Include Files:
       INCLUDE SUBST_IOPARMS     ! I/O parameters definitions
       INCLUDE SUBST_IODECL      ! I/O definitions and declarations
       INCLUDE SUBST_IOFDESC     ! file header data structure
-
-C Arguments:
       REAL, INTENT(OUT) :: ARRAY(*)
       INTEGER, INTENT(IN) :: JDATE ! current model date, coded YYYYDDD
       INTEGER, INTENT(IN) :: JTIME ! current model time, coded HHMMSS
@@ -721,7 +723,7 @@ C Arguments:
 
       INTEGER, PARAMETER :: NLAYS_FRC = 1
 
-      REAL, INTENT(OUT) :: ARRAY(NCOLS,NROWS,NLAYS,NSPCSD)
+      REAL, INTENT(OUT) :: ARRAY(:,:,:,:)
       INTEGER, INTENT(IN) :: JDATE ! current model date, coded YYYYDDD
       INTEGER, INTENT(IN) :: JTIME ! current model time, coded HHMMSS
 !      CHARACTER(16), INTENT(IN) :: ADJ_FORCE
@@ -750,6 +752,9 @@ C Get local window in global domain
          ENDCOL = STRTCOL + NCOLS - 1
          STRTROW = ROWSX_PE(1, MYPE+1)
          ENDROW = STRTROW + NROWS - 1
+         
+         BUFFER = 0.d0
+         ARRAY  = 0.d0
 
 C Get file characteristics of ADJ_FILE
       IF ( .NOT. DESC3(ADJ_FORCE) ) THEN

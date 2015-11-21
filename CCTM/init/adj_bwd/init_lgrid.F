@@ -18,7 +18,8 @@ C   permissions subject to the above restrictions.                     *
 C***********************************************************************
 
 C:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      SUBROUTINE INIT_LGRID(LGRID, SDATE, STIME, EDATE, ETIME, TSTEP, NSTEPS)
+      SUBROUTINE INIT_LGRID(SDATE, STIME, EDATE, ETIME, TSTEP, NSTEPS,
+     &                      LGRID, LGRID_EM, LGRID_EM_SF)
 
 C-----------------------------------------------------------------------
 C Function:
@@ -46,7 +47,7 @@ C External Functions (not already declared by IODECL3.EXT):
       INTEGER, EXTERNAL :: SEC2TIME, TIME2SEC
 
 C Arguments:
-      REAL, POINTER :: LGRID(:, :, :, :)
+      !REAL, POINTER :: LGRID(:, :, :, :)
       INTEGER, INTENT(OUT) :: SDATE ! start date, format YYYYDDD
       INTEGER, INTENT(OUT) :: STIME ! start time, format HHMMSS
       INTEGER, INTENT(OUT) :: EDATE ! end date, format YYYYDDD
@@ -55,8 +56,12 @@ C Arguments:
                                        !   TSTEP(1) = local output step
                                        !   TSTEP(2) = sciproc sync. step (chem)
       INTEGER, INTENT(OUT) :: NSTEPS ! run duration: number of output time steps
+      REAL, POINTER :: LGRID(:, :, :, :)
+      REAL, POINTER :: LGRID_EM(:, :, :, :)
+      REAL, POINTER :: LGRID_EM_SF(:, :, :, :)
 
 C Local Variables:
+      INTEGER, SAVE :: LOGDEV   ! FORTRAN unit number for log file
       CHARACTER(16) :: PNAME = 'INIT_LGRID'
       CHARACTER(96) :: XMSG = ' '
 
@@ -67,6 +72,8 @@ C-----------------------------------------------------------------------
 
       JDATE = 0
       JTIME = 0
+      
+      LOGDEV = INIT3()
 
 !C Get file characteristics of CTM_CONC_FWD
 !      IF ( .NOT. OPEN3(CTM_CONC_FWD, FSREAD3, PNAME) ) THEN
@@ -107,9 +114,10 @@ C Get file characteristics of CTM_CONC_1
 C Set the output time step, TSTEP(1), and number of output steps, NSTEPS, to
 C the values used for the forward simulation
       TSTEP(1) = TSTEP3D
+!     dbg.slc.1.2015
       NSTEPS = MXREC3D - 1
-!     Limit execution to one hour for debugging - dbg.slc.7.2014
-!      NSTEPS = 1
+!     Limit execution to six hours for debugging - dbg.slc.7.2014
+!      NSTEPS = 6
 
 C Set start date and time and end date and time
       SDATE = SDATE3D
@@ -119,7 +127,47 @@ C Set start date and time and end date and time
       ETIME = STIME3D
       CALL NEXTIME(EDATE, ETIME, SEC2TIME(NSTEPS * TIME2SEC(TSTEP(1))))
       ! dbg.slc.7.2014
-      !WRITE(*,*) 'init_lgrid, EDATE/ETIME: ',EDATE, ETIME
+
+C Initialize LGRID
+      IF ( .NOT. OPEN3(INIT_LGRID_1, FSREAD3, PNAME) ) THEN
+         XMSG = 'Could not open ' // TRIM(INIT_LGRID_1) //
+     &        '; initializing LGRID using only adjoint forcing'
+         CALL M3WARN(PNAME, EDATE, ETIME, XMSG)
+!         CALL DEFINE_RECEPTOR(LGRID)
+      ELSE
+         WRITE(LOGDEV,*) 'init_lgrid, EDATE/ETIME: ',EDATE, ETIME
+         CALL RD_ADJ_EM_FILE(LGRID, EDATE, ETIME, INIT_LGRID_1)
+         WRITE(LOGDEV,*) 'Sum LGRID: ', SUM(LGRID)
+!         CALL RD_ADJ_FILE(LGRID_EM, EDATE, ETIME, INIT_EM_1)
+!         CALL RD_ADJ_FILE(LGRID_EM_SF, EDATE, ETIME, INIT_EM_SF_1)
+      END IF
+
+      IF ( .NOT. OPEN3(INIT_EM_1, FSREAD3, PNAME) ) THEN
+         XMSG = 'Could not open ' // TRIM(INIT_EM_1) //
+     &        '; initializing LGRID using only adjoint forcing'
+         CALL M3WARN(PNAME, EDATE, ETIME, XMSG)
+!         CALL DEFINE_RECEPTOR(LGRID)
+      ELSE
+         WRITE(LOGDEV,*) 'init_lgrid_em, EDATE/ETIME: ',EDATE, ETIME
+!         CALL RD_ADJ_FILE(LGRID, EDATE, ETIME, INIT_LGRID_1)
+         CALL RD_ADJ_EM_FILE(LGRID_EM, EDATE, ETIME, INIT_EM_1)
+         WRITE(LOGDEV,*) 'Sum LGRID_EM: ', SUM(LGRID_EM)         
+!         CALL RD_ADJ_FILE(LGRID_EM_SF, EDATE, ETIME, INIT_EM_SF_1)
+      END IF
+
+      IF ( .NOT. OPEN3(INIT_EM_SF_1, FSREAD3, PNAME) ) THEN
+         XMSG = 'Could not open ' // TRIM(INIT_EM_SF_1) //
+     &        '; initializing LGRID using only adjoint forcing'
+         CALL M3WARN(PNAME, EDATE, ETIME, XMSG)
+!         CALL DEFINE_RECEPTOR(LGRID)
+      ELSE
+         WRITE(LOGDEV,*) 'init_lgrid_em_sf, EDATE/ETIME: ',EDATE, ETIME
+!         CALL RD_ADJ_FILE(LGRID, EDATE, ETIME, INIT_LGRID_1)
+!         CALL RD_ADJ_FILE(LGRID_EM, EDATE, ETIME, INIT_EM_1)
+         CALL RD_ADJ_EM_FILE(LGRID_EM_SF, EDATE, ETIME, INIT_EM_SF_1)
+         WRITE(LOGDEV,*) 'Sum LGRID_EM_SF: ', SUM(LGRID_EM_SF)         
+      END IF
+
 
 ! Now the reading of the adjoint forcing is done in the driver_bwd
 ! routine (6.2014.slc)

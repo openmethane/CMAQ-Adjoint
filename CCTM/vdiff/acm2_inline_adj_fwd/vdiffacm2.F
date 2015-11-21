@@ -72,8 +72,8 @@ C-----------------------------------------------------------------------
 
       INCLUDE SUBST_PACTL_ID  ! PA control parameters
       INCLUDE SUBST_CONST     ! constants
-      INCLUDE SUBST_FILES_ID  ! file name parameters
-      INCLUDE SUBST_IOPARMS   ! I/O parameters definitions
+      !INCLUDE SUBST_FILES_ID  ! file name parameters
+      !INCLUDE SUBST_IOPARMS   ! I/O parameters definitions
 #include      SUBST_IODECL    # I/O definitions and declarations
 
       CHARACTER( 120 ) :: XMSG = ' '
@@ -111,7 +111,8 @@ C ACM parameters
 
 C External Functions not previously declared in IODECL3.EXT:
 
-      INTEGER, EXTERNAL :: SECSDIFF, SEC2TIME, TIME2SEC
+      !INTEGER, EXTERNAL :: SECSDIFF, SEC2TIME, TIME2SEC
+      REAL, EXTERNAL    :: ENVREAL
 
 C File variables:
 

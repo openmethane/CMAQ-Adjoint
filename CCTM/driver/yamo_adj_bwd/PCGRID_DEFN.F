@@ -79,6 +79,8 @@ C-----------------------------------------------------------------------
          LOGICAL, SAVE :: FIRSTIME = .TRUE.
          CHARACTER( 120 ) :: XMSG = ' '
 
+         INTEGER :: N_SPC_DIFF
+
 C PCGRID extents
          INTEGER :: LCOL
          INTEGER :: HCOL
@@ -124,6 +126,9 @@ C PCGRID extents
                END IF
 
             PCGRID = 0.0
+            PLGRID = 0.0
+            PLGRID_EM = 0.0
+            PLGRID_EM_SF = 0.0
 !           PCGRID = -999.999
 
             ELSE

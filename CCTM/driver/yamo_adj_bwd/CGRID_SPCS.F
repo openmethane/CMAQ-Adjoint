@@ -67,6 +67,10 @@ C***********************************************************************
             FIRSTIME = .FALSE.
 
             NSPCSD = N_GC_SPCD + N_AE_SPC + N_NR_SPC + N_TR_SPC
+
+            ! dbg.1.2015.slc
+!            write(*,*) 'NSPCSD: ',NSPCSD,' N_GC_SPCD: ',N_GC_SPCD
+!            write(*,*) 'N_AE_SPC: ',N_AE_SPC,' N_NR_SPC: ',N_NR_SPC
  
             GC_STRT = 1 ! Always, even if N_GC_SPCS = 0
  

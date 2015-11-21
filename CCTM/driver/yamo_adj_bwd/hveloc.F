@@ -224,7 +224,7 @@ C currently not implemented: case where only one origin component matches file's
       END IF     ! if firstime
  
       MDATE  = JDATE
-      MTIME  = JTIME
+      MTIME  = JTIME      
       STEP   = TIME2SEC( TSTEP )
       CALL NEXTIME( MDATE, MTIME, SEC2TIME( STEP / 2 ) )
 
