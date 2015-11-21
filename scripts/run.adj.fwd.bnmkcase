@@ -166,6 +166,17 @@ setenv PROMPTFLAG F
 #> input files and directories
  set OCEANpath = $M3DATA_IN/emis/2007
  set OCEANfile = 36US2_surf.ncf
+ 
+#> finite difference perturbation array selection
+ setenv PERTCOLS "50"
+ setenv PERTROWS "80"
+ setenv PERTLEVS "1"
+ setenv PERTSPCS "27"
+# note: multiplicative perturbation (e.g., 1.10 is a 10% positive perturbation)
+ setenv PERTDELT 1.10 
+
+#set GC_BCpath = /data/cmaq/bcon/ICBC_12US2_24L
+#set GC_BCfile = BCON_AE6_12US2_{$FLDATE}.ncf 
 
 #set TR_EMpath =
 #set TR_EMfile =
@@ -334,6 +345,10 @@ while ( $day <= $eday )
  setenv ADJ_EMIST_CHK "$OUTDIR/EMIST_CHK.${FLDATE} -v"
 
  setenv CTM_XFIRST_OUT $OUTDIR/XFIRST.${FLDATE}
+
+ setenv EMISDATE ${YEAR}${MONTH}${STDAT}
+ set EMISpath  = $M3DATA_IN/emis/2007
+ set EMISfile = emis_mole_all_${EMISDATE}_12US2_cmaq_cb05_soa_2007ee_v5_07c_36km.ncf
 
 #> CHANGE: set initial condition directory
  if ( $FLDATE == $FIRSTDAY ) then

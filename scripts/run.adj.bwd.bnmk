@@ -106,7 +106,7 @@ limit stacksize unlimited
  setenv CTM_MINSYNC 600
 
 #> define number of emissions layers
- setenv CTM_EMLAYS 1
+ setenv CTM_EMLAYS 24
 
 #> sync time step (sec) (default is 600)
 #setenv CTM_SYNC_STEP 600
@@ -357,18 +357,17 @@ while ( $day >= $eday )
 
 #> test only
  if ( $FLDATE == $FIRSTDAY ) then
-   set GC_ICpath = $M3DATA/icon
-   set GC_ICfile = ICON_cb05cl_ae5_aq_default_24L_36US   
-   setenv INIT_LGRID_1 "$OUTDIR/LGRID.${APPL_CASE}.${yesterday} -v"
-#> not yet implemented
-#   setenv INIT_EM_1 "$OUTDIR/EM.LGRID.${APPL_CASE}.${md1[$next]} -v"
-#   setenv INIT_EM_SF_1 "$OUTDIR/EM_SF.LGRID.${APPL_CASE}.${md1[$next]} -v"
+   set GC_ICpath = $M3DATA_IN/icon
+   set GC_ICfile = ICON.36km.20080401
+   setenv INIT_LGRID_1 "$OUTDIR2/LGRID.${APPL_CASE}.${yesterday} -v"
+   setenv INIT_EM_1 "$OUTDIR2/EM.LGRID.${APPL_CASE}.${yesterday} -v"
+   setenv INIT_EM_SF_1 "$OUTDIR2/EM_SF.LGRID.${APPL_CASE}.${yesterday} -v"
  else
    set GC_ICpath = $OUTDIR
-   set GC_ICfile = CGRID.${yesterday} #CONC.${fwd_case}.${md1[$prev]}
-   setenv INIT_LGRID_1 "$OUTDIR/LGRID.${APPL_CASE}.${yesterday} -v"
-#   setenv INIT_EM_1 "$OUTDIR/EM.LGRID.${APPL_CASE}.${md1[$next]} -v"
-#   setenv INIT_EM_SF_1 "$OUTDIR/EM_SF.LGRID.${APPL_CASE}.${md1[$next]} -v"
+   set GC_ICfile = CGRID.${yesterday} 
+   setenv INIT_LGRID_1 "$OUTDIR2/LGRID.${APPL_CASE}.${yesterday} -v"
+   setenv INIT_EM_1 "$OUTDIR2/EM.LGRID.${APPL_CASE}.${yesterday} -v"
+   setenv INIT_EM_SF_1 "$OUTDIR2/EM_SF.LGRID.${APPL_CASE}.${yesterday} -v"
  endif
 
  setenv EMISDATE ${YEAR}${MONTH}${STDAT}
