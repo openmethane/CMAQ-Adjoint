@@ -22,7 +22,7 @@ C Scenario start
       INTEGER, PRIVATE,              SAVE :: SDATE = 0   ! Julian start date (YYYYDDD)
       INTEGER, PRIVATE,              SAVE :: STIME = 0   ! start time (HHMMSS)
 
-C Output layer fractions, dimensioned NSRC, emlays, and for diagnostic file
+C Output layer fractions, dimensioned NSRC, EMLAYS, and for diagnostic file
       REAL,    PRIVATE, ALLOCATABLE, SAVE :: LFRAC( :,: ) ! per source local layer fractn
       REAL,    PRIVATE, ALLOCATABLE, SAVE :: TFRAC( : )   ! Temporary LFRAC
 
@@ -237,7 +237,8 @@ C get diagnostic files options
      &                'NOTE: Environment variable REP_LAYR_MIN is '//
      &                'greater than the number of emissions ' //
      &                CRLF() // BLANK10 // 'layers (', EMLYRS, '). '//
-     &                'Resetting to equal number of emissions layers.'
+     &                'Resetting to number of emissions layers.'
+               REP_LAYR = EMLYRS
             ELSE
                WRITE( XMSG,94010 )
      &                'logging stack data for plume rise .ge. layer', REP_LAYR
@@ -308,9 +309,29 @@ C open met files
          MD3NAME = PROMPTMFILE( 'Enter name for DOT-POINT LAYERED MET file',
      &                          FSREAD3, 'MET_DOT_3D', PNAME )
 
+C    Possible alternative if the files do need to be opened; may only need name
+C      IF ( .NOT. OPEN3( MET_CRO_2D, FSREAD3, PNAME ) ) THEN
+C         XMSG = 'Could not open '// MET_CRO_2D // ' file'
+C         CALL M3EXIT( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
+C      END IF
+
+C      IF ( .NOT. OPEN3( MET_CRO_3D, FSREAD3, PNAME ) ) THEN
+C         XMSG = 'Could not open '// MET_CRO_3D // ' file'
+C         CALL M3EXIT( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
+C      END IF
+
+C      IF ( .NOT. OPEN3( MET_DOT_3D, FSREAD3, PNAME ) ) THEN
+C         XMSG = 'Could not open '// MET_DOT_3D // ' file'
+C         CALL M3EXIT( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
+C      END IF
+
+
 C Get grid parameters from 3-d cross-point met file and store header information.
 C Use time parameters for time defaults.
+C     Eliminating use of PROMPTMFILE, need to replace the name (6.2015.slc)
          CALL RETRIEVE_IOAPI_HEADER( MC3NAME, JDATE, JTIME )
+C         CALL RETRIEVE_IOAPI_HEADER( MET_CRO_3D, JDATE, JTIME )
+
 
 C Initialize reference grid with met file
 C (declared and stored in PTBILIN module)
@@ -339,11 +360,17 @@ C Non-hydrostatic is time-independent and hydrostatic is time-dependent.
          IF ( ZSTATIC ) THEN
             GC3NAME = PROMPTMFILE( 'Enter name for CROSS-POINT LAYERED GRID file',
      &                             FSREAD3, 'GRID_CRO_3D', PNAME )
+C           IF ( .NOT. OPEN3( GRID_CRO_3D, FSREAD3, PNAME ) ) THEN
+C			    XMSG = 'Could not open '// GRID_CRO_3D // ' file'
+C         		CALL M3EXIT( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
+C      		END IF
          END IF
 
 C Get grid parameters from 3-d cross-point met file and store header information.
 C (declared and stored in PTBILIN module)
-         CALL RETRIEVE_IOAPI_HEADER( MD3NAME, JDATE, JTIME )
+C        Change to use the name and avoid PROMPTMFILE
+C         CALL RETRIEVE_IOAPI_HEADER( MD3NAME, JDATE, JTIME )
+         CALL RETRIEVE_IOAPI_HEADER( MET_DOT_3D, JDATE, JTIME )
          XCELLDG = XCELL3D
          YCELLDG = YCELL3D
          METDXORIG = XORIG3D
@@ -971,7 +998,7 @@ D           write( logdev,'(a, 4i4)' ) '> Hit top at c,r, for file, source: ', c
 
 C If layer fractions are negative, put in the first layer
                MV = MINVAL( TFRAC( 1:EMLYRS ) )
-               IF ( MV .LT. 0 ) THEN
+               IF ( MV .LT. 0.0 ) THEN
 
                   WRITE( CINT,'( I8 )' ) S
                   WRITE( XMSG,94010 ) 'WARNING: One or more negative plume '

@@ -41,6 +41,7 @@ C+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
       USE GRID_CONF             ! horizontal & vertical domain specifications
       USE CHK_FILES_DEFS        ! adjoint checkpoint files definition
+      !USE EMIS_DEFN, ONLY : EMSENSL
 
       IMPLICIT NONE
 

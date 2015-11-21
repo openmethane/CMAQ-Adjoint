@@ -24,13 +24,14 @@ C what(1) key, module and SID; SCCS file; date and time of last delta:
 C %W% %P% %G% %U%
  
 C:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      SUBROUTINE OPEMIS ( JDATE, JTIME, NEMIS, EM_TRAC, CONVEM, EMLAYS )
+      SUBROUTINE OPEMIS ( JDATE, JTIME, NEMIS, EM_TRAC, CONVEM )
 
 C  7 Mar 02 - J.Young: add units string variations
 C 29 Oct 05 - J.Young: dyn. layers
 C 19 Feb 08 - David Wong: add EM_TRAC = .TRUE. when EMIS_TRAC_1 exists
 
       USE VGRD_DEFN           ! vertical layer specifications
+      USE EMIS_DEFN, ONLY : EMLAYS
 
       IMPLICIT NONE
 
@@ -51,7 +52,7 @@ C Arguments:
       INTEGER      NEMIS      ! no. of gas chem emissions species for vdiff
       LOGICAL      EM_TRAC    ! are there tracer emissions?
       REAL         CONVEM     ! conversion for emissions rates
-      INTEGER      EMLAYS     ! emissions layers from file
+      !INTEGER      EMLAYS     ! emissions layers from file - now in GRID_CONF
 
 C External Functions not previously declared in IODECL3.EXT:
 
@@ -71,8 +72,6 @@ C-----------------------------------------------------------------------
  
 !     LOGDEV = INIT3()
       LOGDEV = SETUP_LOGDEV()
-
-      EMLAYS = 0
 
 C Open the tracer emissions file
 

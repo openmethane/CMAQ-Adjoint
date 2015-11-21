@@ -52,6 +52,7 @@ C+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
       USE GRID_CONF             ! horizontal & vertical domain specifications
       USE CHK_FILES_DEFS        ! adjoint checkpoint files definition
+      USE EMIS_DEFN, ONLY : EMSENSL
 
       IMPLICIT NONE
 
@@ -256,7 +257,7 @@ C Note: "CF" stands for "cost function units"
                FDESC3D(K) = ' '
             END DO
 
-            NLAYS3D = NLAYS
+            NLAYS3D = EMSENSL
             NVARS3D = 0
 
             IF ( TRIM(LGRID_OUTPUT_FREQ) == 'SYNC_STEP' ) THEN
@@ -339,7 +340,7 @@ C Note: "CF" stands for "cost function units"
                FDESC3D(K) = ' '
             END DO
 
-            NLAYS3D = NLAYS
+            NLAYS3D = EMSENSL ! only surface value
             NVARS3D = 0
 
             IF ( TRIM(LGRID_OUTPUT_FREQ) == 'SYNC_STEP' ) THEN
@@ -420,7 +421,7 @@ C Note: "CF" stands for "cost function units"
                FDESC3D(K) = ' '
             END DO
 
-            NLAYS3D = NLAYS
+            NLAYS3D = EMSENSL ! NLAYS
             NVARS3D = 0
 
             IF ( TRIM(LGRID_OUTPUT_FREQ) == 'SYNC_STEP' ) THEN
@@ -623,6 +624,80 @@ C Get file characteristics of ADJ_FILE
 
 
 C+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+C Read from an adjoint file
+C+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+      SUBROUTINE RD_ADJ_EM_FILE(ARRAY, JDATE, JTIME, ADJ_FILE)
+
+      USE GRID_CONF             ! horizontal & vertical domain specifications
+      USE VDIFF_MAP
+      USE EMIS_DEFN, ONLY : EMSENSL ! layers of emissions sensitivity 
+
+      IMPLICIT NONE
+
+C Include Files:
+      INCLUDE SUBST_IOPARMS     ! I/O parameters definitions
+      INCLUDE SUBST_IODECL      ! I/O definitions and declarations
+      INCLUDE SUBST_IOFDESC     ! file header data structure
+      REAL, INTENT(OUT) :: ARRAY(*)
+      INTEGER, INTENT(IN) :: JDATE ! current model date, coded YYYYDDD
+      INTEGER, INTENT(IN) :: JTIME ! current model time, coded HHMMSS
+      CHARACTER(16), INTENT(IN) :: ADJ_FILE
+
+C Local variables:
+      LOGICAL, SAVE :: FIRSTIME = .TRUE.
+
+      CHARACTER(16) :: PNAME = 'RD_ADJ_FILE'
+      CHARACTER(96) :: XMSG = ' '
+
+      REAL :: BUFFER(1:NCOLS, 1:NROWS, 1:EMSENSL)
+
+      INTEGER, SAVE :: STRTCOL, ENDCOL, STRTROW, ENDROW ! local window in global domain
+
+      INTEGER :: K, C, R, L, V  ! loop counters
+
+C-----------------------------------------------------------------------
+
+      IF ( FIRSTIME ) THEN
+         FIRSTIME = .FALSE.
+
+C Get local window in global domain
+         STRTCOL = COLSX_PE(1, MYPE+1)
+         ENDCOL = STRTCOL + NCOLS - 1
+         STRTROW = ROWSX_PE(1, MYPE+1)
+         ENDROW = STRTROW + NROWS - 1
+      END IF
+
+C Get file characteristics of ADJ_FILE
+      IF ( .NOT. DESC3(ADJ_FILE) ) THEN
+         XMSG = 'Could not get ' // TRIM(ADJ_FILE) // ' file description'
+         CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
+      END IF
+
+      K = 0
+      DO V = 1, N_SPC_DIFF
+         IF ( .NOT. XTRACT3(ADJ_FILE, VNAME3D(V),
+     &        1, EMSENSL, STRTROW, ENDROW, STRTCOL, ENDCOL,
+     &        JDATE, JTIME, BUFFER) ) THEN
+            XMSG = 'Could not read  ' // VNAME3D(V)
+     &           // ' from ' // TRIM(ADJ_FILE)
+            CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
+         END IF
+
+         DO L = 1, EMSENSL
+            DO R = 1, NROWS
+               DO C = 1, NCOLS
+                  K = K + 1
+                  ARRAY(K) = BUFFER(C, R, L)
+               END DO
+            END DO
+         END DO
+      END DO
+
+      END SUBROUTINE RD_ADJ_EM_FILE
+
+
+
+C+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 C Read from an offline forcing file
 C+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       SUBROUTINE RD_FORCE_FILE(ARRAY, JDATE, JTIME) !, ADJ_FORCE)
@@ -683,27 +758,31 @@ C Get file characteristics of ADJ_FILE
       END IF
 
 !     Debug (6.2014.slc)
-!      WRITE(*,*) 'NVARS3D: ',NVARS3D
-!      WRITE(*,*) 'VNAME3D(1): ',VNAME3D(1)
-!      WRITE(*,*) 'FTYPE3D: ',FTYPE3D
-!      WRITE(*,*) 'SDATE3D: ',SDATE3D
+      !WRITE(*,*) 'NVARS3D: ',NVARS3D
+      !WRITE(*,*) 'VNAME3D(1): ',VNAME3D(1)
+      !WRITE(*,*) 'FTYPE3D: ',FTYPE3D
+      !WRITE(*,*) 'SDATE3D: ',SDATE3D
+      !WRITE(*,*) 'ADJOINT files'
+      !WRITE(*,*) 'NCOLS: ',NCOLS,' NROWS: ',NROWS
+      !WRITE(*,*) 'NLAYS: ',NLAYS,'NSPCSD: ',NSPCSD
+      !WRITE(*,*) 'STRTCOL: ',STRTCOL
+      !WRITE(*,*) 'ENDCOL: ',ENDCOL
+      !WRITE(*,*) 'STRTROW: ',STRTROW
+      !WRITE(*,*) 'ENDROW: ',ENDROW
 
-!      WRITE(*,*) 'STRTCOL: ',STRTCOL
-!      WRITE(*,*) 'ENDCOL: ',ENDCOL
-!      WRITE(*,*) 'STRTROW: ',STRTROW
-!      WRITE(*,*) 'ENDROW: ',ENDROW
-
-!      WRITE(*,*) 'JDATE: ',JDATE
-!      WRITE(*,*) 'JTIME: ',JTIME
+      !WRITE(*,*) 'JDATE: ',JDATE
+      !WRITE(*,*) 'JTIME: ',JTIME
 
       K = 0
       ! Specify chemical species based on index in *_SPC files 
       ! in cmaq_adj/ICL directory
 
-      V = 22 ! CO (NSPC index) 
+      !V = 22 ! CO (NSPC index) 
+      V = 4 ! O3 (NSPC index)
 
 !     Because ADJ_FORCE will only have one variable,
 !        this one variable should be extracted.
+!        It may also only be at one level, which is indicated by NLAYS_FRC.
 !        The assignment is where V equals the species denoted above.
       IF ( .NOT. XTRACT3(ADJ_FORCE, VNAME3D(1),
      &     1, NLAYS_FRC, STRTROW, ENDROW, STRTCOL, ENDCOL,
@@ -716,15 +795,23 @@ C Get file characteristics of ADJ_FILE
             
          LENROW = NROWS 
          LENCOL = NCOLS   
-!         WRITE(*,*) 'LENROW: ',LENROW, ', LENCOL: ',LENCOL
+         !WRITE(*,*) 'LENROW: ',LENROW, ', LENCOL: ',LENCOL
+         !WRITE(*,*) 'BUFFER(1,1,1): ',BUFFER(1,1,1),' on proc: ',MYPE
+         !WRITE(*,*) 'BUFFER(LC,LR,1): ',BUFFER(LENCOL,LENROW,NLAYS_FRC),' on proc: ',MYPE
          DO R = 1, LENROW
             DO C = 1, LENCOL
-               RARRAY = R + STRTROW - 1
-               CARRAY = C + STRTCOL - 1
-               ARRAY(CARRAY, RARRAY, 1, V) = BUFFER(C, R, 1)
+               DO L = 1, NLAYS_FRC
+                  !RARRAY = R + STRTROW - 1
+                  !CARRAY = C + STRTCOL - 1
+                  !ARRAY(CARRAY, RARRAY, L, V) = BUFFER(C, R, L)
+                  ARRAY(C, R, L, V) = BUFFER(C, R, L)
+               END DO
             END DO
          END DO
-
+      
+      !write(*,*) 'sum(array): ',sum(array)
+      !write(*,*) 'sum(array(:,:,:,4)): ',sum(array(:,:,:,4))
+      
       END IF
 
       END SUBROUTINE RD_FORCE_FILE

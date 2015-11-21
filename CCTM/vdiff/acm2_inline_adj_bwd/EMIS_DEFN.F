@@ -44,6 +44,7 @@ C-----------------------------------------------------------------------
       INTEGER, SAVE :: N_SPC_EMIS ! global emissions species
       INTEGER, SAVE :: EMLAYS     ! no. of emis integration layers
                                   ! EMLAYS must be .LT. NLAYS
+      INTEGER, PUBLIC, SAVE :: EMSENSL = 24   ! no. of emis integration layers
       INTEGER,          SAVE :: EMLYRS     ! no. of layers on base emis input file -
                                            ! a 2d file if inline, otherwise a 3d file
       INTEGER, PRIVATE, SAVE :: NEMIS_AE   ! no. of aero emis species
@@ -133,6 +134,7 @@ C In-line biogenic emissions?
 C Open Emissions files
 
          CALL OPEMIS ( JDATE, JTIME, N_GC_EMIS, EM_TRAC, CONVEM, EMLAYS )
+         !write(*,*) 'after OPEMIS, EMLAYS: ',EMLAYS,' EMSENSL: ',EMSENSL
 
 C Get number of emissions layers
 
@@ -154,7 +156,9 @@ C Get number of emissions layers
          END IF
 
          EMLAYS = MIN ( EMLAYS, NLAYS )
-
+         ! dbg.2.2015.slc
+         !write(*,*) 'EMIS_DEFN, EMLAYS: ', EMLAYS,' EMSENSL: ',EMSENSL
+         
          WRITE( LOGDEV,1009 ) EMLAYS, NLAYS
 1009     FORMAT( / 10X, 'Number of Emissions Layers:         ', I3
      &           / 10X, 'out of total Number of Model Layers:', I3 )
@@ -180,9 +184,9 @@ C 3D point source emissions (N_SPC_EMIS+1 serves as the null map for PTEM_MAP)
             CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
          END IF
          
-         WRITE(*,*) 'N_SPC_EMIS: ',N_SPC_EMIS,', EMLAYS: ',EMLAYS 
-         WRITE(*,*) 'MY_NCOLS: ',MY_NCOLS,', MY_NROWS: ',MY_NROWS
-         WRITE(*,*) 'VDEMIS: ',VDEMIS
+         ! dbg.2.2015.slc
+         !WRITE(*,*) 'N_SPC_EMIS: ',N_SPC_EMIS,', EMLAYS: ',EMLAYS 
+         !WRITE(*,*) 'MY_NCOLS: ',MY_NCOLS,', MY_NROWS: ',MY_NROWS
 
          ALLOCATE ( VDEMIS ( N_SPC_EMIS+1,EMLAYS,MY_NCOLS,MY_NROWS ),
      &              STAT = STATUS )

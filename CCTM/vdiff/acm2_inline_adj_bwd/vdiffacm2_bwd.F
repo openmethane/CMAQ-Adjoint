@@ -40,6 +40,7 @@ C            emissions-related sensitivity calculations
       USE CHK_FILES_DEFS        ! adjoint checkpoint files definition
       USE CHK_FILES             ! adjoint checkpoint files routines
       USE ADJ_ARRAY_MOD         ! adjoint sensitivity arrays
+      !USE EMIS_DEFN, ONLY : EMSENSL
 
 C==============================================
 C all entries are defined explicitly
@@ -156,13 +157,14 @@ C ACM Local Variables
       REAL :: DTLIM, DTS, DTACM, RZ, DELC, LFAC1, LFAC2
 
       INTEGER :: C, R, L, V     ! loop induction variables
-      INTEGER, PARAMETER :: M = 1 ! em_sf dimension length (e.g., for layers)
+      ! Now use EMSENSL instead to be consistent (dbg.2.2015.slc)
+      !INTEGER, PARAMETER :: M = 1 ! em_sf dimension length (e.g., for layers)
       INTEGER :: MDATE, MTIME, MSTEP ! internal simulation date&time
+                                                ! array in vert. mixing
 
       ! For comparing recalculated emissions to the checkpointed ones
-      REAL :: EMIST( NCOLS, NROWS, M, N_SPC_DIFF )   ! emissions from checkpoint subexpression
+      REAL :: EMIST( NCOLS, NROWS, NLAYS, N_SPC_DIFF )   ! emissions from checkpoint subexpression
                            
-                                                ! array in vert. mixing
 
       REAL, POINTER :: L1_CGRID( :,:,:,: )      ! layer 1 concentrations
                                      
@@ -175,8 +177,8 @@ C==============================================
 C define local adjoint variables
 C==============================================
       real :: conc_bwd(n_spc_diff,nlays)
-      real :: conc_em_bwd(n_spc_diff,nlays)
-      real :: conc_em_sf_bwd(n_spc_diff,nlays)
+      real :: conc_em_bwd(n_spc_diff,emsensl)
+      real :: conc_em_sf_bwd(n_spc_diff,emsensl)
       real :: dd_bwd(n_spc_diff,nlays)
       real :: delc_bwd
       real :: uu_bwd(n_spc_diff,nlays)
@@ -248,19 +250,26 @@ C-----------------------------------------------------------------------
          ! just allocate them here. The first time only is necessary
          ! because they are kept in the adj_array_mod module.
          N_SPC_CGRID = SIZE ( CGRID_BWD,4 )
+         
+         !write(*,*) 'N_SPC_DIFF: ',N_SPC_DIFF
+         !write(*,*) 'emsensl: ',emsensl
+
+!     &        CGRID_BWD( MY_NROWS,MY_NCOLS,NLAYS,N_SPC_CGRID ),
+!     &        CGRID_EM_BWD( MY_NROWS,MY_NCOLS,EMSENSL,N_SPC_DIFF  ),
+!     &        CGRID_EM_SF_BWD( MY_NROWS,MY_NCOLS,EMSENSL,N_SPC_DIFF ),
 
          ALLOCATE(
-     &        CGRID( 1:NCOLS,1:NROWS,1:1,1:N_SPC_CGRID ),
-     &        CNGRD_BWD( N_SPC_CGRID,NLAYS,MY_NCOLS,MY_NROWS ),
-     &        CNGRD_EM_BWD( N_SPC_DIFF,NLAYS,MY_NCOLS,MY_NROWS ),
-     &        CNGRD_EM_SF_BWD( N_SPC_DIFF,NLAYS,MY_NCOLS,MY_NROWS ),
+     &        CGRID( 1:NCOLS,1:NROWS,1:NLAYS,1:N_SPC_CGRID ),
+     &        CNGRD_BWD( 1:N_SPC_CGRID,1:NLAYS,1:MY_NCOLS,1:MY_NROWS ),
+     &        CNGRD_EM_BWD( 1:N_SPC_DIFF,1:EMSENSL,1:MY_NCOLS,1:MY_NROWS ),
+     &        CNGRD_EM_SF_BWD( 1:N_SPC_DIFF,1:EMSENSL,1:MY_NCOLS,1:MY_NROWS ),
      &        STAT = ALLOCSTAT )
          IF ( ALLOCSTAT .NE. 0 ) THEN
             XMSG = 'Failure allocating CGRID, CNGRD_BWD'
             CALL M3EXIT( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
          END IF
 
-         ALLOCATE ( EM_SF( MY_NCOLS,MY_NROWS,NLAYS,N_SPC_DIFF ),
+         ALLOCATE ( EM_SF( 1:MY_NCOLS,1:MY_NROWS,1:EMSENSL,1:N_SPC_DIFF ),
      &              STAT = ALLOCSTAT )
          IF ( ALLOCSTAT .NE. 0 ) THEN
             XMSG = 'EM_SF memory allocation failed'
@@ -467,7 +476,7 @@ C----------------------------------------------
 !          WRITE(LOGDEV,*) 'Applying emission perturbation'
 !!debug,mdt
 !          DO V = 1, N_SPC_DIFF
-!             DO L = 1, EMLAYS   ! scaling factor only applies to level 1
+!             DO L = 1, EMSENSL   ! scaling factor only applies to level 1
 !                DO R = 1, MY_NROWS
 !                   DO C = 1, MY_NCOLS
 !                      EM_SF(C, R, 1, V) = EM_SF(C, R, 1, V) *
@@ -555,14 +564,18 @@ C----------------------------------------------
           pol(nh3_so2) = pvdd(nh3_so2,c,r)/depvcr(nh3_hit)
           pol(nh3_nh3) = pvdd(nh3_nh3,c,r)/depvcr(nh3_hit)
           pol(hono_no2) = pvdd(hono_no2,c,r)/depvcr(hono_hit)
+          ! Split do loop into two - treat emissions only up to EMSENSL (dbg.2.2015.slc)
           do l = 1, nlays
             do v = 1, n_spc_diff
               conc_bwd(v,l) = conc_bwd(v,l)+cngrd_bwd(diff_map(v),l,c,r)
               cngrd_bwd(diff_map(v),l,c,r) = 0.
-              conc_em_bwd(v,l) = conc_em_bwd(v,l)+cngrd_em_bwd(v,l,c,r)
-              cngrd_em_bwd(v,l,c,r) = 0.
-              conc_em_sf_bwd(v,l) = conc_em_sf_bwd(v,l)+cngrd_em_sf_bwd(v,l,c,r)
-              cngrd_em_sf_bwd(v,l,c,r) = 0.
+              ! only apply at layers that have emissions (dbg.2.2015.slc)
+              if ( l .le. emsensl ) then
+                 conc_em_bwd(v,l) = conc_em_bwd(v,l)+cngrd_em_bwd(v,l,c,r)
+                 cngrd_em_bwd(v,l,c,r) = 0.
+                 conc_em_sf_bwd(v,l) = conc_em_sf_bwd(v,l)+cngrd_em_sf_bwd(v,l,c,r)
+                 cngrd_em_sf_bwd(v,l,c,r) = 0.
+              endif
             end do
           end do
           do nl = nlp, 1, -1
@@ -680,20 +693,19 @@ C----------------------------------------------
                   conc_bwd(v,l-1) = conc_bwd(v,l-1)+dd_bwd(v,l)*lfac2
                   conc_bwd(v,l+1) = conc_bwd(v,l+1)+dd_bwd(v,l)*lfac1
                   conc_bwd(v,l) = conc_bwd(v,l)-dd_bwd(v,l)*(lfac1+lfac2)
+!!! Eliminated duplicate application of scaling factor in forward; 
+!!!     now making adjoint congruent(dbg.8.2015.slc)
 !      From vdiffacm2.F (forward code) as a reference for the emissions-related sensitivity
-!         calculations for layers 2 to EMLAYS (6.2014.slc)
-!                     IF ( L .LE. EMLAYS ) DD( V,L ) = DD( V,L ) + EMIS( V,L ) 
-!     &                         *  EM_SF( C, R, M, V )  
+!         calculations for layers 2 to EMSENSL (6.2014.slc)
+!                     IF ( L .LE. EMSENSL ) DD( V,L ) = DD( V,L ) + EMIS( V,L ) 
 !            DO V = 1, N_SPC_DIFF
 !               DD( V,1 ) = CONC( V,1 )
 !            END DO
 !      Semi-normalized and scaling factor-related sensitivities after conv_cgrid_bwd (6.2014.slc)
-                  if ( l .le. emlays ) then
-                    conc_em_sf_bwd(v,l) = conc_em_sf_bwd(v,l) + emis(v,l)
-     &                                 * dd_bwd(v,l)
-!!      Layer index is always 1 (=m) for em_sf because it is only defined for layer 1
-                    conc_em_bwd(v,l) = conc_em_bwd(v,l) + em_sf(c,r,m,v)
-     &                                 * dd_bwd(v,l)
+                  if ( l .le. emsensl ) then
+!                    conc_em_sf_bwd(v,l) = conc_em_sf_bwd(v,l) + emis(v,l)
+!     &                                 * dd_bwd(v,l)
+                    conc_em_bwd(v,l) = conc_em_bwd(v,l) + dd_bwd(v,l)
                   end if
                 end do
               endif
@@ -747,14 +759,35 @@ C----------------------------------------------
             conc_bwd(no2_map,1) = conc_bwd(no2_map,1) + conc_no2b
             conc_bwd(so2_map,1) = conc_bwd(so2_map,1) + conc_so2b
           end do
+          
+! Forward code: 
+!    Currently where the emissions scaling factor is applied (8.2015.slc)
+!        DO L = 1, EMLAYS
+!           DO V = 1, N_SPC_DIFF
+!              EMIS( V,L ) = VDEMIS( DF2EM( V ),L,C,R ) * DTS * EM_SF(C, R, L, V)
+!           END DO
+!        END DO
+
+! Backward code:
+!    pass sensitivity information to em_sf sensitivity array
+          do l = 1, emlays
+             do v = 1, n_spc_diff
+                conc_em_sf_bwd(v,l) = vdemis_vd( c,r,l,df2em( v ) ) * dts * 
+     &                                conc_em_bwd(v,l)
+             end do
+          end do 
+             
           do l = 1, nlays
             do v = 1, n_spc_diff
               cngrd_bwd(diff_map(v),l,c,r) = cngrd_bwd(diff_map(v),l,c,r)+conc_bwd(v,l)
               conc_bwd(v,l) = 0.
-              cngrd_em_bwd(v,l,c,r) = cngrd_em_bwd(v,l,c,r)+conc_em_bwd(v,l)
-              conc_em_bwd(v,l) = 0.
-              cngrd_em_sf_bwd(v,l,c,r) = cngrd_em_sf_bwd(v,l,c,r)+conc_em_sf_bwd(v,l)
-              conc_em_sf_bwd(v,l) = 0.
+              ! only apply at layers that have emissions (dbg.2.2015.slc)
+              if ( l .le. emsensl ) then
+                 cngrd_em_bwd(v,l,c,r) = cngrd_em_bwd(v,l,c,r)+conc_em_bwd(v,l)
+                 conc_em_bwd(v,l) = 0.
+                 cngrd_em_sf_bwd(v,l,c,r) = cngrd_em_sf_bwd(v,l,c,r)+conc_em_sf_bwd(v,l)
+                 conc_em_sf_bwd(v,l) = 0.
+              endif
             end do
           end do
         end do

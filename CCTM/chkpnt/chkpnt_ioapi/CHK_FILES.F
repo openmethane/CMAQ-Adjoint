@@ -222,7 +222,9 @@
             INDX = INDX + N_TR_SPC
 
          CASE ( ADJ_VDIFF_CHK )
-            CHK%NLAYS = 1
+            ! No longer want to limit the vertical diffusion checkpointing to the first layer
+            !    - need to account for stack emissions (6.2015.slc)
+            !CHK%NLAYS = 1
             CHK%FDESC(1) = 'Vertical diffusion checkpoint file'
             CHK%FDESC(2) = 'From CMAQ model dyn alloc version CTM'
             CHK%NVARS = N_GC_SPC + 1 + N_AE_SPC + N_NR_SPC + N_TR_SPC
@@ -273,7 +275,9 @@
             INDX = INDX + N_TR_SPC
 
          CASE ( ADJ_EMIST_CHK )
-            CHK%NLAYS = 1
+            ! No longer want to limit the vertical diffusion checkpointing to the first layer
+            !    - need to account for stack emissions (6.2015.slc)
+            !CHK%NLAYS = 1
             CHK%FDESC(1) = 'Emissions checkpoint file'
             CHK%FDESC(2) = 'From CMAQ model dyn alloc version CTM'
             CHK%NVARS = N_GC_DIFF + N_AE_DIFF + N_NR_DIFF + N_TR_DIFF

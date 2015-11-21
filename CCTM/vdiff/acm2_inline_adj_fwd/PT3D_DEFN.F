@@ -237,7 +237,8 @@ C get diagnostic files options
      &                'NOTE: Environment variable REP_LAYR_MIN is '//
      &                'greater than the number of emissions ' //
      &                CRLF() // BLANK10 // 'layers (', EMLYRS, '). '//
-     &                'Resetting to equal number of emissions layers.'
+     &                'Resetting to number of emissions layers.'
+               REP_LAYR = EMLYRS
             ELSE
                WRITE( XMSG,94010 )
      &                'logging stack data for plume rise .ge. layer', REP_LAYR
@@ -343,7 +344,9 @@ C Non-hydrostatic is time-independent and hydrostatic is time-dependent.
 
 C Get grid parameters from 3-d cross-point met file and store header information.
 C (declared and stored in PTBILIN module)
-         CALL RETRIEVE_IOAPI_HEADER( MD3NAME, JDATE, JTIME )
+C        Change to use the name and avoid PROMPTMFILE
+C         CALL RETRIEVE_IOAPI_HEADER( MD3NAME, JDATE, JTIME )
+         CALL RETRIEVE_IOAPI_HEADER( MET_DOT_3D, JDATE, JTIME )
          XCELLDG = XCELL3D
          YCELLDG = YCELL3D
          METDXORIG = XORIG3D
@@ -971,7 +974,7 @@ D           write( logdev,'(a, 4i4)' ) '> Hit top at c,r, for file, source: ', c
 
 C If layer fractions are negative, put in the first layer
                MV = MINVAL( TFRAC( 1:EMLYRS ) )
-               IF ( MV .LT. 0 ) THEN
+               IF ( MV .LT. 0.0 ) THEN
 
                   WRITE( CINT,'( I8 )' ) S
                   WRITE( XMSG,94010 ) 'WARNING: One or more negative plume '

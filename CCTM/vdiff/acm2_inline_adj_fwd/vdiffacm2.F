@@ -147,7 +147,7 @@ C Local Variables:
 
       REAL, ALLOCATABLE, SAVE :: EMIS_PA( :,:,:,: ) ! emis for process analysis
       REAL, ALLOCATABLE, SAVE :: VDEMIS_CHK( :,:,:,: )
-      REAL, ALLOCATABLE, SAVE :: EMIS_CHK( :,:,:,: )
+      !REAL, ALLOCATABLE, SAVE :: EMIS_CHK( :,:,:,: )
 
       INTEGER, SAVE :: N_SPC_CGRID              ! no. of CGRID species
 
