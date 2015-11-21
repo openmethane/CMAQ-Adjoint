@@ -658,16 +658,15 @@ C----------------------------------------------
 !            DO V = 1, N_SPC_DIFF
 !               DD( V,1 ) = DD( V,1 )
 !     &                   + LFAC1 * ( CONC( V,2 ) - CONC( V,1 ) )
-!     &                   + EMIS( V,1 ) * EM_SF( C, R, M, V )
+!     &                   + EMIS( V,1 ) ! * EM_SF( C, R, M, V )
 !            END DO
 !
 !             Semi-normalized and scaling factor-related sensitivities 
 !                   by propagating arrays through all of vdiff as CNGRD_EM_BWD 
 !                   and CNGRD_EM_BWD_SF (6.2014.slc|mdt)
-              conc_em_sf_bwd(v,1) = conc_em_sf_bwd(v,1) + emis(v,1) 
-     &                      * dd_bwd(v,1)
-              conc_em_bwd(v,1) = conc_em_bwd(v,1) + em_sf(c,r,m,v)
-     &                      * dd_bwd(v,1)
+!              conc_em_sf_bwd(v,1) = conc_em_sf_bwd(v,1) + emis(v,1) 
+!     &                      * dd_bwd(v,1)
+              conc_em_bwd(v,1) = conc_em_bwd(v,1) + dd_bwd(v,1)
               conc_bwd(v,2) = conc_bwd(v,2)+dd_bwd(v,1)*lfac1
               conc_bwd(v,1) = conc_bwd(v,1)-dd_bwd(v,1)*lfac1
             end do

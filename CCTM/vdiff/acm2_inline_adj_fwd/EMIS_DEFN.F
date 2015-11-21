@@ -36,8 +36,14 @@ C     26 Jan 2010 J.Young: fix bug overwriting point source layer 1 NH3; inline 
 C-----------------------------------------------------------------------
 
       USE GRID_CONF           ! horizontal & vertical domain specifications
+      USE CHK_FILES_DEFS      ! adjoint checkpoint files definition
+      USE CHK_FILES           ! adjoint checkpoint files routines      
+      USE VDIFF_MAP
 
       IMPLICIT NONE
+      
+      INCLUDE SUBST_FILES_ID  ! file name parameters
+      INCLUDE SUBST_IOPARMS   ! I/O parameters definitions
 
       REAL, ALLOCATABLE, SAVE :: VDEMIS( :,:,:,: ) ! total emissions array
 
@@ -61,6 +67,17 @@ C-----------------------------------------------------------------------
       INTEGER, PRIVATE       :: LDATE, LTIME  ! step start date/time (beis)
       INTEGER, PRIVATE, SAVE :: NDATE, NTIME  ! step next date/time (beis)
 
+      REAL, PRIVATE, PARAMETER :: MWAIR  =  28.9628    ! molwt of dry air [ g/mol ]
+
+      INTEGER      MDATE, MTIME, MSTEP          ! internal simulation date&time
+      INTEGER, PRIVATE        :: DTSEC                        ! array in vert. mixing
+
+C External Functions not previously declared in IODECL3.EXT:
+
+      INTEGER, EXTERNAL :: SECSDIFF, SEC2TIME, TIME2SEC
+
+      REAL, ALLOCATABLE, SAVE :: EMIS_CHK( :,:,:,: )
+      
       CONTAINS
 
 C-----------------------------------------------------------------------
@@ -107,6 +124,10 @@ C Local Variables:
          CHARACTER( 80 ) :: VARDESC   ! env variable description
          CHARACTER( 120 ) :: XMSG = ' '
          INTEGER V, K, LOGDEV, STATUS
+         
+!         REAL, ALLOCATABLE, SAVE :: EMIS_CHK( :,:,:,: )
+         INTEGER      ALLOCSTAT
+
 
 C-----------------------------------------------------------------------
 
@@ -218,7 +239,24 @@ C 3D point source emissions (N_SPC_EMIS+1 serves as the null map for PTEM_MAP)
          END IF
          BUFF = 0.0   ! array assignment
 
+         write(*,*) 'before EMIS_CHK allocation'
+         ALLOCATE ( EMIS_CHK( NCOLS,NROWS,NLAYS,N_SPC_DIFF ),
+     &              STAT = ALLOCSTAT )
+         IF ( ALLOCSTAT .NE. 0 ) THEN
+            XMSG = 'EMIS_CHK memory allocation failed'
+            CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
+         END IF
+         write(*,*) 'after EMIS_CHK allocation'
+
+!         CALL CHK_FILE_OPEN ( ADJ_EMIST_CHK, MDATE, MTIME, .TRUE., TSTEP )
+
 C combined gas emssions conversion factor
+
+! CMLMR  = 1d6      ! ppmV/Molar Mixing Ratio
+! CONVEM = 1.0E-03  ! assuming gram-moles  ! conversion for emissions rates to Kg/s
+! MWAIR  = 28.9628  ! molwt of dry air [ g/mol ]
+! DX1, DX2          ! CX x1- and x2-cell widths
+! CNVTE  = 28.9628e3 / (DX1 * DX2) 
 
          CNVTE = CMLMR * CONVEM * MWAIR / ( DX1 * DX2 )
 
@@ -287,15 +325,25 @@ C Local Variables:
          INTEGER          GXOFF, GYOFF         ! global origin offset from file
          INTEGER, SAVE :: STARTCOL, ENDCOL, STARTROW, ENDROW
 
+
 C-----------------------------------------------------------------------
 
          IF ( FIRSTIME ) THEN
             FIRSTIME = .FALSE.
-D           logdev = init3()
+           logdev = init3()
 C Get domain decomp info from the emissions file
             CALL SUBHFILE ( EMIS_1, GXOFF, GYOFF, STARTCOL, ENDCOL, STARTROW, ENDROW )
+! CNVTE  = 28.9628e3 / (DX1 * DX2) 
+! CONVPA = [1, 1e-2, 1e-3] depending on METCRO3D
             CNVTP = CONVPA * CNVTE
+            CALL CHK_FILE_OPEN ( ADJ_EMIST_CHK, MDATE, MTIME, .TRUE., TSTEP )
          END IF
+
+         !MDATE = JDATE
+         !MTIME = JTIME
+         !MSTEP = TIME2SEC( TSTEP( 2 ) )
+         !DTSEC = FLOAT( MSTEP )
+         !CALL NEXTIME ( MDATE, MTIME, SEC2TIME( MSTEP / 2 ) )
 
 C read & interpolate emissions (create VDEMIS in the species class order)
 
@@ -314,8 +362,16 @@ C                                       vvvvvvv - emis surrogate names
 !              CALL M3EXIT( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
                CALL M3WARN( PNAME, JDATE, JTIME, XMSG )
             END IF
+! GC_EMIS_FAC = 1.0 from ../ICL/mech/cb05cl_ae5_aq_noaero/GC_EMIS.EXT 
+!    could be a scaling factor in its own right, perhaps example for us
             CNVTI = CNVTP * GC_EMIS_FAC( S )
 
+            !if (v .eq. 1) then
+            !   write(logdev,*) 'NO, sum(buff) = ',sum(BUFF(:,:,:))
+            !elseif (v .eq. 2) then
+            !   write(logdev,*) 'NO2, sum(buff) = ',sum(BUFF(:,:,:))
+            !endif
+               
 C reactive gases (conversion to ppmv/s) VDEMIS in this order from RDEMIS
 C "Stores read an entire cache line, modify the target, then write back the
 C  entire line. Thus, non-consecutive stores are worse than non-consecutive
@@ -324,15 +380,23 @@ C  loads."
                DO C = 1, MY_NCOLS
                   DO L = 1, EMLYRS
                      CNVTC = CNVTI * RDX3F( L ) * RRHOJ( C,R,L )
+                     ! dbg.7.2015.slc - sum of VDEMIS 
+                     EMIS_CHK( C,R,L,V ) = BUFF( C,R,L ) !* EM_SF(C, R, L, V)  
+        
                      VDEMIS( V,L,C,R ) = VDEMIS( V,L,C,R )
      &                                 + CNVTC * BUFF( C,R,L )
                   END DO
                END DO
             END DO
 
-D           write( logdev,* ) '  GC EMIS: ', s, '  ', gc_emis( s )
+
+           write( logdev,* ) '  GC EMIS: ', s, '  ', gc_emis( s )
 
          END DO   ! V
+C Write emissions to emission checkpoint file
+         ! check JDATE and JTIME
+         !write(*, *) 'JDATE, TIME: ',JDATE, JTIME
+         CALL CHK_FILE_WRITE ( ADJ_EMIST_CHK, JDATE, JTIME, EMIS_CHK )
 
 C beis
 
@@ -372,6 +436,16 @@ C merge: VDEMIS_PT in mol/sec. Convert to ppm/sec
 C If aerosols, then the 6 PM emissions obtained from GET_PT3D_EMIS need to be
 C accessed by GET_AERO_EMIS to be "speciated" and merged with the 27 AE emissions.
 
+            ! dbg.7.2015.slc - sum of VDEMIS 
+            !do S = 1, N_SPC_PTEM
+               !if (PTEM_MAP(S) .eq. 1) then
+            !      write(logdev,*) 'NO, sum(VDEMIS_PT) = ',sum(VDEMIS_PT( :,:,:,S ))
+            !   elseif (PTEM_MAP(S) .eq. 2) then
+            !      write(logdev,*) 'NO2, sum(VDEMIS_PT) = ',sum(VDEMIS_PT( :,:,:,S ))
+            !   endif
+            !end do 
+            
+! Multiplication by CNVTP is the same (with GC_EMIS_FAC = 1) as multiplication by CNVTI above
             DO R = 1, MY_NROWS
                DO C = 1, MY_NCOLS
                   DO L = 1, EMLAYS

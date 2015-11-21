@@ -197,14 +197,38 @@ C ACM Local Variables
       INTEGER, SAVE :: NO2_HIT, HONO_HIT, HNO3_HIT, NO2_MAP, HONO_MAP, HNO3_MAP
       REAL        DTLIM, DTS, DTACM, RZ, DELC, LFAC1, LFAC2
 
+      ! For finite difference perturbation 
+      CHARACTER(32) :: PERTCOLS = 'PERTCOLS'
+      CHARACTER(32) :: PERTROWS = 'PERTROWS'
+      CHARACTER(32) :: PERTLEVS = 'PERTLEVS'
+      CHARACTER(32) :: PERTSPCS = 'PERTSPCS'
+      CHARACTER(32) :: PERTDELT = 'PERTDELT'
+
+      INTEGER, ALLOCATABLE, SAVE :: PERTI ( : )    ! columns to perturb
+      INTEGER, ALLOCATABLE, SAVE :: PERTJ ( : )    ! rows to perturb
+      INTEGER, ALLOCATABLE, SAVE :: PERTL ( : )    ! layers to perturb
+      INTEGER, ALLOCATABLE, SAVE :: PERTV ( : )    ! species to perturb      
+      REAL, SAVE :: PERTD                       ! multiplicative perturbation
+
+      INTEGER :: GLCOL, GLROW, PC, PR, PL, PV, IND, PERTFLAG
+!      CHARACTER( 16 ), ALLOCATABLE, SAVE :: V_LIST( : )
+      CHARACTER( 16 ) :: V_LIST( 1 )
+
       INTEGER, SAVE :: LOGDEV
       CHARACTER(80) :: JDATE_STR, JTIME_STR, filename
  
       INTEGER      ALLOCSTAT
       INTEGER      C, R, L, S, V                ! loop induction variables
       INTEGER, PARAMETER :: M = 1               ! em_sf variable (time, layer, etc)
-      INTEGER      MDATE, MTIME, MSTEP          ! internal simulation date&time
+      !INTEGER      MDATE, MTIME, MSTEP          ! internal simulation date&time
                                                 ! array in vert. mixing
+      INTEGER I, NV
+
+    
+      ! For comparing recalculated emissions to the checkpointed ones
+      !REAL :: EMIST( NCOLS, NROWS, NLAYS, N_SPC_DIFF )   ! emissions from checkpoint subexpression
+                           
+
       INTERFACE
          SUBROUTINE RDMET( MDATE, MTIME, RDEPVHT, RJACM, RVJACMF, RRHOJ,
      &                     DENS1 )
@@ -252,6 +276,12 @@ C ACM Local Variables
             INTEGER, INTENT( OUT )      :: LPBL  ( :,: )
             LOGICAL, INTENT( OUT )      :: CONVCT( :,: )
          END SUBROUTINE EDDYX
+         SUBROUTINE GET_ENVLIST ( ENV_VAR, NVARS, VAL_LIST )
+            IMPLICIT NONE
+            CHARACTER( * ),  INTENT ( IN )  :: ENV_VAR
+            INTEGER,         INTENT ( OUT ) :: NVARS
+            CHARACTER( 16 ), INTENT ( OUT ) :: VAL_LIST( : )
+         END SUBROUTINE GET_ENVLIST
       END INTERFACE
 
 C-----------------------------------------------------------------------
@@ -407,15 +437,113 @@ C set auxiliary depv arrays
             CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
          END IF
 
-         ALLOCATE ( EMIS_CHK( MY_NCOLS,MY_NROWS,NLAYS,N_SPC_DIFF ),
-     &              STAT = ALLOCSTAT )
-         IF ( ALLOCSTAT .NE. 0 ) THEN
-            XMSG = 'EMIS_CHK memory allocation failed'
-            CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
-         END IF
+!         ALLOCATE ( EMIS_CHK( MY_NCOLS,MY_NROWS,NLAYS,N_SPC_DIFF ),
+!     &              STAT = ALLOCSTAT )
+!         IF ( ALLOCSTAT .NE. 0 ) THEN
+!            XMSG = 'EMIS_CHK memory allocation failed'
+!            CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
+!         END IF
 
 C Create new adjoint file and open for update
          CALL CHK_FILE_OPEN ( ADJ_VDIFF_CHK, JDATE, JTIME, .TRUE., TSTEP )
+
+C    Retrieve the perturbation information
+
+         write(*,*) 'before reading perturbation parameters'
+         CALL GET_ENVLIST ( PERTCOLS, NV, V_LIST )
+         write(*,*) 'PERTCOLS: ',PERTCOLS
+         write(*,*) 'NV: ',NV
+         write(*,*) 'V_LIST: ',V_LIST
+         IF ( NV .LT. 1 ) THEN
+            PERTFLAG = 0
+            XMSG = 'Not applying a perturbation'
+            CALL M3WARN ( 'VDIFF', XMSG )
+!           SUCCESS = .FALSE.; RETURN
+         ELSE
+            write(*,*) 'PERTCOLS NV',NV
+            PERTFLAG = 1
+            write(*,*) 'PERTCOLS PERTFLAG',PERTFLAG
+            ALLOCATE ( PERTI( NV ), STAT = ALLOCSTAT )
+            IF ( ALLOCSTAT .NE. 0 ) THEN
+               XMSG = 'Failure allocating PERTI'
+               CALL M3EXIT( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
+            END IF
+            DO IND = 1, NV
+               write(*,*) 'V_LIST(IND): ',V_LIST(IND)
+               READ( V_LIST( IND ), '( I4 )' ) PERTI(IND)
+            ENDDO
+            write(*,*) 'PERTI: ',PERTI
+         ENDIF
+
+         CALL GET_ENVLIST ( PERTROWS, NV, V_LIST )
+         IF ( NV .LT. 1 ) THEN
+            PERTFLAG = 0
+            XMSG = 'Not applying a perturbation'
+            CALL M3WARN ( 'VDIFF', XMSG )
+!           SUCCESS = .FALSE.; RETURN
+         ELSE
+            PERTFLAG = 1
+            ALLOCATE ( PERTJ( NV ), STAT = ALLOCSTAT )
+            IF ( ALLOCSTAT .NE. 0 ) THEN
+               XMSG = 'Failure allocating PERTJ'
+               CALL M3EXIT( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
+            END IF
+            DO IND = 1, NV
+               READ( V_LIST( IND ), '( I4 )' ) PERTJ(IND)
+            ENDDO
+            write(*,*) 'PERTJ: ',PERTJ
+         ENDIF
+         
+
+         CALL GET_ENVLIST ( PERTLEVS, NV, V_LIST )
+         IF ( NV .LT. 1 ) THEN
+            PERTFLAG = 0
+            XMSG = 'Not applying a perturbation'
+            CALL M3WARN ( 'VDIFF', XMSG )
+!           SUCCESS = .FALSE.; RETURN
+         ELSE
+            PERTFLAG = 1
+            ALLOCATE ( PERTL( NV ), STAT = ALLOCSTAT )
+            IF ( ALLOCSTAT .NE. 0 ) THEN
+               XMSG = 'Failure allocating PERTL'
+               CALL M3EXIT( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
+            END IF
+            DO IND = 1, NV
+               READ( V_LIST( IND ), '( I4 )' ) PERTL(IND)
+            ENDDO
+            write(*,*) 'PERTL: ',PERTL
+         ENDIF
+         
+
+         CALL GET_ENVLIST ( PERTSPCS, NV, V_LIST )
+         IF ( NV .LT. 1 ) THEN
+            PERTFLAG = 0
+            XMSG = 'Not applying a perturbation'
+            CALL M3WARN ( 'VDIFF', XMSG )
+!           SUCCESS = .FALSE.; RETURN
+         ELSE
+            PERTFLAG = 1
+            ALLOCATE ( PERTV( NV ), STAT = ALLOCSTAT )
+            IF ( ALLOCSTAT .NE. 0 ) THEN
+               XMSG = 'Failure allocating PERTV'
+               CALL M3EXIT( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
+            END IF
+            DO IND = 1, NV
+               READ( V_LIST( IND ), '( I4 )' ) PERTV(IND)
+            ENDDO
+            write(*,*) 'PERTV: ',PERTV
+         ENDIF
+         
+
+         PERTD = 1.0            ! default
+         VARDESC = 'finite difference perturbation for select location'
+         PERTD = ENVREAL(PERTDELT, VARDESC, PERTD, STATUS)
+         IF ( STATUS /= 0 ) WRITE( LOGDEV, '(5X, A)' ) VARDESC
+         IF ( STATUS == 1 ) THEN
+            XMSG = 'Environment variable improperly formatted'
+            CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT2)
+         END IF
+         write(*,*) 'perturbations, col,row,lev,spec,delt: ',PERTI,PERTJ,PERTL,PERTV,PERTD
 
       END IF          !  if Firstime
 
@@ -443,6 +571,7 @@ C read & interpolate emissions data => VDEMIS from EMIS_DEFN module
 
          CALL GET_EMIS ( MDATE, MTIME, TSTEP, CONVPA, RDX3F, RRHOJ, RJACM )
 
+      IF (PERTFLAG > 0) THEN
 !! *** perturb emis if validating emissions sensitivities
 !!     Technique implemented by mdt, refined by slc (8.2014)
 !!      RUN_TYPE = 'for'    !default value
@@ -451,55 +580,93 @@ C read & interpolate emissions data => VDEMIS from EMIS_DEFN module
 !!      IF ( TRIM( RUN_TYPE ) == 'emis_fd' ) THEN
 !!        Limit perturbation to first four hours of benchmark
 !!        (6.2014.slc)
-!            ALLOCATE ( PERT ( MY_NCOLS, MY_NROWS, EMLAYS, N_SPC_DIFF )
-!     &                 , STAT = ALLOCSTAT )
-!            IF ( ALLOCSTAT .NE. 0 ) THEN
-!               XMSG = 'PERT  memory allocation failed'
-!               CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
-!            END IF
+            ALLOCATE ( PERT ( MY_NCOLS, MY_NROWS, EMLAYS, N_SPC_DIFF )
+     &                 , STAT = ALLOCSTAT )
+            IF ( ALLOCSTAT .NE. 0 ) THEN
+               XMSG = 'PERT  memory allocation failed'
+               CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
+            END IF
 !
 !         IF ( JDATE == 2007161 .AND.  JTIME <= 5500 ) THEN
 !            ! Allocate PERT Array
 !            ! Always include the PERT = 1.0 (sf test) or 0.0 (abs test) to ensure that all emissions
 !            ! other than that perturbed are constant.
-!            PERT( :,:,:,: ) = 1.d0  ! fractional
+            PERT( :,:,:,: ) = 1.d0  ! fractional
 !            ! PERT( :,:,:,: ) = 0.d0  ! absolute
-!            EM_SF = 1.0  ! fractional emissions perturbation test
+            EM_SF = 1.0d0  ! fractional emissions perturbation test
 !!           EM_SF = 0.0  ! absolute emissions perturbation test
 !            WRITE(LOGDEV,*) 'Not applying emission perturbation'
 !            ! Perturb one species in specific location or column
 !            PERT(:,:,1,16 ) = 1.01     ! CO - fractional
 !            PERT(:,:,1,16 ) = 1.d-2    ! CO - absolute
-!            WRITE(LOGDEV,*) 'Applying emission perturbation'   !debug, mdt
-!!            Implement loop to increment specific values of EM_SF for
-!!              fractional test
-!!            DO V = 1, N_SPC_DIFF
-!!               DO L = 1, EMLAYS   ! scaling factor only applies to level 1
-!!                  DO R = 1, MY_NROWS
-!!                     DO C = 1, MY_NCOLS
-!!                        EM_SF(C, R, 1, V) = EM_SF(C, R, 1, V) *
-!!     &                                      PERT( C, R, 1, V)
-!!                     END DO ! Col
-!!                  END DO ! Row
-!!               END DO ! Layer
-!!            END DO ! Species
-!         ELSE
+!            PERT(:,:,:,27 ) = 1.10d0    ! TOL - fractional
+                        
+            WRITE(LOGDEV,*) 'Applying emission perturbation'   !debug, mdt
+            WRITE(LOGDEV,*) 'N_SPC_DIFF: ',N_SPC_DIFF
+            WRITE(LOGDEV,*) 'EMLAYS: ',EMLAYS
+            WRITE(LOGDEV,*) 'MY_NROWS: ',MY_NROWS
+            WRITE(LOGDEV,*) 'MY_NCOLS: ',MY_NCOLS
+            
+            IF ( MYPE .NE. 0 ) THEN
+               DO R = 1, MY_NROWS
+                  DO C = 1, MY_NCOLS
+                     DO L = 1, EMLAYS
+                        DO V = 1, N_SPC_DIFF
+                           GLROW = ROWSX_PE(1, MYPE+1) + R
+                           GLCOL = COLSX_PE(1, MYPE+1) + C
+                           DO PR = 1, SIZE(PERTJ) 
+                              DO PC = 1, SIZE(PERTI)
+                                 DO PL = 1, SIZE(PERTL)
+                                    DO PV = 1, SIZE(PERTV) 
+                                       IF ((GLROW == PERTJ(PR)) .AND. 
+     &                                     (GLCOL == PERTI(PC)) .AND. 
+     &                                     (L == PERTL(PL)) .AND. (V == PERTV(PV)) ) THEN
+                                           PERT(C,R,L,V) = 1.d0 * PERTD
+                                       ENDIF
+                                    ENDDO
+                                 ENDDO
+                              ENDDO
+                           ENDDO
+                        ENDDO
+                     ENDDO
+                  ENDDO
+               ENDDO
+            ENDIF
+           
+!            Implement loop to increment specific values of EM_SF for
+!              fractional test
+            DO V = 1, N_SPC_DIFF
+               DO L = 1, EMLAYS   ! scaling factor only applies to level 1
+                  DO R = 1, MY_NROWS
+                     DO C = 1, MY_NCOLS
+                        EM_SF(C, R, L, V) = EM_SF(C, R, L, V) *
+     &                                      PERT( C, R, L, V)
+                     END DO ! Col
+                  END DO ! Row
+               END DO ! Layer
+            END DO ! Species
+            WRITE(LOGDEV,*) 'After transferring perturbation'   !debug, mdt
+            WRITE(LOGDEV,*) 'EM_SF(PERTJ,I,L,V): ',EM_SF(PERTJ(1),PERTI(1),PERTL(1),PERTV(1))
+
+           
+      ELSE
 !            ! Always include the PERT = 1.0 (fractional) or 0.0 (absolute)  to ensure that all emissions
 !            ! other than those perturbed are constant.
 !            PERT( :,:,:,: ) = 0.d0 ! absolute
-!            PERT( :,:,:,: ) = 1.d0 ! fractional
-!            EM_SF = 1.0            ! always
+            PERT( :,:,:,: ) = 1.d0 ! fractional
+            EM_SF = 1.0            ! always
 !         END IF ! Date and time qualification
-!!      END IF ! Run type flag
+      END IF ! Run type flag
 
       IF ( FIRST ) THEN
          FIRST = .false.
 ! Open checkpoint file for emissions as VDEMIS
          CALL CHK_FILE_OPEN ( ADJ_EMIS_CHK, MDATE, MTIME, .TRUE., TSTEP )
 C Open for update of emissions as EMIS
-         CALL CHK_FILE_OPEN ( ADJ_EMIST_CHK, MDATE, MTIME, .TRUE., TSTEP )
+         !CALL CHK_FILE_OPEN ( ADJ_EMIST_CHK, MDATE, MTIME, .TRUE., TSTEP )
       END IF
 
+! From EMIS_DEFN, "reactive gases (conversion to ppmv/s) VDEMIS"
       DO S = 1, N_SPC_EMIS+1
          DO L = 1, EMLAYS
             DO R = 1, MY_NROWS
@@ -566,8 +733,8 @@ C Note: DT has been moved from EDDY to here, dt = .75 dzf dzh / Kz
          DO L = 1, NLAYS - 1
             DTLIM = MIN( DTLIM, 0.75 / ( SEDDY( L,C,R ) * RDX3F( L ) ) )
          END DO
-         MBARKS = 0.0
-         MDWN = 0.0
+         MBARKS = 0.0   ! array assignment
+         MDWN = 0.0     ! array assignment
 
 C New couple ACM & EDDY ------------------------------------------------
 
@@ -625,7 +792,7 @@ C Modify Timestep for ACM
 C-----------------------------------------------------------------------
 
          NLP = INT( DTSEC / DTLIM + 0.99 )
-         DTS = DTSEC / NLP
+         DTS = DTSEC / REAL( NLP )
          DTDENS1 = DTS * DENS1( C,R )
 
 D       IF ( R .EQ. MY_NROWS / 2 .AND. C .EQ. MY_NCOLS / 2 )
@@ -650,8 +817,8 @@ C End ACM insert
 !        testing.
          DO L = 1, EMLAYS
             DO V = 1, N_SPC_DIFF
-               EMIS( V,L ) = VDEMIS( DF2EM( V ),L,C,R ) * DTS ! + PERT(C, R, L, V) for absolute
-               EMIS_CHK( C,R,L,V ) = EMIS( V,L ) * EM_SF(C, R, L, V)  
+               EMIS( V,L ) = VDEMIS( DF2EM( V ),L,C,R ) * DTS * EM_SF(C, R, L, V) ! + PERT(C, R, L, V) for absolute
+!               EMIS_CHK( C,R,L,V ) = EMIS( V,L )   
             END DO
          END DO
 
@@ -785,7 +952,8 @@ C Define arrays A,B,E which make up MATRIX and D which is RHS
      &                         - LFAC2
      &                         * ( CONC( V,L ) - CONC( V,L-1 ) )
                      IF ( L .LE. EMLAYS ) DD( V,L ) = DD( V,L ) + EMIS( V,L ) 
-     &                         *  EM_SF( C, R, M, V )
+! dbg.7.2015.slc - eliminating duplication of the emissions scaling factor (see l.659)
+!     &                         *  EM_SF( C, R, M, V )
                   END DO
                END IF
             END DO
@@ -811,9 +979,10 @@ C Define arrays A,B,E which make up MATRIX and D which is RHS
             BB( 1 ) = BB( 1 ) + CRANKP * EDDY( 1 ) * RDX3F( 1 ) * DTS
             LFAC1 = CRANKQ * EDDY( 1 ) * RDX3F( 1 ) * DTS
             DO V = 1, N_SPC_DIFF
+! dbg.7.2015.slc - eliminating duplication of the emissions scaling factor (see l.659)
                DD( V,1 ) = DD( V,1 )
      &                   + LFAC1 * ( CONC( V,2 ) - CONC( V,1 ) )
-     &                   + EMIS( V,1 ) * EM_SF( C, R, M, V )
+     &                   + EMIS( V,1 ) !* EM_SF( C, R, M, V )
             END DO
 
 C Subroutine MATRIX then solves for U if ACM2, else TRI solves for U
@@ -888,7 +1057,7 @@ C Revert non-molar mixing ratio species and re-order CGRID
       CALL REV_CGRID ( CNGRD, MDATE, MTIME, CGRID )
 
 C Write emissions to emission checkpoint file
-      CALL CHK_FILE_WRITE ( ADJ_EMIST_CHK, MDATE, MTIME, EMIS_CHK )
+!      CALL CHK_FILE_WRITE ( ADJ_EMIST_CHK, MDATE, MTIME, EMIS_CHK )
 
       IF ( NDEPV_SPC > 0 ) THEN
 
