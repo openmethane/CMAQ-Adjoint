@@ -1,18 +1,5 @@
 #! /bin/csh -f
 
-# BS -N D51a_cctm
-#PBS -N test_adj
-#PBS -l walltime=04:00:00
-#PBS -l nodes=2:ppn=2
-# BS -l nodes=8:ppn=8
-# BS -l nodes=1:ppn=1
-# BS -q batch
-#PBS -q amadtest
-#PBS -W group_list=climsim
-#PBS -V
-#PBS -m n
-#PBS -j oe
-
 # ======================= CCTMv4.7.1 Run Script ===================== #
 # Usage: run.cctm >&! run.cctm.log &                                  #
 # The following environment variables must be set for this script to  #
@@ -22,11 +9,7 @@
 #             http://www.cmascenter.org/help_desk.cfm                 #
 # =================================================================== #
 
-#> Set the working directory:
- set BASE     = /home/slc/cmaqofffrc/cmaq_adj/scripts
- cd $BASE
-
-
+#> CHANGE: set the data directory
  set M3DATA = /work/CLIMSIM/rpe/cmaq_adj/test_data
 
 #> Check that M3DATA is set:
@@ -36,16 +19,18 @@
     endif
  echo " "; echo " Input data path, M3DATA set to $M3DATA"; echo " "
 
+#> CHANGE: Set the working directory:
+ set BASE     = /home/slc/cmaqofffrc/cmaq_adj/scripts
 
- set APPL     = adj_test
-#> Application name (no default)
+#> CHANGE: Application name (no default)
+ set APPL     = adj_fwd_test
  if ( ! $?APPL ) then
     echo 'Must set environment variable APPL (application name)'
     exit 1
  endif
 
-# set RM       = ser
 #> Run mode: "ser" or "par" (default is par)
+#set RM       = ser
  if ( ! $?RM ) then
     echo 'RM (run mode) was not set; this will be a parallel run'
     set RM = par
@@ -54,17 +39,18 @@
     exit 1
  endif
 
+ #> CHANGE: set date of simulation
  set YR = 7
  set YER = 07
  set YEAR = 2007
  set MONTH = 06             # does not cross months yet
- set FIRSTDAY  = 20070610   # first day YYYYMMDD
- set DAY1 = 10 #9              # first day
- set EDAY = 13 #19 #25              # end day
- set IDAY = 10              # day for initial conditions
+ set FIRSTDAY  = 20070601   # first day YYYYMMDD
+ set DAY1 = 01              # first day
+ set EDAY = 07              # end day
+ set IDAY = 01              # day for initial conditions
 
  set APPL_CASE = fwd_par_adj
- set CFG  = bnmk_slc
+ set CFG  = bnmk
  set EXEC = $BASE/../BLD_${APPL_CASE}/ADJOINT_FWD
 
  cd $BASE; date; cat ${CFG}; echo "    "; set echo
@@ -78,12 +64,6 @@
 #    setenv NPCOL_NPROW "12 6"; set NPROCS   = 72
  endif
 
-#> OpenMP Settings
- # Set number of openmp threads (this should be <= number of cores/processors on ONE node)
- # setenv OMP_NUM_THREADS 8
- # Don't restrict OpenMP threads to the MPI process they were launched from
- # setenv KMP_AFFINITY "verbose,norespect,compact"
-
 #> Switch to the qsub directory; default launch location
  if ( $?PBS_JOBID ) then
     echo Job ID is $PBS_JOBID
@@ -94,46 +74,30 @@
  echo '>>>>>> start model run at ' `date`
  set echo # Display each line after variables have been substituted
 
-# Directories
+#> CHANGE: temporary directories
+#> If temporary directories are necessary, specify here; comment out OUTDIR specification below. 
+#set PTMP    = $PBS_O_WORKDIR
+#set PTMP    = /work/MOD3EVAL/has/omi/co_20110224/run
+#set PTMPOUT = $PTMP
+#set BASE    = $PTMP
+#set BASE2   = $PTMP/../code/debug # BLD_N4a also
+# set EXEC    = ADJOINT_FWD
+#set OUTDIR  = $PTMPOUT
+#if ( ! -d "$OUTDIR" ) mkdir -p $OUTDIR
+#set OUTDIR2  = $OUTDIR
 
- set OUTDIR   = /work/CLIMSIM/slc/data/cmaqadj_bnmk/official_testcase/model_output
- if ( ! -d "$OUTDIR" ) mkdir -p $OUTDIR
-
-# Set up
-limit stacksize 100000
-limit stacksize unlimited
-
-#sc actually done below
-#sc I think you could delete from here through the next comment beginning with sc
-#Creating date loop
-
-#> for Scyld Beowulf ...
-#setenv NP $NPROCS
-#setenv BEOWULF_JOB_MAP -1:-1:0:0:1:1:2:2:3:3:4:4
-#echo " task-processor map `beomap`"
-
-# Data setup for multiple days --------------
-#
-#set md1 = ( 0401 0402 0403 0404 0405 0406 0407 ) 
-#set md1 = ( 0401 0402 0403 0404 0405 0406 0407 0408 0409 0410 0411 0412 0413 0414 0415 0416 0417 0418 0419 0420 0421 0422 0423 0424 0425 0426 0427 0428 0429 0430 )
-#set jd1 = (  092 093 094 095 096 097 098 )
-#set jd1 = (  092 093 094 095 096 097 098 099 100 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120 121 )
-
-# set md1 = ( 0401 )
-# set md2 = ( 92 )
-# set DAY   = 01
-#sc
+#> CHANGE: Specify for system if necessary
+## limit stacksize 100000
+# limit stacksize unlimited
 
 #> turn off excess WRITE3 logging
  setenv IOAPI_LOG_WRITE F
 
 #> max sync time step (sec) (default is 720)
-setenv CTM_MAXSYNC 600
+ setenv CTM_MAXSYNC 600
 
 #> min sync time step (sec) (default is 60)
-setenv CTM_MINSYNC 600
-
-setenv CTM_EMLAYS 1
+ setenv CTM_MINSYNC 600
 
 #> top sigma level thru which sync step determined (default is 0.7)
 #setenv SIGMA_SYNC_TOP 0.7
@@ -150,21 +114,39 @@ setenv CTM_EMLAYS 1
 #> flag for in-line deposition velocities [ T | Y | F | N ] (default is T|Y)
 #setenv CTM_ILDEPV F
 
+#> use in-line plume rise emissions [ N|F ]
+ setenv CTM_PT3DEMIS T
+
+ if ( $?CTM_PT3DEMIS ) then   # $CTM_PT3DEMIS is defined
+    if ( $CTM_PT3DEMIS == 'Y' || $CTM_PT3DEMIS == 'T' ) then
+       set pt3don = 1
+       setenv PT3DDIAG N  # optional 3d point source emissions diagnostic file [N]
+       setenv REP_LAYER_MIN 0
+       setenv IPVERT 0
+    else
+       set pt3don = 0
+    endif
+ else   # $CTM_PT3DEMIS is not defined => $CTM_PT3DEMIS == 'N
+    set pt3don = 0
+ endif
+
+#> Lightning NOx configuration
+
+#> define number of emissions layers
+ setenv CTM_EMLAYS 24
+
 #> Kz min on flag [ T | Y | F | N ]
  setenv KZMIN N
 
 #> stop on inconsistent input file [ T | Y | F | N ]
  setenv FL_ERR_STOP F
 
-#> set floor file (neg concs)
- setenv FLOOR_FILE $OUTDIR/FLOOR_${APPL_CASE}
+#> turn off I/O-API PROMPT*FILE interactive mode
+setenv PROMPTFLAG F
 
-#> horizontal grid defn; check GRIDDESC file for GRID_NAME options
-# setenv GRIDDESC /home/mturner/CMAQ/scripts/GRIDDESC2
- setenv GRIDDESC $M3DATA/other/GRIDDESC
-#setenv GRID_NAME TX_CCTM_uh04
-# setenv GRID_NAME M_36_2001
- setenv GRID_NAME CMAQ-BENCHMARK
+#> CHANGE: horizontal grid defn; check GRIDDESC file for GRID_NAME options
+ setenv GRIDDESC $M3DATA_IN/GRIDDESC12
+ setenv GRID_NAME 36US2
 
 #> species for standard conc
  setenv CONC_SPCS "O3 NO ANO3I ANO3J NO2 FORM ISOP ANH4J ASO4I ASO4J"
@@ -182,17 +164,13 @@ setenv CTM_EMLAYS 1
  setenv ACONC_BLEV_ELEV " 1 1 "
 
 #> input files and directories
-
- set OCEANpath = ${M3DATA}/other
- set OCEANfile = surf_BENCHMARK.ncf
-
- set GC_BCpath = $M3DATA/bcon
- set GC_BCfile = BCON_CMAQ-BENCHMARK_profile
+ set OCEANpath = $M3DATA_IN/emis/2007
+ set OCEANfile = 36US2_surf.ncf
 
 #set TR_EMpath =
 #set TR_EMfile =
 
-# Julian day adjustment (non-leap year is commented out)
+# Julian day adjustment (leap year is commented out)
 if ( $MONTH == 01 ) then
  set juladd = 0
 else if ( $MONTH == 02 ) then
@@ -204,7 +182,7 @@ else if ( $MONTH == 04 ) then
 else if ( $MONTH == 05 ) then
  set juladd = 121 #120
 else if ( $MONTH == 06 ) then
- set juladd = 151 #152 #151
+ set juladd = 151 #152
 else if ( $MONTH == 07 ) then
  set juladd = 182 #181
 else if ( $MONTH == 08 ) then
@@ -226,7 +204,8 @@ endif
  @ day  = $DAY1
  @ eday = $EDAY
 
-#foreach day ($days)#################################################
+#########################################################
+
 while ( $day <= $eday )
 
  date; echo " "
@@ -239,40 +218,86 @@ while ( $day <= $eday )
  echo $STDAT
 
  set STTIME   = 000000        # beginning hour (GMT)
- set NSTEPS   = 240000 # test only - usually  240000        # time duration (HHMMSS) for this run
+ set NSTEPS   = 240000        # time duration (HHMMSS) for this run
  set TSTEP    = 010000        # output time step interval (HHMMSS)
 
  set yest = `echo $day | awk '{printf("%2.2d",$1-1)}'`
  set yesterday = $YEAR$MONTH$yest
-
+ set yrmn = $YEAR$MONTH
+ 
  cd $BASE; date; set timestamp;
 
 #> set ancillary log file name extensions
- setenv CTM_APPL $APPL_CASE.$FLDATE
-
-#> set log file [ default = unit 6 ]; uncomment to write standard output to a log
- setenv LOGFILE $OUTDIR/$APPL_CASE.$FLDATE.log
-
-#
- #> timestep run parameters for multi-day run
-#foreach i ( 1 )
-#foreach i ( $number )
-# foreach i ( 7 )
-# set STDATE   = 2008092       # beginning date
-# set STTIME   = 000000        # beginning GMT time (HHMMSS)
-# set TSTEP    = 010000        # output time step interval (HHMMSS)
-# set NSTEPS   = 240000
+ setenv CTM_APPL $APPL.$FLDATE
 
 #> remove existing output files?
 #set DISP = delete
 #set DISP = update
  set DISP = keep
+ 
+#> CHANGE: Location of emissions files
+ setenv EMISDATE ${YEAR}${MONTH}${STDAT}
+ set EMISpath  = $M3DATA_IN/emis/2007
+
+ if ( $CTM_PT3DEMIS == 'N' ) then
+   #set EMISfile  = e3d.${EMISDATE}.12EUS1_279X240.cb05soa.24.ncf #> Offline 3d emissions file name
+ else
+   #> In-line emissions configuration
+   set IN_PTpath = $M3DATA_IN/emis/2007      #> elevated emissions input directory (in-line point only)
+   set SMKMRGE = $IN_PTpath/smk_merge_dates_${yrmn}.txt
+   echo $SMKMRGE
+
+   @ gline = $day + 1      # indicates line in text file, which has a single header line
+    ## @ gline = $STDAT + 1
+   echo $gline
+   set intable = `head -$gline $SMKMRGE | tail -1`
+
+   set Date     = `echo $intable[1] | cut -d, -f1`
+   set aveday_N = `echo $intable[2] | cut -d, -f1`
+   set aveday_Y = `echo $intable[3] | cut -d, -f1`
+   set mwdss_N  = `echo $intable[4] | cut -d, -f1`
+   set mwdss_Y  = `echo $intable[5] | cut -d, -f1`
+   set week_N   = `echo $intable[6] | cut -d, -f1`
+   set week_Y   = `echo $intable[7] | cut -d, -f1`
+   set all      = `echo $intable[8] | cut -d, -f1`
+   echo $Date $aveday_N $aveday_Y $mwdss_N $mwdss_Y
+   echo $week_N $week_Y $all
+
+   set CASE1 = 12US1_2007ee_v5_07c_36km
+   set CASE2 = 12US1_2007ea_v5_07c_36km
+   set CASE3 = 12US2_cmaq_cb05_soa_2007ee_v5_07c_36km
+   set CASE4 = 12US1_cmaq_cb05_soa_2007ee_v5_07c
+   set CASE5 = 12US1_cmaq_cb05_soa_2007ea_v5_07c
+   setenv CASEa ${EMISDATE}_$CASE2
+   setenv CASEb ${EMISDATE}_$CASE3
+   setenv CASEc ${EMISDATE}_$CASE4
+   setenv CASEd ${EMISDATE}_$CASE5
+   set EMISfile = emis_mole_all_${CASEb}.ncf #> Surface emissions
+   setenv NPTGRPS 5          #> Number of elevated source groups
+   setenv STK_GRPS_01 $IN_PTpath/stack_groups_ptnonipm_${CASE1}.ncf
+   setenv STK_GRPS_02 $IN_PTpath/stack_groups_ptipm_${CASE1}.ncf
+   setenv STK_GRPS_03 $IN_PTpath/stack_groups_othpt_${CASE2}.ncf
+   setenv STK_GRPS_04 $IN_PTpath/stack_groups_c3marine_${CASE2}.ncf
+   setenv STK_GRPS_05 $IN_PTpath/stack_groups_ptfire_${CASEa}.ncf
+   setenv LAYP_STTIME $STTIME
+   setenv LAYP_NSTEPS $NSTEPS
+   setenv LAYP_STDATE $STDATE
+   setenv STK_EMIS_01 $IN_PTpath/ptnonipm/"inln_mole_ptnonipm_"${mwdss_Y}"_"${CASE4}.ncf
+   setenv STK_EMIS_02 $IN_PTpath/ptipm/"inln_mole_ptipm_"${EMISDATE}"_"${CASE4}.ncf
+   setenv STK_EMIS_03 $IN_PTpath/othpt/"inln_mole_othpt_"${mwdss_N}"_"${CASE5}.ncf
+   setenv STK_EMIS_04 $IN_PTpath/c3marine/"inln_mole_c3marine_"${aveday_N}"_"${CASE5}.ncf
+   setenv STK_EMIS_05 $IN_PTpath/ptfire/inln_mole_ptfire_${CASEd}.ncf
+ endif
+
 
 #> output files and directories
-# set OUTDIR   =  /work/CLIMSIM/slc/data/cmaqadj_bnmk/inputs
-# set OUTDIR   = $M3DATA/cctm/out
- set OUTDIR   = /work/CLIMSIM/slc/data/cmaqadj_bnmk/official_testcase/model_output
+#> CHANGE: set OUTDIR to job-specific location.
+ set OUTDIR   = $M3DATA/fwdpt
  if ( ! -d "$OUTDIR" ) mkdir -p $OUTDIR
+
+#> set log file [ default = unit 6 ]; uncomment to write standard output to a log
+ setenv LOGFILE $OUTDIR/$APPL.$FLDATE.log
+
  set CONCfile  = CONC.${FLDATE}    # CTM_CONC_1
  set ACONCfile = ACONC.${FLDATE}   # CTM_ACONC_1
  set CGRIDfile = CGRID.${FLDATE}   # CTM_CGRID_1
@@ -291,35 +316,26 @@ while ( $day <= $eday )
  set RJ1file   = RJ_1.${FLDATE}    # CTM_RJ_1
  set RJ2file   = RJ_2.${FLDATE}    # CTM_RJ_2
 
+#> CHANGE: set boundary condition files
+ set GC_BCpath = $M3DATA_IN/bcon/36km
+ set GC_BCfile = BCON.36km.${FLDATE}
+
+#> set floor file (neg concs)
+ setenv FLOOR_FILE $OUTDIR/FLOOR_${APPL}
+
  setenv ADJ_CHEM_CHK "$OUTDIR/CHEM_CHK.${FLDATE} -v"
  setenv ADJ_VDIFF_CHK "$OUTDIR/VDIFF_CHK.${FLDATE} -v"
  setenv ADJ_AERO_CHK "$OUTDIR/AERO_CHK.${FLDATE} -v"
  setenv ADJ_HA_RHOJ_CHK "$OUTDIR/HA_RHOJ_CHK.${FLDATE} -v"
  setenv ADJ_VA_RHOJ_CHK "$OUTDIR/VA_RHOJ_CHK.${FLDATE} -v"
- setenv ADJ_RHOJ_CHK "$OUTDIR/RHOJ_CHK.${FLDATE} -v"
- setenv ADJ_XADV_CHK "$OUTDIR/XADV_CHK.${FLDATE} -v"
- setenv ADJ_YADV_CHK "$OUTDIR/YADV_CHK.${FLDATE} -v"
- setenv ADJ_ZADV_CHK "$OUTDIR/ZADV_CHK.${FLDATE} -v"
+ setenv ADJ_HADV_CHK "$OUTDIR/HADV_CHK.${FLDATE} -v"
+ setenv ADJ_VADV_CHK "$OUTDIR/VADV_CHK.${FLDATE} -v"
  setenv ADJ_EMIS_CHK "$OUTDIR/EMIS_CHK.${FLDATE} -v"
+ setenv ADJ_EMIST_CHK "$OUTDIR/EMIST_CHK.${FLDATE} -v"
 
  setenv CTM_XFIRST_OUT $OUTDIR/XFIRST.${FLDATE}
 
- setenv EMISDATE ${YEAR}${MONTH}${STDAT}
- set EMISpath  = ${M3DATA}/emis
-# set EMISfile  = e3d.${EMISDATE}.12EUS1_279X240.cb05soa.24.ncf
- set EMISfile = emis_CMAQ-BENCHMARK_${EMISDATE}.ncf
-
-#setenv LOGFILE $OUTDIR/$APPL_CASE.$FLDATE.log
-
-##@ prev = $i - 1
-##if ($i == 1) then
-#   set GC_ICpath = $M3DATA/icon
-#   set GC_ICfile = ICON_cb05cl_ae5_aq_default_24L_36US
-##else
-##   set GC_ICpath = $OUTDIR
-##   set GC_ICfile = CONC.fwd_${APPL}.${md1[$prev]}
-##endif
-
+#> CHANGE: set initial condition directory
  if ( $FLDATE == $FIRSTDAY ) then
    set GC_ICpath = $M3DATA/icon
    set GC_ICfile = ICON_CMAQ-BENCHMARK_profile
@@ -330,6 +346,7 @@ while ( $day <= $eday )
    setenv CTM_XFIRST_IN $OUTDIR/XFIRST.${yesterday}
  endif
 
+#> CHANGE: set meteorological file directory
  set METpath   = $M3DATA/mcip
  set extn      = $YEAR$MONTH$STDAT
  set GC2file = GRIDCRO2D_${extn}
@@ -342,9 +359,7 @@ while ( $day <= $eday )
  set TR_DVpath = $METpath
  set TR_DVfile = $MC2file
 
-###set M3HOME = /home/slc/cucmaqadj/cmaq_adj
-
-#> 7-level photolysis data w/ file header
+#> CHANGE: Set jproc location. 7-level photolysis data w/ file header
  set JVALpath  = $M3DATA/jproc
  set JVALfile  = JTABLE_2006213
 
@@ -375,8 +390,7 @@ while ( $day <= $eday )
  setenv CTM_PROGNAME    $EXEC
 
 #> look for existing log files
- set test = `ls CTM_LOG_???.${APPL_CASE}`
-# set test = `ls $OUTDIR/$APPL_CASE.$FLDATE.log`
+ set test = `ls CTM_LOG_???.${APPL}`
  if ( "$test" != "" ) then
     if ( $DISP == 'delete' ) then
        echo " ancillary log files being deleted"
@@ -391,7 +405,7 @@ while ( $day <= $eday )
           rm $file
        end
     else
-       echo "*** Logs exist - run ABRTED ***"
+       echo "*** Logs exist - run ABORTED ***"
        exit 1
     endif
  endif
@@ -404,21 +418,13 @@ while ( $day <= $eday )
  unlimit
  limit
 
- module unload intel
- module load intel-11.1 impi_3.2.2.006
-
  if ( $RM == 'ser' ) then
 #> Executable call for single PE
     time $EXEC
  else
-#> Executable call for multiple PE, set location of MPIRUN script
-#    set MPIRUN = /opt/mpich/bin/mpirun
-#    set TASKMAP = $HOME/loc/machines
-#    cat $TASKMAP
-#    set MPIRUN = /data/opt/intel/impi/4.0.0.028/intel64/bin/mpirun
+#> CHANGE: Set mpirun location. Executable call for multiple PE, set location of MPIRUN script
     set MPI = /usr/local/intel/impi/3.2.2.006/bin64
     set MPIRUN = $MPI/mpirun
-#    totalview $MPIRUN -np $NPROCS $EXEC
     time $MPIRUN -r ssh -np $NPROCS $EXEC
  endif
 
