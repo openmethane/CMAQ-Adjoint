@@ -159,15 +159,15 @@
  set ModChem   = chem/kpp_cb05cl_ae5_adj_fwd
 #set ModChem   = chem/kpp_cb05cl_ae5_adj_bwd
 
-#set ModAero   = aero/aero_noop
+ set ModAero   = aero/aero_noop
 #set ModAero   = aero/aero_bwd_noop
 #set ModAero   = aero/aero4
 #set ModAero   = aero/aero5
- set ModAero   = aero/aero5_adj_fwd
+#set ModAero   = aero/aero5_adj_fwd
 #set ModAero   = aero/aero5_adj_bwd
 
-#set ModAdepv  = aero_depv/aero_depv_noop
- set ModAdepv  = aero_depv/aero_depv2
+ set ModAdepv  = aero_depv/aero_depv_noop
+#set ModAdepv  = aero_depv/aero_depv2
 
  set ModCloud  = cloud/cloud_noop
 #set ModCloud  = cloud/cloud_bwd_noop
@@ -185,7 +185,8 @@
 
 #> user choices: mechanism
 #set Mechanism = mech/cb05cl_ae4_aq
- set Mechanism = mech/cb05cl_ae5_aq
+# set Mechanism = mech/cb05cl_ae5_aq
+ set Mechanism = mech/cb05cl_ae5_aq_noaero
 #set Mechanism = mech/saprc99_ae4_aq
 #set Mechanism = mech/saprc99_ae5_aq
 #set Mechanism = mech/nochem
@@ -201,7 +202,7 @@
 #>    library paths
 
 # set Base = $cwd
- set APPL  = fwd
+ set APPL  = fwd_noaero
 # set APPL  = aero_adj
  set CFG   = cfg.$APPL
 #
@@ -211,21 +212,22 @@
  mkdir -p $MODLOC
 
 # CHANGE: Set full path of Fortran 90 and c compilers
- set FC = /usr/local/intel/ictce/3.2.2.013/fc/bin/intel64/ifort
- set CC = /usr/local/intel/ictce/3.2.2.013/fc/bin/intel64/icc
+ set FC = /data/opt/intel/impi/4.0.0.028/intel64/bin/mpiifort 
+ set CC = /data/opt/intel/impi/4.0.0.028/intel64/bin/mpicc
  set FP = $FC
 
 # CHANGE: Set location of MPICH if using multiple processors
  set MPICH  =  "${M3LIB}/mpich/include -lmpi"
 
 # CHANGE: Set location for stenex library/include/and mod files
- set STENEX = $M3LIB/se_noop
+# set STENEX = $M3LIB/se_noop
+ set STENEX = ${M3LIB}/se_snl
 
 # CHANGE: Set compiler flags
- set FSTD       = "-extend_source 132 -vec-report0 -nodefines -cm -w95 -traceback -CB -c -g"
- set F_FLAGS    = "${FSTD} -O2 -module ${MODLOC} -I."
+ set FSTD       = "-fixed -132 -O3 -override-limits -fno-alias -mp1 -fp-model precise"
+ set F_FLAGS    = "-free -O3 -fno-alias -mp1 -fp-model precise"
  set CPP_FLAGS  = ""
- set C_FLAGS    = "-v -g -I${MPICH}/intel64/include -module ${MODLOC} -I."
+ set C_FLAGS    = "-O2 -v -g"
  set LINK_FLAGS = "-i-static"
 
 # Set location of M3Bld executable

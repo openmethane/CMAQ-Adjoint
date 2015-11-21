@@ -144,9 +144,9 @@
  set ModVdiff  = vdiff/acm2_inline_adj_bwd
 
 #set ModPhot   = phot/phot_noop
-#set ModPhot   = phot/phot
+ set ModPhot   = phot/phot
 #set ModPhot   = phot/phot_sat
- set ModPhot   = phot/phot_inline
+#set ModPhot   = phot/phot_inline
 
 #set ModChem   = chem/chem_noop
 #set ModChem   = chem/chem_bwd_noop
@@ -160,17 +160,17 @@
  set ModChem   = chem/kpp_cb05cl_ae5_adj_bwd
 
 #set ModAero   = aero/aero_noop
-#set ModAero   = aero/aero_bwd_noop
+ set ModAero   = aero/aero_bwd_noop
 #set ModAero   = aero/aero4
 #set ModAero   = aero/aero5
 #set ModAero   = aero/aero5_adj_fwd
- set ModAero   = aero/aero5_adj_bwd
+#set ModAero   = aero/aero5_adj_bwd
 
-#set ModAdepv  = aero_depv/aero_depv_noop
- set ModAdepv  = aero_depv/aero_depv2
+ set ModAdepv  = aero_depv/aero_depv_noop
+#set ModAdepv  = aero_depv/aero_depv2
 
-#set ModCloud  = cloud/cloud_noop
- set ModCloud  = cloud/cloud_bwd_noop
+ set ModCloud  = cloud/cloud_noop
+#set ModCloud  = cloud/cloud_bwd_noop
 #set ModCloud  = cloud/cloud_acm
 #set ModCloud  = cloud/cloud_acm_ae5
 
@@ -185,7 +185,8 @@
 
 #> user choices: mechanism
 #set Mechanism = mech/cb05cl_ae4_aq
- set Mechanism = mech/cb05cl_ae5_aq
+#set Mechanism = mech/cb05cl_ae5_aq
+ set Mechanism = mech/cb05cl_ae5_aq_noaero
 #set Mechanism = mech/saprc99_ae4_aq
 #set Mechanism = mech/saprc99_ae5_aq
 #set Mechanism = mech/nochem
@@ -211,22 +212,23 @@
  mkdir -p $MODLOC
 
 # CHANGE: Set full path of Fortran 90 and c compilers
- set FC = /usr/local/intel/ictce/3.2.2.013/fc/bin/intel64/ifort
- set CC = /usr/local/intel/ictce/3.2.2.013/fc/bin/intel64/icc
+ set FC = /data/opt/intel/impi/4.0.0.028/intel64/bin/mpiifort
+ set CC = /data/opt/intel/impi/4.0.0.028/intel64/bin/mpicc
  set FP = $FC
 
 # CHANGE: Set location of MPICH if using multiple processors
  set MPICH  =  "{$M3LIB}/mpich/include -lmpi"
 
 # CHANGE: Set location for stenex library/include/and mod files
- set STENEX = $M3LIB/se_noop
+# set STENEX = $M3LIB/se_noop
+ set STENEX = /${M3LIB}/stenex/Linux2_x86_64intel
 
 # CHANGE: Set compiler flags
- set FSTD       = "-extend_source 132 -vec-report0 -nodefines -cm -w95 -traceback -CB -c -g"
- set F_FLAGS    = "${FSTD} -O2 -module ${MODLOC} -I."
+ set FSTD       = "-fixed -O0 -132 -fno-alias -mp1 -fp-model precise -I /home/shannon/cmaqadj/code/cmaq_adj/lib/x86_64/intel/se_snl  -I /data/opt/intel/impi/4.0.0.028/intel64/include -I."
+ set F_FLAGS    = "-free -O3 -fno-alias -mp1 -fp-model precise -I /home/shannon/cmaq/CMAQv5.0.2/lib/x86_64/intel/se_snl -I /data/opt/intel/impi/4.0.0.028/intel64/include -I."
  set CPP_FLAGS  = ""
- set C_FLAGS    = "-v -g -I${MPICH}/intel64/include -module ${MODLOC} -I."
- set LINK_FLAGS = "-i-static"
+ set C_FLAGS    = "-O0 -v -g  -I /data/opt/intel/impi/4.0.0.028/intel64/include"
+ set LINK_FLAGS = "-liomp5 -lpthread"
 
 # Set location of M3Bld executable
  set Blder = "$M3MODEL/BLDMAKE_git/bldmake -verbose"
