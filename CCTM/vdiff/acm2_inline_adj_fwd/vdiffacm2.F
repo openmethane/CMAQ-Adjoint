@@ -449,30 +449,30 @@ C Create new adjoint file and open for update
 
 C    Retrieve the perturbation information
 
-         write(*,*) 'before reading perturbation parameters'
+         !write(*,*) 'before reading perturbation parameters'
          CALL GET_ENVLIST ( PERTCOLS, NV, V_LIST )
-         write(*,*) 'PERTCOLS: ',PERTCOLS
-         write(*,*) 'NV: ',NV
-         write(*,*) 'V_LIST: ',V_LIST
+         !write(*,*) 'PERTCOLS: ',PERTCOLS
+         !write(*,*) 'NV: ',NV
+         !write(*,*) 'V_LIST: ',V_LIST
          IF ( NV .LT. 1 ) THEN
             PERTFLAG = 0
             XMSG = 'Not applying a perturbation'
             CALL M3WARN ( 'VDIFF', XMSG )
 !           SUCCESS = .FALSE.; RETURN
          ELSE
-            write(*,*) 'PERTCOLS NV',NV
+            !write(*,*) 'PERTCOLS NV',NV
             PERTFLAG = 1
-            write(*,*) 'PERTCOLS PERTFLAG',PERTFLAG
+            !write(*,*) 'PERTCOLS PERTFLAG',PERTFLAG
             ALLOCATE ( PERTI( NV ), STAT = ALLOCSTAT )
             IF ( ALLOCSTAT .NE. 0 ) THEN
                XMSG = 'Failure allocating PERTI'
                CALL M3EXIT( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
             END IF
             DO IND = 1, NV
-               write(*,*) 'V_LIST(IND): ',V_LIST(IND)
+               !write(*,*) 'V_LIST(IND): ',V_LIST(IND)
                READ( V_LIST( IND ), '( I4 )' ) PERTI(IND)
             ENDDO
-            write(*,*) 'PERTI: ',PERTI
+            !write(*,*) 'PERTI: ',PERTI
          ENDIF
 
          CALL GET_ENVLIST ( PERTROWS, NV, V_LIST )
@@ -491,7 +491,7 @@ C    Retrieve the perturbation information
             DO IND = 1, NV
                READ( V_LIST( IND ), '( I4 )' ) PERTJ(IND)
             ENDDO
-            write(*,*) 'PERTJ: ',PERTJ
+            !write(*,*) 'PERTJ: ',PERTJ
          ENDIF
          
 
@@ -511,7 +511,7 @@ C    Retrieve the perturbation information
             DO IND = 1, NV
                READ( V_LIST( IND ), '( I4 )' ) PERTL(IND)
             ENDDO
-            write(*,*) 'PERTL: ',PERTL
+            !write(*,*) 'PERTL: ',PERTL
          ENDIF
          
 
@@ -531,7 +531,7 @@ C    Retrieve the perturbation information
             DO IND = 1, NV
                READ( V_LIST( IND ), '( I4 )' ) PERTV(IND)
             ENDDO
-            write(*,*) 'PERTV: ',PERTV
+            !write(*,*) 'PERTV: ',PERTV
          ENDIF
          
 
@@ -543,7 +543,7 @@ C    Retrieve the perturbation information
             XMSG = 'Environment variable improperly formatted'
             CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT2)
          END IF
-         write(*,*) 'perturbations, col,row,lev,spec,delt: ',PERTI,PERTJ,PERTL,PERTV,PERTD
+         !write(*,*) 'perturbations, col,row,lev,spec,delt: ',PERTI,PERTJ,PERTL,PERTV,PERTD
 
       END IF          !  if Firstime
 
