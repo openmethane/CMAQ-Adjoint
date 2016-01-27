@@ -239,14 +239,12 @@ C 3D point source emissions (N_SPC_EMIS+1 serves as the null map for PTEM_MAP)
          END IF
          BUFF = 0.0   ! array assignment
 
-         write(*,*) 'before EMIS_CHK allocation'
          ALLOCATE ( EMIS_CHK( NCOLS,NROWS,NLAYS,N_SPC_DIFF ),
      &              STAT = ALLOCSTAT )
          IF ( ALLOCSTAT .NE. 0 ) THEN
             XMSG = 'EMIS_CHK memory allocation failed'
             CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
          END IF
-         write(*,*) 'after EMIS_CHK allocation'
 
 !         CALL CHK_FILE_OPEN ( ADJ_EMIST_CHK, MDATE, MTIME, .TRUE., TSTEP )
 
