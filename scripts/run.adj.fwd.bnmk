@@ -13,7 +13,7 @@
 
 #> Set M3DATA:
 ### CHANGE
- set M3DATA = /data/shannon/cmaqadj/bnmk/test_data
+ set M3DATA = /home/563/spt563/cmaq_adj/CMAQadjBnmkData
 
 #> Check that M3DATA is set:
  if ( ! -e $M3DATA ) then
@@ -24,7 +24,18 @@
 
 #> Set the working directory:
 ### CHANGE
- set BASE     = /home/shannon/noaero_cmaqadj/cmaq_adj/scripts
+ set BASE     = /home/563/spt563/cmaq_adj/scripts
+
+#> Set the output directory
+ set OUTDIR   = $M3DATA/spt_output
+ if ( ! -d "$OUTDIR" ) mkdir -p $OUTDIR
+
+#> SPT: if CLEAROUT = 'YES' delete files made by previous run (logfiles & output)
+ set CLEARLOG = YES
+ if ( $CLEARLOG == 'YES' ) then
+    rm $BASE/CTM_LOG*
+    rm $OUTDIR/*
+ endif
 
 #> Application name (no default)
 ### CHANGE
@@ -55,7 +66,7 @@
  set IDAY = 10              # day for initial conditions
 
 ### CHANGE
- set APPL_CASE = fwd_pert
+ set APPL_CASE = fwd_noaero
  set CFG  = adj
  set EXEC = $BASE/../BLD_${APPL_CASE}/ADJOINT_FWD
 
@@ -66,7 +77,7 @@
  if ( $RM == 'ser' ) then
     setenv NPCOL_NPROW "1 1"; set NPROCS   = 1 # single processor setting
  else
-    setenv NPCOL_NPROW "8 4"; set NPROCS   = 32
+    setenv NPCOL_NPROW "4 4"; set NPROCS   = 16
  endif
 
 #> Switch to the qsub directory; default launch location
@@ -76,7 +87,7 @@
     echo Queue is $PBS_O_QUEUE
     echo Working directory is $PBS_O_WORKDIR
     #cd $PBS_O_WORKDIR
-    cd /big_scratch/temp/cmaqadj
+    #cd /big_scratch/temp/cmaqadj
  endif
  echo '>>>>>> start model run at ' `date`
  set echo # Display each line after variables have been substituted
@@ -239,17 +250,17 @@ while ( $day <= $eday )
  set yesterday = $YEAR$MONTH$yest
  set yrmn = $YEAR$MONTH
  
-# cd $BASE; date; set timestamp;
+ cd $BASE; date; set timestamp;
 ### CHANGE
-cd /big_scratch/temp/cmaqadj; date; set timestamp;
+# cd /big_scratch/temp/cmaqadj; date; set timestamp;
 
 #> set ancillary log file name extensions
  setenv CTM_APPL $APPL.$FLDATE
 
 #> remove existing output files?
-#set DISP = delete
+ set DISP = delete
 #set DISP = update
- set DISP = keep
+#set DISP = keep
  
 #> Emissions files
  setenv EMISDATE ${YEAR}${MONTH}${STDAT}
@@ -307,12 +318,13 @@ cd /big_scratch/temp/cmaqadj; date; set timestamp;
  endif
 
 
+#> SPT: outdir now defined earlier in code (for CLEAROUT)
 #> output files and directories
 #> Change OUTDIR to job-specific location.
 # set OUTDIR   = $M3DATA/empert_eth
 ### CHANGE
- set OUTDIR   = /big_scratch/temp/cmaqadj
- if ( ! -d "$OUTDIR" ) mkdir -p $OUTDIR
+# set OUTDIR   = /big_scratch/temp/cmaqadj
+# if ( ! -d "$OUTDIR" ) mkdir -p $OUTDIR
 
 #> set log file [ default = unit 6 ]; uncomment to write standard output to a log
  setenv LOGFILE $OUTDIR/$APPL.$FLDATE.log
@@ -398,7 +410,7 @@ cd /big_scratch/temp/cmaqadj; date; set timestamp;
  set TR_BCfile = $GC_BCfile
 
 #> input and output files and directories (boilerplate)
- source /home/shannon/noaero_cmaqadj/cmaq_adj/scripts/in_out.q
+ source $BASE/in_out.q
  if ( $status ) exit 1
 
 #> for the run control ...
@@ -451,10 +463,12 @@ cd /big_scratch/temp/cmaqadj; date; set timestamp;
 #    set MPIRUN = /data/opt/intel/impi/4.0.0.028/intel64/bin/mpiexec
 #    totalview $MPIRUN -np $NPROCS $EXEC
 #    set MPIRUN = mpiexec
-    mpdboot --totalnum=`cat $PBS_NODEFILE | uniq | wc -l` -f $PBS_NODEFILE
-    time mpiexec -n `cat $PBS_NODEFILE | wc -l` -np $NPROCS $EXEC
+#    mpdboot --totalnum=`cat $PBS_NODEFILE | uniq | wc -l` -f $PBS_NODEFILE
+#    time mpiexec -n `cat $PBS_NODEFILE | wc -l` -np $NPROCS $EXEC
 #    set MPIRUN = /opt/intel/impi/5.0.1.035/bin64/mpirun
 #    time $MPIRUN -np $NPROCS $EXEC 
+    set MPIRUN = mpirun
+    time $MPIRUN -np $NPROCS $EXEC
  endif
 
 # date
