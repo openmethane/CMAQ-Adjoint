@@ -14,7 +14,7 @@
 # =================================================================== #
 
 # CHANGE: put root repository directory here
- setenv M3MODEL /work/CLIMSIM/rpe/cmaq_adj
+ setenv M3MODEL /home/563/spt563/cmaq_adj
 
 #===============================================================================
 
@@ -24,12 +24,12 @@
  setenv BLD_OS "`/bin/uname -s``/bin/uname -r | cut -d. -f1`"
 
 # CHANGE: set M3LIB to base directory for MPI, netCDF, IOAPI, STENEX, PARIO libraries
- setenv lib_basedir /home/wdx/lib
+ setenv lib_basedir ${M3MODEL}/lib
  set MACH = `uname -m`
  setenv COMPILER intel
  setenv compiler_ext ifort
  setenv M3LIB ${lib_basedir}/${system}/{$COMPILER}
- setenv MPI_INC $M3LIB/mpich/include
+ setenv MPI_INC "/apps/openmpi/1.6.3/include -I/apps/openmpi/1.6.3/include/Intel"
 
 ## Check for M3MODEL and M3LIB settings:
  if ( ! -e $M3MODEL || ! -e $M3LIB ) then
@@ -45,6 +45,11 @@
     exit 1
     endif
  set echo
+while( 1 )
+    switch( "$1" )
+    endsw
+    shift
+end
 
 #:#:#:#:#:#:#:#:#:#:#:# Begin User Input Section #:#:#:#:#:#:#:#:#:#:#:#
 
@@ -202,7 +207,7 @@
 #>    library paths
 
 # set Base = $cwd
- set APPL  = bwd
+ set APPL  = bwd_noaero
 # set APPL  = aero_adj
  set CFG   = cfg.$APPL
 #
@@ -212,23 +217,25 @@
  mkdir -p $MODLOC
 
 # CHANGE: Set full path of Fortran 90 and c compilers
- set FC = /data/opt/intel/impi/4.0.0.028/intel64/bin/mpiifort
- set CC = /data/opt/intel/impi/4.0.0.028/intel64/bin/mpicc
+# set FC = /data/opt/intel/impi/4.0.0.028/intel64/bin/mpiifort
+# set CC = /data/opt/intel/impi/4.0.0.028/intel64/bin/mpicc
+ set FC = /apps/openmpi/wrapper/fortran/mpif90
+ set CC = /apps/openmpi/1.6.3/bin/mpicc
  set FP = $FC
 
 # CHANGE: Set location of MPICH if using multiple processors
- set MPICH  =  "{$M3LIB}/mpich/include -lmpi"
+ set MPICH  =  "/apps/openmpi/1.6.3"
 
 # CHANGE: Set location for stenex library/include/and mod files
 # set STENEX = $M3LIB/se_noop
- set STENEX = /${M3LIB}/stenex/Linux2_x86_64intel
+ set STENEX = ${M3LIB}/se_snl
 
 # CHANGE: Set compiler flags
- set FSTD       = "-fixed -O0 -132 -fno-alias -mp1 -fp-model precise -I /home/shannon/cmaqadj/code/cmaq_adj/lib/x86_64/intel/se_snl  -I /data/opt/intel/impi/4.0.0.028/intel64/include -I."
- set F_FLAGS    = "-free -O3 -fno-alias -mp1 -fp-model precise -I /home/shannon/cmaq/CMAQv5.0.2/lib/x86_64/intel/se_snl -I /data/opt/intel/impi/4.0.0.028/intel64/include -I."
+ set FSTD       = "-extend_source 132 -vec-report0 -nodefines -warn nousage -stand none -traceback -CB -c -g"
+ set F_FLAGS    = "${FSTD} -O2 -module ${MODLOC} -I."
  set CPP_FLAGS  = ""
- set C_FLAGS    = "-O0 -v -g  -I /data/opt/intel/impi/4.0.0.028/intel64/include"
- set LINK_FLAGS = "-liomp5 -lpthread"
+ set C_FLAGS    = "-g -I/apps/openmpi/1.6.3/include"
+ set LINK_FLAGS = "-openmp"
 
 # Set location of M3Bld executable
  set Blder = "$M3MODEL/BLDMAKE_git/bldmake -verbose"
@@ -236,8 +243,8 @@
 # CHANGE: Set location of libraries/include files
  set IOAPI = "${M3LIB}/ioapi_3.1/Linux2_${system}${compiler_ext} -lioapi"
  set ICL_IOAPI = ${M3LIB}/ioapi_3.1/ioapi/fixed_src
- set NETCDF = "${M3LIB}/netcdf/lib -lnetcdf"
- set PARIO = "${M3LIB}/pario/${BLD_OS}_${MACH}${COMPILER} -lpario"
+ set NETCDF = "/apps/netcdf/4.2.1.1/lib -lnetcdf -L/apps/netcdf/4.2.1.1/lib/Intel -lnetcdff"
+ set PARIO = "${M3LIB}/pario -lpario"
 
 #:#:#:#:#:#:#:#:#:#:#:# End of User Input Section :#:#:#:#:#:#:#:#:#:#:#:#:#
 
@@ -266,9 +273,9 @@
 #    cp -p ${STENEX}/se_*.mod ${STENEX}/swap_sandia.mod $Bld
     set LIB2 = "-L${PARIO}"
     set LIB3 =
-    set LIB4 = "-L${Mpich}/intel64/lib -lmpich"
+    set LIB4 = "-L${Mpich}/lib -lmpi"
     set Str1 = (// Parallel / Include message passing definitions)
-    set Str2 = (include SUBST_MPICH ${Mpich}/intel64/include/mpif.h;)
+    set Str2 = (include SUBST_MPICH ${Mpich}/include/mpif.h;)
  else
     set Mpich =           # Single processor system configuration
     set seL = sef90_noop

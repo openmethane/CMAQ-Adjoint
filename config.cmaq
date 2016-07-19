@@ -31,8 +31,8 @@
  setenv bld_os "`/bin/uname -s``/bin/uname -r | cut -d. -f1`"
 
 # CHANGE: Set appropriate library directory
-#setenv lib_basedir $M3HOME/lib
- setenv lib_basedir /home/563/spt563/CMAQ_test/CMAQ/lib
+ setenv lib_basedir $M3HOME/lib
+#setenv lib_basedir /home/563/spt563/CMAQ_test/CMAQ/lib
 ######## vvvvv infinity
 #setenv extra_lib "-lrdmacm -libumad -lopa -lmpl -lrt -lpthread -libverbs -ldl"
 #setenv extra_lib "-lrdmacm -libumad "

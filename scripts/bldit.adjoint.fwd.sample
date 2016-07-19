@@ -24,7 +24,7 @@
  setenv BLD_OS "`/bin/uname -s``/bin/uname -r | cut -d. -f1`"
 
 # CHANGE: set M3LIB to base directory for MPI, netCDF, IOAPI, STENEX, PARIO libraries
- setenv lib_basedir /home/563/spt563/CMAQ_test/CMAQ/lib
+ setenv lib_basedir ${M3MODEL}/lib
  set MACH = `uname -m`
  setenv COMPILER intel
  setenv compiler_ext ifort
@@ -236,8 +236,8 @@
  set Blder = "$M3MODEL/BLDMAKE_git/bldmake -verbose"
 
 # CHANGE: Set location of libraries/include files
- set IOAPI = "/home/563/spt563/CMAQ_test/ioapi-3.1/Linux2_${system}${compiler_ext} -lioapi"
- set ICL_IOAPI = "/home/563/spt563/CMAQ_test/ioapi-3.1/ioapi/fixed_src"
+ set IOAPI = "${M3LIB}/ioapi_3.1/Linux2_${system}${compiler_ext} -lioapi"
+ set ICL_IOAPI = "${M3LIB}/ioapi_3.1/ioapi/fixed_src"
  set NETCDF = "/apps/netcdf/4.2.1.1/lib -lnetcdf -L/apps/netcdf/4.2.1.1/lib/Intel -lnetcdff"
  set PARIO = "${M3LIB}/pario -lpario"
 
