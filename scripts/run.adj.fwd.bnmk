@@ -27,7 +27,7 @@
  set BASE     = /home/563/spt563/cmaq_adj/scripts
 
 #> Set the output directory
- set OUTDIR   = $M3DATA/spt_output
+ set OUTDIR   = $M3DATA/GHG_output
  if ( ! -d "$OUTDIR" ) mkdir -p $OUTDIR
 
 #> SPT: if CLEAROUT = 'YES' delete files made by previous run (logfiles & output)

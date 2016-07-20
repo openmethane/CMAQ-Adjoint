@@ -313,7 +313,7 @@ while ( $day >= $eday )
 # set fwd_case = 238
 
 #> output files and directories
- set OUTDIR   =  ${M3DATA}/spt_output
+ set OUTDIR   =  ${M3DATA}/GHG_output
  #set OUTDIR2  =  $M3DATA/fullmda8pt
 # if ( ! -d "$OUTDIR" ) mkdir -p $OUTDIR
  set CONCfile   = CONC.${FLDATE}      # CTM_CONC_1
