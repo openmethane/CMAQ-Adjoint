@@ -386,9 +386,10 @@ C Open adjoint file for reading
       END IF                    ! FIRSTIME
 
 C Read vertical diffusion checkpoint at sync step
-      L1_CGRID => CGRID(:, :, 1:1, :)
-
+      !L1_CGRID => CGRID(:, :, 1:1, :)
+      L1_CGRID => CGRID(:, :, :, :)
       CALL CHK_FILE_READ ( ADJ_VDIFF_CHK, JDATE, JTIME, L1_CGRID )
+      L1_CGRID => L1_CGRID(:, :, 1:1, :)
 
       MDATE = JDATE
       MTIME = JTIME

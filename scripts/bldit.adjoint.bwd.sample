@@ -45,11 +45,11 @@
     exit 1
     endif
  set echo
-while( 1 )
-    switch( "$1" )
-    endsw
-    shift
-end
+#while( 1 )
+#    switch( "$1" )
+#    endsw
+#    shift
+#end
 
 #:#:#:#:#:#:#:#:#:#:#:# Begin User Input Section #:#:#:#:#:#:#:#:#:#:#:#
 

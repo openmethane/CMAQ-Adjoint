@@ -10,8 +10,8 @@
 # =================================================================== #
 
 # source ./setcase_12km_test
-set APPL   = adj_bnmk
-set M3DATA = /data/shannon/cmaqadj/bnmk 
+set APPL   = adj_emlays
+set M3DATA = /home/563/spt563/cmaq_adj/CMAQadjBnmkData
 
 #> Check that M3DATA is set:
  if ( ! -e $M3DATA ) then
@@ -21,7 +21,7 @@ set M3DATA = /data/shannon/cmaqadj/bnmk
  echo " "; echo " Input data path, M3DATA set to $M3DATA"; echo " "
 
 #> Set the working directory:
- set BASE     = /home/shannon/noaero_cmaqadj/cmaq_adj/scripts
+ set BASE     = /home/563/spt563/cmaq_adj/scripts
 
 #> Application name (no default)
  if ( ! $?APPL ) then
@@ -30,6 +30,7 @@ set M3DATA = /data/shannon/cmaqadj/bnmk
  endif
 
 #> Run mode: "ser" or "par" (default is par)
+#set RM       = ser
  if ( ! $?RM ) then
     echo 'RM (run mode) was not set; this will be a parallel run'
     set RM = par
@@ -38,20 +39,23 @@ set M3DATA = /data/shannon/cmaqadj/bnmk
     exit 1
  endif
 
- set YR = 8
- set YER = 08
- set YEAR = 2008
- set MONTH = 04             # does not cross months yet
- set FIRSTDAY  = 20080401   # first day YYYYMMDD
- set DAY1 = 01              # first day
- set EDAY = 03              # end day
- set IDAY = 01              # day for initial conditions
+ set YR = 7
+ set YER = 07
+ set YEAR = 2007
+ set MONTH = 06             # does not cross months yet
+ set FIRSTDAY  = 20070610   # first day YYYYMMDD
+ set DAY1 = 10              # first day
+ set EDAY = 13              # end day
+ set IDAY = 10              # day for initial conditions
 
- set APPL_CASE = ${APPL}_bwd
+ set APPL_CASE = bwd_noaero
  set CFG  = $BASE/../BLD_${APPL_CASE}/cfg.bwd
  set EXEC = $BASE/../BLD_${APPL_CASE}/ADJOINT_BWD
 
  cd $BASE; date; cat ${CFG}; echo "    "; set echo
+# cd $BASE; date; set timestamp;
+# mkdir /big_scratch/temp/bnmk
+# cd /big_scratch/temp/bnmk; date; cat ${CFG}; echo "    "; set echo
 
 #> horizontal domain decomposition
 # set RM = ser
@@ -60,7 +64,7 @@ set M3DATA = /data/shannon/cmaqadj/bnmk
  else
 #    setenv NPCOL_NPROW "20 12"; set NPROCS   = 240
 #    setenv NPCOL_NPROW "4 6"; set NPROCS   = 24
-    setenv NPCOL_NPROW "1 24"; set NPROCS   = 24
+    setenv NPCOL_NPROW "4 4"; set NPROCS   = 16
  endif
 
 #> Switch to the qsub directory; default launch location
@@ -68,7 +72,8 @@ set M3DATA = /data/shannon/cmaqadj/bnmk
     echo Job ID is $PBS_JOBID
     echo Queue is $PBS_O_QUEUE
     echo Working directory is $PBS_O_WORKDIR
-    cd $PBS_O_WORKDIR
+    # cd $PBS_O_WORKDIR
+    #cd /big_scratch/temp/bnmk
  endif
  echo '>>>>>> start model run at ' `date`
  set echo # Display each line after variables have been substituted
@@ -88,8 +93,8 @@ set M3DATA = /data/shannon/cmaqadj/bnmk
  #set OUTDIR2  = $OUTDIR
 
 # Set up
-limit stacksize 100000
-limit stacksize unlimited
+#limit stacksize 100000
+#limit stacksize unlimited
 
 #> set log file [ default = unit 6 ]; uncomment to write standard output to a log
 #setenv LOGFILE $BASE/$APPL_CASE.log
@@ -150,8 +155,8 @@ limit stacksize unlimited
 #setenv PROMPTFLAG F
 
 #> horizontal grid defn; check GRIDDESC file for GRID_NAME options
- setenv GRIDDESC $M3DATA/GRIDDESC3
- setenv GRID_NAME C_36_OAQPS
+ setenv GRIDDESC $M3DATA/other/GRIDDESC
+ setenv GRID_NAME CMAQ-BENCHMARK
 
 #> species for standard conc
  setenv CONC_SPCS "O3 NO NO2 FORM ISOP"
@@ -166,37 +171,37 @@ limit stacksize unlimited
  setenv ACONC_BLEV_ELEV " 1 1"
 
 #> input files and directories
- set OCEANpath = ${M3DATA}/emis/2008
- set OCEANfile = us36_surf.ncf
+ set OCEANpath = ${M3DATA}/other
+ set OCEANfile = surf_BENCHMARK.ncf
 
  set GC_BCpath = ${M3DATA}/bcon
- set GC_BCfile = BCON_cb05cl_ae5_aq_default_24L_36US
+ set GC_BCfile = BCON_CMAQ-BENCHMARK_profile
 
-# Julian day adjustment (non-leap year is commented out)
+# Julian day adjustment (leap year is commented out)
 if ( $MONTH == 01 ) then
  set juladd = 0
 else if ( $MONTH == 02 ) then
  set juladd = 31
 else if ( $MONTH == 03 ) then
- set juladd = 60  #59
+ set juladd = 59 #60
 else if ( $MONTH == 04 ) then
- set juladd = 91  #90
+ set juladd = 90 #91
 else if ( $MONTH == 05 ) then
- set juladd = 121 #120
+ set juladd = 120 #121
 else if ( $MONTH == 06 ) then
- set juladd = 152 #151
+ set juladd = 151 #152
 else if ( $MONTH == 07 ) then
- set juladd = 182 #181
+ set juladd = 181 #182
 else if ( $MONTH == 08 ) then
- set juladd = 213 #212
+ set juladd = 212 #213
 else if ( $MONTH == 09 ) then
- set juladd = 244 #243
+ set juladd = 243 #244
 else if ( $MONTH == 10 ) then
- set juladd = 274 #273
+ set juladd = 273 #274
 else if ( $MONTH == 11 ) then
- set juladd = 305 #304
+ set juladd = 304 #305
 else if ( $MONTH == 12 ) then
- set juladd = 335 #334
+ set juladd = 334 #335
 else
  echo " MONTH MUST BE BETWEEN 1-12 "
  exit (1)
@@ -223,18 +228,21 @@ while ( $day >= $eday )
  set NSTEPS   = 240000        # time duration (HHMMSS) for this run
  set TSTEP    = 010000        # output time step interval (HHMMSS)
 
- set yest = `echo $day | awk '{printf("%2.2d",$1+1)}'`
+# set yest = `echo $day | awk '{printf("%2.2d",$1+1)}'`
+# query: does bwd need to know IC?
+ set yest = `echo $day | awk '{printf("%2.2d",$1-1)}'`
  set yesterday = $YEAR$MONTH$yest
 
  cd $BASE; date; set timestamp;
-
+# cd /big_scratch/temp/bnmk
+ 
 #> set ancillary log file name extensions
  setenv CTM_APPL $APPL_CASE.$FLDATE
 
 #> remove existing output files?
 #set DISP = delete
-#set DISP = update
- set DISP = keep
+ set DISP = update
+#set DISP = keep
 
 
 ###> Testing the implementation of offline adjoint forcing functions.
@@ -305,25 +313,28 @@ while ( $day >= $eday )
 # set fwd_case = 238
 
 #> output files and directories
- set OUTDIR   =  /data/shannon/cmaqadj/bnmk/model_output_noaero 
+ set OUTDIR   =  ${M3DATA}/spt_output
+ #set OUTDIR2  =  $M3DATA/fullmda8pt
 # if ( ! -d "$OUTDIR" ) mkdir -p $OUTDIR
  set CONCfile   = CONC.${FLDATE}      # CTM_CONC_1
  set ACONCfile  = ACONC.${FLDATE}     # CTM_ACONC_1
  set CGRIDfile  = CGRID.${FLDATE}     # CTM_CGRID_1
  set DD1file    = DRYDEP.${FLDATE}    # CTM_DRY_DEP_1
-# set WD1file   = WETDEP1.${FLDATE}   # CTM_WET_DEP_1
-# set WD2file   = WETDEP2.${FLDATE}   # CTM_WET_DEP_2
-# set SS1file   = SSEMIS1.${FLDATE}   # CTM_SSEMIS_1
-# set AV1file   = AEROVIS.${FLDATE}   # CTM_VIS_1
-# set AD1file   = AERODIAM.${FLDATE}  # CTM_DIAM_1
-# set PA1file   = PA_1.${FLDATE}      # CTM_IPR_1
-# set PA2file   = PA_2.${FLDATE}      # CTM_IPR_2
-# set PA3file   = PA_3.${FLDATE}      # CTM_IPR_3
-# set IRR1file  = IRR_1.${FLDATE}     # CTM_IRR_1
-# set IRR2file  = IRR_2.${FLDATE}     # CTM_IRR_2
-# set IRR3file  = IRR_3.${FLDATE}     # CTM_IRR_3
-# set RJ1file   = RJ_1.${FLDATE}      # CTM_RJ_1
-# set RJ2file   = RJ_2.${FLDATE}      # CTM_RJ_2
+# <was commented out>
+ set WD1file   = WETDEP1.${FLDATE}   # CTM_WET_DEP_1
+ set WD2file   = WETDEP2.${FLDATE}   # CTM_WET_DEP_2
+ set SS1file   = SSEMIS1.${FLDATE}   # CTM_SSEMIS_1
+ set AV1file   = AEROVIS.${FLDATE}   # CTM_VIS_1
+ set AD1file   = AERODIAM.${FLDATE}  # CTM_DIAM_1
+ set PA1file   = PA_1.${FLDATE}      # CTM_IPR_1
+ set PA2file   = PA_2.${FLDATE}      # CTM_IPR_2
+ set PA3file   = PA_3.${FLDATE}      # CTM_IPR_3
+ set IRR1file  = IRR_1.${FLDATE}     # CTM_IRR_1
+ set IRR2file  = IRR_2.${FLDATE}     # CTM_IRR_2
+ set IRR3file  = IRR_3.${FLDATE}     # CTM_IRR_3
+ set RJ1file   = RJ_1.${FLDATE}      # CTM_RJ_1
+ set RJ2file   = RJ_2.${FLDATE}      # CTM_RJ_2
+#</ was commented out>
 
  setenv CHK_PATH "$OUTDIR"
  setenv ADJ_LGRID          "$OUTDIR/LGRID.${APPL_CASE}.${FLDATE} -v"
@@ -356,28 +367,34 @@ while ( $day >= $eday )
 #set TR_EMfile =
 
 #> test only
- if ( $FLDATE == $FIRSTDAY ) then
-   set GC_ICpath = $M3DATA_IN/icon
-   set GC_ICfile = ICON.36km.20080401
-   setenv INIT_LGRID_1 "$OUTDIR2/LGRID.${APPL_CASE}.${yesterday} -v"
-   setenv INIT_EM_1 "$OUTDIR2/EM.LGRID.${APPL_CASE}.${yesterday} -v"
-   setenv INIT_EM_SF_1 "$OUTDIR2/EM_SF.LGRID.${APPL_CASE}.${yesterday} -v"
- else
-   set GC_ICpath = $OUTDIR
-   set GC_ICfile = CGRID.${yesterday} 
-   setenv INIT_LGRID_1 "$OUTDIR2/LGRID.${APPL_CASE}.${yesterday} -v"
-   setenv INIT_EM_1 "$OUTDIR2/EM.LGRID.${APPL_CASE}.${yesterday} -v"
-   setenv INIT_EM_SF_1 "$OUTDIR2/EM_SF.LGRID.${APPL_CASE}.${yesterday} -v"
- endif
+# if ( $FLDATE == $FIRSTDAY ) then
+#   set GC_ICpath = $M3DATA/icon
+#   set GC_ICfile = ICON_CMAQ-BENCHMARK_profile
+#   setenv INIT_LGRID_1 "$OUTDIR/LGRID.${APPL_CASE}.${yesterday} -v"
+#   setenv INIT_EM_1 "$OUTDIR/EM.LGRID.${APPL_CASE}.${yesterday} -v"
+#   setenv INIT_EM_SF_1 "$OUTDIR/EM_SF.LGRID.${APPL_CASE}.${yesterday} -v"
+# else
+#   set GC_ICpath = $OUTDIR
+#   set GC_ICfile = CGRID.${yesterday} 
+#   setenv INIT_LGRID_1 "$OUTDIR/LGRID.${APPL_CASE}.${yesterday} -v"
+#   setenv INIT_EM_1 "$OUTDIR/EM.LGRID.${APPL_CASE}.${yesterday} -v"
+#   setenv INIT_EM_SF_1 "$OUTDIR/EM_SF.LGRID.${APPL_CASE}.${yesterday} -v"
+# endif
+
+ set GC_ICpath = $OUTDIR
+ set GC_ICfile = CGRID.${FLDATE}
+ setenv INIT_LGRID_1 "$OUTDIR/LGRID.${APPL_CASE}.${yesterday} -v"
+ setenv INIT_EM_1 "$OUTDIR/EM.LGRID.${APPL_CASE}.${yesterday} -v"
+ setenv INIT_EM_SF_1 "$OUTDIR/EM_SF.LGRID.${APPL_CASE}.${yesterday} -v"
 
  setenv EMISDATE ${YEAR}${MONTH}${STDAT}
- set EMISpath = ${M3DATA}/emis/2008
- set EMISfile  = emis_mole_all_${EMISDATE}_36US1_cmaq_cb05_soa_2008af_08b2.ncf 
+ set EMISpath = ${M3DATA}/emis
+ set EMISfile  = emis_CMAQ-BENCHMARK_${EMISDATE}.ncf
 
  setenv ADJ_FORCE "$OUTDIR/ADJ_FORCE.${FLDATE}"
 
- set METpath   = $M3DATA/met/M_04_2008
- set extn      = $YER$MONTH$STDAT
+ set METpath   = $M3DATA/mcip
+ set extn      = $YEAR$MONTH$STDAT
  set GC2file = GRIDCRO2D_${extn}
  set GD2file = GRIDDOT2D_${extn}
  set MC2file = METCRO2D_${extn}
@@ -408,7 +425,7 @@ while ( $day >= $eday )
 
 #> input and output files and directories (boilerplate)
 # source $M3HOME/scripts/cctm/in_out.q
- source /home/shannon/noaero_cmaqadj/cmaq_adj/scripts/in_out.q 
+ source /home/563/spt563/cmaq_adj/scripts/in_out.q 
  if ( $status ) exit 1
 
 #> for the run control ...
@@ -455,9 +472,13 @@ while ( $day >= $eday )
 #> Executable call for multiple PE, set location of MPIRUN script
 #   set TASKMAP = $HOME/loc/machines
 #   cat $TASKMAP
-    set MPI = /data/opt/intel/impi/4.0.0.028/intel64/bin
-    set MPIRUN = $MPI/mpirun
-    time $MPIRUN -r ssh -np $NPROCS $EXEC 
+#    set MPIRUN = mpiexec
+#    mpdboot --totalnum=`cat $PBS_NODEFILE | uniq | wc -l` -f $PBS_NODEFILE
+#    time mpiexec -n `cat $PBS_NODEFILE | wc -l` -np $NPROCS $EXEC
+#    mpdboot -f nodefile
+#    time mpiexec -np $NPROCS $EXEC
+    set MPIRUN = mpirun
+    time $MPIRUN -np $NPROCS $EXEC
  endif
 
  @ day--   # decrement day

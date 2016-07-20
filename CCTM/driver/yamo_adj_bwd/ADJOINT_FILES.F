@@ -34,7 +34,7 @@ C Parameters
       CHARACTER(16), PARAMETER :: INIT_EM_1       = 'INIT_EM_1'
       CHARACTER(16), PARAMETER :: INIT_EM_SF_1    = 'INIT_EM_SF_1'
       CHARACTER(16), PARAMETER :: ADJ_LGRID       = 'ADJ_LGRID'
-      CHARACTER(16), PARAMETER :: ADJ_FORCE       = 'ADJ_FORCE'
+      CHARACTER(16), PARAMETER :: ADJ_FORCE_FILE  = 'ADJ_FORCE'
       CHARACTER(16), PARAMETER :: ADJ_LGRID_EM_SF = 'ADJ_LGRID_EM_SF'
       CHARACTER(16), PARAMETER :: ADJ_LGRID_EM    = 'ADJ_LGRID_EM'
       CHARACTER(16), PARAMETER :: ADJ_LGRID_EM_NRM= 'ADJ_LGRID_EM_NRM'
@@ -726,7 +726,7 @@ C Arguments:
       REAL, INTENT(OUT) :: ARRAY(:,:,:,:)
       INTEGER, INTENT(IN) :: JDATE ! current model date, coded YYYYDDD
       INTEGER, INTENT(IN) :: JTIME ! current model time, coded HHMMSS
-!      CHARACTER(16), INTENT(IN) :: ADJ_FORCE
+!      CHARACTER(16), INTENT(IN) :: ADJ_FORCE_FILE
 
 C Local variables:
       LOGICAL, SAVE :: FIRSTIME_FRC = .TRUE.
@@ -756,9 +756,9 @@ C Get local window in global domain
          BUFFER = 0.d0
          ARRAY  = 0.d0
 
-C Get file characteristics of ADJ_FILE
-      IF ( .NOT. DESC3(ADJ_FORCE) ) THEN
-         XMSG = 'Could not get ' // TRIM(ADJ_FORCE) // ' file description'
+C Get file characteristics of ADJ_FILE_FILE
+      IF ( .NOT. DESC3(ADJ_FORCE_FILE) ) THEN
+         XMSG = 'Could not get ' // TRIM(ADJ_FORCE_FILE) // ' file description'
          CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
       END IF
 
@@ -785,15 +785,15 @@ C Get file characteristics of ADJ_FILE
       !V = 22 ! CO (NSPC index) 
       V = 4 ! O3 (NSPC index)
 
-!     Because ADJ_FORCE will only have one variable,
+!     Because ADJ_FORCE_FILE will only have one variable,
 !        this one variable should be extracted.
 !        It may also only be at one level, which is indicated by NLAYS_FRC.
 !        The assignment is where V equals the species denoted above.
-      IF ( .NOT. XTRACT3(ADJ_FORCE, VNAME3D(1),
+      IF ( .NOT. XTRACT3(ADJ_FORCE_FILE, VNAME3D(1),
      &     1, NLAYS_FRC, STRTROW, ENDROW, STRTCOL, ENDCOL,
      &     JDATE, JTIME, BUFFER) ) THEN
          XMSG = 'Could not read  ' // VNAME3D(1)
-     &        // ' from ' // TRIM(ADJ_FORCE)
+     &        // ' from ' // TRIM(ADJ_FORCE_FILE)
          CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
 
       ELSE
