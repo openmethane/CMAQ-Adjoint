@@ -148,13 +148,13 @@
 #set ModVdiff  = vdiff/acm2_inline_adj_fwd
  set ModVdiff  = vdiff/acm2_inline_adj_bwd
 
-#set ModPhot   = phot/phot_noop
- set ModPhot   = phot/phot
+ set ModPhot   = phot/phot_noop
+#set ModPhot   = phot/phot
 #set ModPhot   = phot/phot_sat
 #set ModPhot   = phot/phot_inline
 
 #set ModChem   = chem/chem_noop
-#set ModChem   = chem/chem_bwd_noop
+ set ModChem   = chem/chem_bwd_noop
 #set ModChem   = chem/smvgear
 #set ModChem   = chem/ros3
 #set ModChem   = chem/ebi_cb05cl
@@ -162,7 +162,7 @@
 #set ModChem   = chem/ebi_saprc99
 #set ModChem   = chem/ebi_saprc99_ae5
 #set ModChem   = chem/kpp_cb05cl_ae5_adj_fwd
- set ModChem   = chem/kpp_cb05cl_ae5_adj_bwd
+#set ModChem   = chem/kpp_cb05cl_ae5_adj_bwd
 
 #set ModAero   = aero/aero_noop
  set ModAero   = aero/aero_bwd_noop
@@ -191,7 +191,8 @@
 #> user choices: mechanism
 #set Mechanism = mech/cb05cl_ae4_aq
 #set Mechanism = mech/cb05cl_ae5_aq
- set Mechanism = mech/cb05cl_ae5_aq_noaero
+#set Mechanism = mech/cb05cl_ae5_aq_noaero
+ set Mechanism = mech/cb05cl_ae5_aq_CO2only
 #set Mechanism = mech/saprc99_ae4_aq
 #set Mechanism = mech/saprc99_ae5_aq
 #set Mechanism = mech/nochem
@@ -207,7 +208,7 @@
 #>    library paths
 
 # set Base = $cwd
- set APPL  = bwd_noaero
+ set APPL  = bwd_CO2only
 # set APPL  = aero_adj
  set CFG   = cfg.$APPL
 #

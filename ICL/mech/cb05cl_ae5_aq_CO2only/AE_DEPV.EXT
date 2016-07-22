@@ -1,0 +1,16 @@
+
+C RCS file, release, date & time of last delta, author, state, [and locker]
+C $Header: /Volumes/Data/CVS/CMAQ_CVSrepos/ICL/src/mech/cb05cl_ae5_aq/AE_DEPV.EXT,v 1.1.1.1 2009/12/16 19:15:59 sjr Exp $ 
+
+C what(1) key, module and SID; SCCS file; date and time of last delta:
+C %W% %P% %G% %U%
+
+C Mechanism Name: CB05CL_AE5_AQ
+
+        INTEGER        N_AE_DEPV
+        PARAMETER     (N_AE_DEPV = 0)
+        INTEGER        N_AE_DEPVD
+        PARAMETER     (N_AE_DEPVD = N_AE_DEPV)
+        CHARACTER*16   AE_DEPV(N_AE_DEPVD)
+        INTEGER        AE_DEPV_MAP(N_AE_DEPVD)
+        REAL           AE_DEPV_FAC(N_AE_DEPVD)

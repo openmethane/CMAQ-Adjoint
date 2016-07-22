@@ -645,8 +645,8 @@ C read & interpolate emissions data => VDEMIS from EMIS_DEFN module
                   END DO ! Row
                END DO ! Layer
             END DO ! Species
-            WRITE(LOGDEV,*) 'After transferring perturbation'   !debug, mdt
-            WRITE(LOGDEV,*) 'EM_SF(PERTJ,I,L,V): ',EM_SF(PERTJ(1),PERTI(1),PERTL(1),PERTV(1))
+!            WRITE(LOGDEV,*) 'After transferring perturbation'   !debug, mdt
+!            WRITE(LOGDEV,*) 'EM_SF(PERTJ,I,L,V): ',EM_SF(PERTJ(1),PERTI(1),PERTL(1),PERTV(1))
 
            
       ELSE
@@ -836,8 +836,12 @@ C End ACM insert
             
          END DO
 
-         PLDV_HONO = PLDV( HONO_HIT,C,R )
-         CONC_NO2 = CONC( NO2_MAP,1 )
+         IF ( HONO_HIT > 0 ) THEN
+            PLDV_HONO = PLDV( HONO_HIT,C,R )
+         END IF
+         IF ( NO2_MAP > 0 ) THEN
+            CONC_NO2 = CONC( NO2_MAP,1 )
+         END IF
 
 C-----------------------------------------------------------------------
 

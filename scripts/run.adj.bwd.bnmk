@@ -48,7 +48,7 @@ set M3DATA = /home/563/spt563/cmaq_adj/CMAQadjBnmkData
  set EDAY = 13              # end day
  set IDAY = 10              # day for initial conditions
 
- set APPL_CASE = bwd_noaero
+ set APPL_CASE = bwd_CO2only
  set CFG  = $BASE/../BLD_${APPL_CASE}/cfg.bwd
  set EXEC = $BASE/../BLD_${APPL_CASE}/ADJOINT_BWD
 
@@ -159,13 +159,15 @@ set M3DATA = /home/563/spt563/cmaq_adj/CMAQadjBnmkData
  setenv GRID_NAME CMAQ-BENCHMARK
 
 #> species for standard conc
- setenv CONC_SPCS "O3 NO NO2 FORM ISOP"
+# setenv CONC_SPCS "O3 NO NO2 FORM ISOP"
+ setenv CONC_SPCS "CO"
 
 #> layer range for standard conc
  setenv CONC_BLEV_ELEV " 1 4"
 
 #> species for integral average conc
- setenv AVG_CONC_SPCS "O3 NO CO NO2"
+# setenv AVG_CONC_SPCS "O3 NO CO NO2"
+ stenv AVG_CONC_SPCS "CO"
 
 #> layer range for integral average conc
  setenv ACONC_BLEV_ELEV " 1 1"

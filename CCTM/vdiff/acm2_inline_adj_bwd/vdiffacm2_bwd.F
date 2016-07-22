@@ -565,9 +565,13 @@ C----------------------------------------------
             efac1(v) = exp(-(depvcr(v)*rdepvht(c,r)*thbar*dts))
             efac2(v) = exp(-(depvcr(v)*rdepvht(c,r)*theta*dts))
           end do
-          pol(nh3_so2) = pvdd(nh3_so2,c,r)/depvcr(nh3_hit)
-          pol(nh3_nh3) = pvdd(nh3_nh3,c,r)/depvcr(nh3_hit)
-          pol(hono_no2) = pvdd(hono_no2,c,r)/depvcr(hono_hit)
+          if ( nh3_hit > 0 ) then
+             pol(nh3_so2) = pvdd(nh3_so2,c,r)/depvcr(nh3_hit)
+             pol(nh3_nh3) = pvdd(nh3_nh3,c,r)/depvcr(nh3_hit)
+          end if
+          if ( hono_hit > 0 ) then
+             pol(hono_no2) = pvdd(hono_no2,c,r)/depvcr(hono_hit)
+          end if
           ! Split do loop into two - treat emissions only up to EMSENSL (dbg.2.2015.slc)
           do l = 1, nlays
             do v = 1, n_spc_diff
@@ -634,8 +638,12 @@ C----------------------------------------------
                 conc_bwd(dv2df(v),1) = conc_bwd(dv2df(v),1)*efac2(v)
               endif
             end do
-            conc_bwd(no2_map,1) = conc_bwd(no2_map,1) + conc_no2b
-            conc_bwd(so2_map,1) = conc_bwd(so2_map,1) + conc_so2b
+            if ( no2_map > 0 ) then
+               conc_bwd(no2_map,1) = conc_bwd(no2_map,1) + conc_no2b
+            end if
+            if ( so2_map > 0 ) then
+               conc_bwd(so2_map,1) = conc_bwd(so2_map,1) + conc_so2b
+            end if
             do l = 1, nlays
               do v = 1, n_spc_diff
                 uu_bwd(v,l) = uu_bwd(v,l)+conc_bwd(v,l)
@@ -762,8 +770,12 @@ C----------------------------------------------
                 conc_bwd(dv2df(v),1) = conc_bwd(dv2df(v),1)*efac1(v)
               endif
             end do
-            conc_bwd(no2_map,1) = conc_bwd(no2_map,1) + conc_no2b
-            conc_bwd(so2_map,1) = conc_bwd(so2_map,1) + conc_so2b
+            if ( no2_map > 0 ) then
+               conc_bwd(no2_map,1) = conc_bwd(no2_map,1) + conc_no2b
+            end if
+            if ( so2_map > 0 ) then
+               conc_bwd(so2_map,1) = conc_bwd(so2_map,1) + conc_so2b
+            end if
           end do
           
 ! Forward code: 

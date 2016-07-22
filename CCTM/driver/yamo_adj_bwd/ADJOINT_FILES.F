@@ -783,7 +783,8 @@ C Get file characteristics of ADJ_FILE_FILE
       ! in cmaq_adj/ICL directory
 
       !V = 22 ! CO (NSPC index) 
-      V = 4 ! O3 (NSPC index)
+      !V = 4 ! O3 (NSPC index)
+      V = 1 ! CO2 in GHG_raijin version
 
 !     Because ADJ_FORCE_FILE will only have one variable,
 !        this one variable should be extracted.
