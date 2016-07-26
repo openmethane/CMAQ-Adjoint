@@ -18,5 +18,5 @@ C Mechanism Name: CB05CL_AE5_AQ
         INTEGER        GC_EMIS_MAP(N_GC_EMISD)
         REAL           GC_EMIS_FAC(N_GC_EMISD)
 
-        DATA   GC_EMIS(  1), GC_EMIS_MAP(  1) / 'CO              ',   1 /
+        DATA   GC_EMIS(  1), GC_EMIS_MAP(  1) / 'CO2             ',   1 /
         DATA   GC_EMIS_FAC(  1) /     1.0 /

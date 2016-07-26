@@ -30,7 +30,7 @@ set M3DATA = /home/563/spt563/cmaq_adj/CMAQadjBnmkData
  endif
 
 #> Run mode: "ser" or "par" (default is par)
-#set RM       = ser
+set RM       = ser
  if ( ! $?RM ) then
     echo 'RM (run mode) was not set; this will be a parallel run'
     set RM = par
@@ -44,6 +44,7 @@ set M3DATA = /home/563/spt563/cmaq_adj/CMAQadjBnmkData
  set YEAR = 2007
  set MONTH = 06             # does not cross months yet
  set FIRSTDAY  = 20070610   # first day YYYYMMDD
+ set LASTDAY   = 20070613   # last day YYYYMMDD
  set DAY1 = 10              # first day
  set EDAY = 13              # end day
  set IDAY = 10              # day for initial conditions
@@ -160,14 +161,14 @@ set M3DATA = /home/563/spt563/cmaq_adj/CMAQadjBnmkData
 
 #> species for standard conc
 # setenv CONC_SPCS "O3 NO NO2 FORM ISOP"
- setenv CONC_SPCS "CO"
+ setenv CONC_SPCS "CO2"
 
 #> layer range for standard conc
  setenv CONC_BLEV_ELEV " 1 4"
 
 #> species for integral average conc
 # setenv AVG_CONC_SPCS "O3 NO CO NO2"
- stenv AVG_CONC_SPCS "CO"
+ stenv AVG_CONC_SPCS "CO2"
 
 #> layer range for integral average conc
  setenv ACONC_BLEV_ELEV " 1 1"
@@ -177,7 +178,7 @@ set M3DATA = /home/563/spt563/cmaq_adj/CMAQadjBnmkData
  set OCEANfile = surf_BENCHMARK.ncf
 
  set GC_BCpath = ${M3DATA}/bcon
- set GC_BCfile = BCON_CMAQ-BENCHMARK_profile
+ set GC_BCfile = BCON_CMAQ-CO2test_profile
 
 # Julian day adjustment (leap year is commented out)
 if ( $MONTH == 01 ) then
@@ -230,9 +231,7 @@ while ( $day >= $eday )
  set NSTEPS   = 240000        # time duration (HHMMSS) for this run
  set TSTEP    = 010000        # output time step interval (HHMMSS)
 
-# set yest = `echo $day | awk '{printf("%2.2d",$1+1)}'`
-# query: does bwd need to know IC?
- set yest = `echo $day | awk '{printf("%2.2d",$1-1)}'`
+ set yest = `echo $day | awk '{printf("%2.2d",$1+1)}'`
  set yesterday = $YEAR$MONTH$yest
 
  cd $BASE; date; set timestamp;
@@ -369,25 +368,21 @@ while ( $day >= $eday )
 #set TR_EMfile =
 
 #> test only
-# if ( $FLDATE == $FIRSTDAY ) then
-#   set GC_ICpath = $M3DATA/icon
-#   set GC_ICfile = ICON_CMAQ-BENCHMARK_profile
+ if ( $FLDATE == $LASTDAY ) then
 #   setenv INIT_LGRID_1 "$OUTDIR/LGRID.${APPL_CASE}.${yesterday} -v"
 #   setenv INIT_EM_1 "$OUTDIR/EM.LGRID.${APPL_CASE}.${yesterday} -v"
 #   setenv INIT_EM_SF_1 "$OUTDIR/EM_SF.LGRID.${APPL_CASE}.${yesterday} -v"
-# else
-#   set GC_ICpath = $OUTDIR
-#   set GC_ICfile = CGRID.${yesterday} 
-#   setenv INIT_LGRID_1 "$OUTDIR/LGRID.${APPL_CASE}.${yesterday} -v"
-#   setenv INIT_EM_1 "$OUTDIR/EM.LGRID.${APPL_CASE}.${yesterday} -v"
-#   setenv INIT_EM_SF_1 "$OUTDIR/EM_SF.LGRID.${APPL_CASE}.${yesterday} -v"
-# endif
+ else
+   setenv INIT_LGRID_1 "$OUTDIR/LGRID.${APPL_CASE}.${yesterday} -v"
+   setenv INIT_EM_1 "$OUTDIR/EM.LGRID.${APPL_CASE}.${yesterday} -v"
+   setenv INIT_EM_SF_1 "$OUTDIR/EM_SF.LGRID.${APPL_CASE}.${yesterday} -v"
+ endif
 
  set GC_ICpath = $OUTDIR
  set GC_ICfile = CGRID.${FLDATE}
- setenv INIT_LGRID_1 "$OUTDIR/LGRID.${APPL_CASE}.${yesterday} -v"
- setenv INIT_EM_1 "$OUTDIR/EM.LGRID.${APPL_CASE}.${yesterday} -v"
- setenv INIT_EM_SF_1 "$OUTDIR/EM_SF.LGRID.${APPL_CASE}.${yesterday} -v"
+# setenv INIT_LGRID_1 "$OUTDIR/LGRID.${APPL_CASE}.${yesterday} -v"
+# setenv INIT_EM_1 "$OUTDIR/EM.LGRID.${APPL_CASE}.${yesterday} -v"
+# setenv INIT_EM_SF_1 "$OUTDIR/EM_SF.LGRID.${APPL_CASE}.${yesterday} -v"
 
  setenv EMISDATE ${YEAR}${MONTH}${STDAT}
  set EMISpath = ${M3DATA}/emis

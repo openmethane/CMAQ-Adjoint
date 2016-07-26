@@ -17,4 +17,4 @@ C Mechanism Name: CB05CL_AE5_AQ
         CHARACTER*16   GC_DIFF(N_GC_DIFFD)
         INTEGER        GC_DIFF_MAP(N_GC_DIFFD)
 
-        DATA          GC_DIFF(  1), GC_DIFF_MAP(  1) / 'CO              ',   1 /
+        DATA          GC_DIFF(  1), GC_DIFF_MAP(  1) / 'CO2             ',   1 /

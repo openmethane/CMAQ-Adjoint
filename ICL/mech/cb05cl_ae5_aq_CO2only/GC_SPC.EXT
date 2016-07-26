@@ -17,4 +17,4 @@ C Mechanism Name: CB05CL_AE5_AQ
         CHARACTER*16   GC_SPC(N_GC_SPCD)
         REAL           GC_MOLWT(N_GC_SPCD)
 
-        DATA          GC_SPC(  1), GC_MOLWT(  1) / 'CO              ', 28.0 /
+        DATA          GC_SPC(  1), GC_MOLWT(  1) / 'CO2             ', 44.0 /

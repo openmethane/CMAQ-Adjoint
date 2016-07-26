@@ -47,7 +47,7 @@
  endif
 
 #> Run mode: "ser" or "par" (default is par)
-#set RM       = ser
+set RM       = ser
  if ( ! $?RM ) then
     echo 'RM (run mode) was not set; this will be a parallel run'
     set RM = par
@@ -168,7 +168,7 @@ setenv PROMPTFLAG F
 
 #> species for standard conc
 # setenv CONC_SPCS "O3 NO NO2 FORM ISOP ETH"
- setenv CONC_SPCS "CO"
+ setenv CONC_SPCS "CO2"
 
 #> layer range for standard conc
  setenv CONC_BLEV_ELEV " 1 4"
@@ -177,7 +177,7 @@ setenv PROMPTFLAG F
 #setenv AVG_CONC_SPCS "O3 NO CO NO2 ASO4I ASO4J NH3"
 #setenv AVG_CONC_SPCS "ALL"
 # setenv AVG_CONC_SPCS "O3 NO CO FORM NO2 ETH"
- setenv AVG_CONC_SPCS "CO"
+ setenv AVG_CONC_SPCS "CO2"
 
 #> layer range for integral average conc
  setenv ACONC_BLEV_ELEV " 1 1 "
@@ -268,7 +268,7 @@ while ( $day <= $eday )
  set EMISpath  = $M3DATA/emis
 
  if ( $CTM_PT3DEMIS == 'N' ) then
-   set EMISfile  = emis_CMAQ-BENCHMARK_${EMISDATE}.ncf #> Offline 3d emissions file name
+   set EMISfile  = emis_CMAQ-CO2test_${EMISDATE}.ncf #> Offline 3d emissions file name
  else
    #> In-line emissions configuration
    set IN_PTpath = $M3DATA/emis/2007      #> elevated emissions input directory (in-line point only)
@@ -350,7 +350,7 @@ while ( $day <= $eday )
 
 #> set boundary condition files
  set GC_BCpath = $M3DATA/bcon
- set GC_BCfile = BCON_CMAQ-BENCHMARK_profile
+ set GC_BCfile = BCON_CMAQ-CO2test_profile
 
 #> set floor file (neg concs)
  setenv FLOOR_FILE $OUTDIR/FLOOR_${APPL}
@@ -371,7 +371,7 @@ while ( $day <= $eday )
  echo $FIRSTDAY
  if ( $FLDATE == $FIRSTDAY ) then
    set GC_ICpath = $M3DATA/icon
-   set GC_ICfile = ICON_CMAQ-BENCHMARK_profile
+   set GC_ICfile = ICON_CMAQ-CO2test_profile
    setenv CTM_XFIRST_IN
  else
    set GC_ICpath = $OUTDIR

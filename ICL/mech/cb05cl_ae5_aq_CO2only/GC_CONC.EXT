@@ -17,4 +17,4 @@ C Mechanism Name: CB05CL_AE5_AQ
         CHARACTER*16   GC_CONC(N_GC_CONCD)
         INTEGER        GC_CONC_MAP(N_GC_CONCD)
 
-        DATA          GC_CONC(  1), GC_CONC_MAP(  1) / 'CO              ',   1 /
+        DATA          GC_CONC(  1), GC_CONC_MAP(  1) / 'CO2             ',   1 /

@@ -13,7 +13,7 @@ for dstamp in dates:
     conc_name = '/home/563/spt563/cmaq_adj/CMAQadjBnmkData/GHG_output/CONC.' + dstamp
     conc_file = Dataset(conc_name, mode='r', open=True)
 
-    COhr = np.squeeze(conc_file.variables['CO'][:][:][:])
+    COhr = np.squeeze(conc_file.variables['CO2'][:][:][:])
 
     dayCOhrly = COhr[0:25, 1, :, :]
     binCOmax = np.where(dayCOhrly[:,:,:] == np.max(dayCOhrly[:,:,:], axis=0), 1.0, 0.0)
@@ -37,8 +37,8 @@ for dstamp in dates:
     setattr(forcCOmxhrfile, "NVARS", 1)
     setattr(forcCOmxhrfile, "NLAYS", 1)
     setattr(forcCOmxhrfile, "UPNAM", "RD_FORCE_FILE")
-    setattr(forcCOmxhrfile, "VAR-LIST", "CO             ")
-    setattr(forcCOmxhrfile, "FILEDESC", "Adjoint forcing file. Cost function: sum of max CO in every cell, each day (ppm)")
+    setattr(forcCOmxhrfile, "VAR-LIST", "CO2            ")
+    setattr(forcCOmxhrfile, "FILEDESC", "Adjoint forcing file. Cost function: sum of max CO2 in every cell, each day (ppm)")
 
     ltime, lrow, lcol = (binCOmax.shape)
     llay = 1
@@ -61,7 +61,7 @@ for dstamp in dates:
     forc_tflag = forcCOmxhrfile.createVariable('TFLAG', 'i4', ('TSTEP', 'VAR', 'DATE-TIME'))
     forc_tflag[:] = dattim.reshape(ltime, llay, ldattim)
 
-    forc_COmxhr = forcCOmxhrfile.createVariable('CO', 'f4', ('TSTEP', 'LAY', 'ROW', 'COL'))
+    forc_COmxhr = forcCOmxhrfile.createVariable('CO2', 'f4', ('TSTEP', 'LAY', 'ROW', 'COL'))
     forc_COmxhr[:] = binCOmax.reshape(ltime, llay, lrow, lcol)
 
     varattrs = ["long_name", "units", "var_desc"]
@@ -69,11 +69,11 @@ for dstamp in dates:
         if hasattr(conc_file.variables['TFLAG'], varattr):
             varattr_val = getattr(conc_file.variables['TFLAG'], varattr)
             setattr(forc_tflag, varattr, varattr_val)
-        if hasattr(conc_file.variables['CO'], varattr):
-            varattr_val = getattr(conc_file.variables['CO'], varattr)
+        if hasattr(conc_file.variables['CO2'], varattr):
+            varattr_val = getattr(conc_file.variables['CO2'], varattr)
             setattr(forc_COmxhr, varattr, varattr_val)
         else:
-            print 'CO has no attr', varattr
+            print 'CO2 has no attr', varattr
 
     forcCOmxhrfile.close()
     conc_file.close()
