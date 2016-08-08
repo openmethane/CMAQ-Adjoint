@@ -232,7 +232,8 @@ endif
 
 #########################################################
 
-while ( $day <= $eday )
+#while ( $day <= $eday )
+while ( $day <= $DAY1 )
 
  date; echo " "
 
@@ -245,7 +246,8 @@ while ( $day <= $eday )
 
  set STTIME   = 000000        # beginning hour (GMT)
  set NSTEPS   = 240000        # time duration (HHMMSS) for this run
- set TSTEP    = 010000        # output time step interval (HHMMSS)
+# set TSTEP    = 010000        # output time step interval (HHMMSS)
+ set TSTEP    = 001000
 
  set yest = `echo $day | awk '{printf("%2.2d",$1-1)}'`
  set yesterday = $YEAR$MONTH$yest

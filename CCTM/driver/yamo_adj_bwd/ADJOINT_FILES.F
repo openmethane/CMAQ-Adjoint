@@ -721,7 +721,10 @@ C Include Files:
 
 C Arguments:
 
-      INTEGER, PARAMETER :: NLAYS_FRC = 1
+      INTEGER, EXTERNAL :: ENVINT
+      INTEGER           :: IOS
+      INTEGER           :: NLAYS_FRC
+      INTEGER           :: ALLOCSTAT
 
       REAL, INTENT(OUT) :: ARRAY(:,:,:,:)
       INTEGER, INTENT(IN) :: JDATE ! current model date, coded YYYYDDD
@@ -736,8 +739,9 @@ C Local variables:
 
 !      INTEGER, PARAMETER :: NLAYS_FRC = 1
 
-      REAL :: BUFFER(1:NCOLS, 1:NROWS, 1:NLAYS_FRC)
+!      REAL :: BUFFER(1:NCOLS, 1:NROWS, 1:NLAYS_FRC)
 !      REAL :: BUFFER(1:NCOLS, 1:NROWS)
+      REAL, ALLOCATABLE :: BUFFER(:, :, :)
 
       INTEGER :: STRTCOL, ENDCOL, STRTROW, ENDROW ! local window in global domain
       INTEGER :: CARRAY, RARRAY, LENROW, LENCOL
@@ -746,6 +750,9 @@ C Local variables:
       INTEGER :: K, C, R, L, V  ! loop counters
 
 C-----------------------------------------------------------------------
+
+         NLAYS_FRC = ENVINT('NLAYS_FRC', 'No. of layers in forcing file', 1, IOS)
+         ALLOCATE( BUFFER(1:NCOLS, 1:NROWS, 1:NLAYS_FRC), STAT=ALLOCSTAT )
 
 C Get local window in global domain
          STRTCOL = COLSX_PE(1, MYPE+1)

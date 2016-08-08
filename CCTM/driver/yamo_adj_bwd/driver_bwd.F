@@ -125,6 +125,10 @@ C Local Variables:
 
       INTEGER :: VI             ! variable index in naming array
 
+      INTEGER              NLAYS_FRC      ! number of layers to use in forcing file
+      INTEGER              IOS            ! I/O status
+      INTEGER, EXTERNAL :: ENVINT         ! to read in NLAYS_FRC
+
       INTEGER     N_SPC_DIFF               ! global diffusion species
       PARAMETER ( N_SPC_DIFF = N_GC_DIFF   
      &                       + N_AE_DIFF
@@ -242,6 +246,9 @@ C Initialize PCGRID
 !      WRITE(*,*) 'In driver'
 !      WRITE(*,*) 'NCOLS: ',NCOLS,' NROWS: ',NROWS
 !      WRITE(*,*) 'NLAYS: ',NLAYS,'NSPCSD: ',NSPCSD
+
+C read in NLAYS_FRC
+      NLAYS_FRC = ENVINT('NLAYS_FRC', 'Number of layers in forcing file', 1, IOS)
 
 C Allocate memory
       ALLOCATE(
@@ -377,7 +384,7 @@ C        LGRID_FRC and LGRID_FRC_TOT are stored in ADJ_ARRAY_MOD
             !WRITE(*,*) MYPE, ' Shape LGRID: ',shape(LGRID)
             !WRITE(*,*) 'Before addition on ',MYPE,', LGRID(1,1,1,4): ', LGRID(1,1,1,4)
             !WRITE(*,*) 'Before addition on ',MYPE,', LGRID_FRC(1,1,1,4): ', LGRID_FRC(1,1,1,4)
-            LGRID(:,:,1,:) = LGRID(:,:,1,:) + LGRID_FRC(:,:,1,:) 
+            LGRID(:,:,1:NLAYS_FRC,:) = LGRID(:,:,1:NLAYS_FRC,:) + LGRID_FRC(:,:,1:NLAYS_FRC,:) 
 !            IF ( IREP .EQ. NREPS ) THEN
 !               dbg.1.2015.slc - applying forcing at every time step
 !               LGRID(:,:,1,:) = LGRID(:,:,1,:) + LGRID_FRC_TOT(:,:,1,:)

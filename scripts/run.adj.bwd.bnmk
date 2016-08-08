@@ -52,6 +52,7 @@ set RM       = ser
  set APPL_CASE = bwd_CO2only
  set CFG  = $BASE/../BLD_${APPL_CASE}/cfg.bwd
  set EXEC = $BASE/../BLD_${APPL_CASE}/ADJOINT_BWD
+ set CHECK_NLAYS_FRC = $BASE/check_nlays_frc
 
  cd $BASE; date; cat ${CFG}; echo "    "; set echo
 # cd $BASE; date; set timestamp;
@@ -211,7 +212,8 @@ else
 endif
 
 # Set start and end days
- @ day  = $EDAY
+# @ day  = $EDAY
+ @ day = $DAY1
  @ eday = $DAY1
 
 #########################################################
@@ -229,7 +231,8 @@ while ( $day >= $eday )
 
  set STTIME   = 000000        # beginning hour (GMT)
  set NSTEPS   = 240000        # time duration (HHMMSS) for this run
- set TSTEP    = 010000        # output time step interval (HHMMSS)
+# set TSTEP    = 010000        # output time step interval (HHMMSS)
+ set TSTEP    = 001000
 
  set yest = `echo $day | awk '{printf("%2.2d",$1+1)}'`
  set yesterday = $YEAR$MONTH$yest
@@ -388,7 +391,14 @@ while ( $day >= $eday )
  set EMISpath = ${M3DATA}/emis
  set EMISfile  = emis_CMAQ-BENCHMARK_${EMISDATE}.ncf
 
+ setenv NLAYS_FRC 2
  setenv ADJ_FORCE "$OUTDIR/ADJ_FORCE.${FLDATE}"
+
+ $CHECK_NLAYS_FRC $ADJ_FORCE $NLAYS_FRC
+ if ( $status != 0 ) then
+    echo "invalid NLAYS_FRC for data"
+    exit 1
+ endif
 
  set METpath   = $M3DATA/mcip
  set extn      = $YEAR$MONTH$STDAT
