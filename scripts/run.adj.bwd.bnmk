@@ -391,7 +391,7 @@ while ( $day >= $eday )
  set EMISpath = ${M3DATA}/emis
  set EMISfile  = emis_CMAQ-BENCHMARK_${EMISDATE}.ncf
 
- setenv NLAYS_FRC 2
+ setenv NLAYS_FRC 1
  setenv ADJ_FORCE "$OUTDIR/ADJ_FORCE.${FLDATE}"
 
  $CHECK_NLAYS_FRC $ADJ_FORCE $NLAYS_FRC
