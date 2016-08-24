@@ -31,6 +31,7 @@ for dstamp in dates:
 #        binCOmax[6, 0, 11:14, 11:14] = 2 * s_hat
 #        binCOmax[7, 0, 11:14, 11:14] = s_hat
         binCOmax[6, 0, 11:14, 11:14] = 1.0
+#        binCOmax[21, 0, :, :] = 1.0
     
     forcCOmxhrpath = '/home/563/spt563/cmaq_adj/CMAQadjBnmkData/GHG_output/ADJ_FORCE.' + dstamp
     forcCOmxhrfile = Dataset(forcCOmxhrpath, 'w', format='NETCDF3_64BIT')

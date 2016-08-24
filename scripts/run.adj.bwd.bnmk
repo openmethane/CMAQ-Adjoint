@@ -231,6 +231,7 @@ while ( $day >= $eday )
 
  set STTIME   = 000000        # beginning hour (GMT)
  set NSTEPS   = 240000        # time duration (HHMMSS) for this run
+# set NSTEPS   = 002000
 # set TSTEP    = 010000        # output time step interval (HHMMSS)
  set TSTEP    = 001000
 
@@ -391,7 +392,7 @@ while ( $day >= $eday )
  set EMISpath = ${M3DATA}/emis
  set EMISfile  = emis_CMAQ-BENCHMARK_${EMISDATE}.ncf
 
- setenv NLAYS_FRC 1
+ setenv NLAYS_FRC 2
  setenv ADJ_FORCE "$OUTDIR/ADJ_FORCE.${FLDATE}"
 
  $CHECK_NLAYS_FRC $ADJ_FORCE $NLAYS_FRC

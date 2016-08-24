@@ -246,6 +246,7 @@ while ( $day <= $DAY1 )
 
  set STTIME   = 000000        # beginning hour (GMT)
  set NSTEPS   = 240000        # time duration (HHMMSS) for this run
+# set NSTEPS   = 002000
 # set TSTEP    = 010000        # output time step interval (HHMMSS)
  set TSTEP    = 001000
 

@@ -499,6 +499,8 @@ C----------------------------------------------
       call rev_cgrid_bwd( cngrd_bwd, mdate, mtime, cgrid_bwd )
       call rev_em_bwd( cngrd_em_bwd, mdate, mtime, cgrid_em_bwd )
       call rev_em_bwd( cngrd_em_sf_bwd, mdate, mtime, cgrid_em_sf_bwd )
+      cngrd_em_bwd = 0.0
+      cngrd_em_sf_bwd = 0.0
       do r = 1, my_nrows
         do c = 1, my_ncols
           dtlim = dtsec
@@ -801,7 +803,8 @@ C----------------------------------------------
               conc_bwd(v,l) = 0.
               ! only apply at layers that have emissions (dbg.2.2015.slc)
               if ( l .le. emsensl ) then
-                 cngrd_em_bwd(v,l,c,r) = cngrd_em_bwd(v,l,c,r)+conc_em_bwd(v,l)
+                 !cngrd_em_bwd(v,l,c,r) = cngrd_em_bwd(v,l,c,r)+conc_em_bwd(v,l)
+                 cngrd_em_bwd(v,l,c,r) = cngrd_em_bwd(v,l,c,r) + dts * conc_em_bwd(v,l)
                  conc_em_bwd(v,l) = 0.
                  cngrd_em_sf_bwd(v,l,c,r) = cngrd_em_sf_bwd(v,l,c,r)+conc_em_sf_bwd(v,l)
                  conc_em_sf_bwd(v,l) = 0.
