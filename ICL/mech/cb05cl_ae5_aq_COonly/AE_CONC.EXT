@@ -1,0 +1,15 @@
+
+C RCS file, release, date & time of last delta, author, state, [and locker]
+C $Header: /Volumes/Data/CVS/CMAQ_CVSrepos/ICL/src/mech/cb05cl_ae5_aq/AE_CONC.EXT,v 1.1.1.1 2009/12/16 19:15:59 sjr Exp $ 
+
+C what(1) key, module and SID; SCCS file; date and time of last delta:
+C %W% %P% %G% %U%
+
+C Mechanism Name: CB05CL_AE5_AQ
+
+        INTEGER        N_AE_CONC
+        PARAMETER     (N_AE_CONC = 0)
+        INTEGER        N_AE_CONCD
+        PARAMETER     (N_AE_CONCD = N_AE_CONC)
+        CHARACTER*16   AE_CONC(N_AE_CONCD)
+        INTEGER        AE_CONC_MAP(N_AE_CONCD)

@@ -13,7 +13,7 @@
 
 #> Set M3DATA:
 ### CHANGE
- set M3DATA = /home/563/spt563/cmaq_adj/CMAQadjBnmkData
+ set M3DATA = /home/563/spt563/cmaq/cmaq_adj/data
 
 #> Check that M3DATA is set:
  if ( ! -e $M3DATA ) then
@@ -24,7 +24,7 @@
 
 #> Set the working directory:
 ### CHANGE
- set BASE     = /home/563/spt563/cmaq_adj/scripts
+ set BASE     = /home/563/spt563/cmaq/cmaq_adj/scripts
 
 #> Set the output directory
  set OUTDIR   = $M3DATA/GHG_output
@@ -47,7 +47,7 @@
  endif
 
 #> Run mode: "ser" or "par" (default is par)
-set RM       = ser
+set RM       = par
  if ( ! $?RM ) then
     echo 'RM (run mode) was not set; this will be a parallel run'
     set RM = par
@@ -171,7 +171,8 @@ setenv PROMPTFLAG F
  setenv CONC_SPCS "CO2"
 
 #> layer range for standard conc
- setenv CONC_BLEV_ELEV " 1 4"
+ #setenv CONC_BLEV_ELEV " 1 4"
+ setenv CONC_BLEV_ELEV " 1 34"
 
 #> species for integral average conc
 #setenv AVG_CONC_SPCS "O3 NO CO NO2 ASO4I ASO4J NH3"
@@ -247,8 +248,8 @@ while ( $day <= $DAY1 )
  set STTIME   = 000000        # beginning hour (GMT)
  set NSTEPS   = 240000        # time duration (HHMMSS) for this run
 # set NSTEPS   = 002000
-# set TSTEP    = 010000        # output time step interval (HHMMSS)
- set TSTEP    = 001000
+ set TSTEP    = 010000        # output time step interval (HHMMSS)
+# set TSTEP    = 001000
 
  set yest = `echo $day | awk '{printf("%2.2d",$1-1)}'`
  set yesterday = $YEAR$MONTH$yest
@@ -367,6 +368,7 @@ while ( $day <= $DAY1 )
  setenv ADJ_VADV_CHK "$OUTDIR/VADV_CHK.${FLDATE} -v"
  setenv ADJ_EMIS_CHK "$OUTDIR/EMIS_CHK.${FLDATE} -v"
  setenv ADJ_EMIST_CHK "$OUTDIR/EMIST_CHK.${FLDATE} -v"
+ setenv ADJ_CPL_CHK "$OUTDIR/CPL_CHK.${FLDATE} -v"
 
  setenv CTM_XFIRST_OUT $OUTDIR/XFIRST.${FLDATE}
  
@@ -375,7 +377,7 @@ while ( $day <= $DAY1 )
  if ( $FLDATE == $FIRSTDAY ) then
    set GC_ICpath = $M3DATA/icon
    set GC_ICfile = ICON_CMAQ-CO2test_profile
-   setenv CTM_XFIRST_IN
+   #setenv CTM_XFIRST_IN
  else
    set GC_ICpath = $OUTDIR
    set GC_ICfile = CGRID.${yesterday}

@@ -18,7 +18,7 @@ C   permissions subject to the above restrictions.                     *
 C***********************************************************************
 
 C RCS file, release, date & time of last delta, author, state, [and locker]
-C $Header: /Volumes/Data/CVS/CMAQ_CVSrepos/CCTM/src/hdiff/multiscale_adj_bwd/deform.F,v 1.1 2010/11/17 21:06:35 sergey Exp $ 
+C $Header: /Volumes/Data/CVS/CMAQ_CVSrepos/CCTM/src/hdiff/multiscale_adj_fwd/deform.F,v 1.1 2010/11/17 21:06:38 sergey Exp $ 
 
 C what(1) key, module and SID; SCCS file; date and time of last delta:
 C %W% %P% %G% %U%
@@ -96,15 +96,15 @@ C Parameters:
 
 C file variables:
       
-      REAL      DENSJ_BUF( NCOLS,NROWS,NLAYS ) ! Jacobian * air density
-      REAL      DENSJ_BND( NBNDY,NLAYS )       ! boundary Jacobian * air density
+!      REAL      DENSJ_BUF( NCOLS,NROWS,NLAYS ) ! Jacobian * air density
+!      REAL      DENSJ_BND( NBNDY,NLAYS )       ! boundary Jacobian * air density
  
 C External Functions (not already declared by IODECL3.EXT):
  
       INTEGER, EXTERNAL :: SEC2TIME, TIME2SEC, TRIMLEN
-#ifdef parallel
-      LOGICAL, EXTERNAL :: INTERPB
-#endif
+!#ifdef parallel
+!      LOGICAL, EXTERNAL :: INTERPB
+!#endif
       
 C local variables:
       
@@ -119,8 +119,8 @@ C local variables:
       INTEGER   MDATE             ! mid-advection date
       INTEGER   MTIME             ! mid-advection time
 !     INTEGER   STEP              ! advection time step in seconds
-      INTEGER, SAVE :: LDATE( 3 ) ! last date for data on file
-      INTEGER, SAVE :: LTIME( 3 ) ! last time for data on file
+      INTEGER, SAVE :: LDATE      ! last date for data on file
+      INTEGER, SAVE :: LTIME      ! last time for data on file
       LOGICAL   REVERT            ! recover last time step if true
       REAL      DJ                ! temporary Jacobian * air density
  
@@ -130,7 +130,7 @@ C local variables:
       CHARACTER( 96 ) :: XMSG = ' '
  
 C Jacobian * air density
-      REAL         DENSJ    ( 0:NCOLS+1,0:NROWS+1,NLAYS )
+      !REAL         DENSJ    ( 0:NCOLS+1,0:NROWS+1,NLAYS )
 
       REAL         UWIND    (   NCOLS+1,  NROWS+1,NLAYS ) ! ContrVar x1-velocity 
       REAL         LOC_UWIND(   NCOLS+1,0:NROWS+1,NLAYS ) ! local CV x1-velocity 
@@ -178,16 +178,16 @@ C-----------------------------------------------------------------------
 
          MLAYS = SIZE ( DEFORM3D,3 )
  
-         CALL LSTEPF( MET_CRO_3D, LDATE( 1 ), LTIME( 1 ) )
-         CALL LSTEPF( MET_BDY_3D, LDATE( 2 ), LTIME( 2 ) )
-         CALL LSTEPF( MET_DOT_3D, LDATE( 3 ), LTIME( 3 ) )
+         !CALL LSTEPF( MET_CRO_3D, LDATE( 1 ), LTIME( 1 ) )
+         !CALL LSTEPF( MET_BDY_3D, LDATE( 2 ), LTIME( 2 ) )
+         CALL LSTEPF( MET_DOT_3D, LDATE, LTIME )
  
-         LDATE( 1 ) = MIN( LDATE( 1 ), LDATE( 2 ), LDATE( 3 ) )
-         LTIME( 1 ) = SEC2TIME( MIN(
-     &                         TIME2SEC( LTIME( 1 ) ),
-     &                         TIME2SEC( LTIME( 2 ) ),
-     &                         TIME2SEC( LTIME( 3 ) )
-     &                         ) )
+!         LDATE( 1 ) = MIN( LDATE( 1 ), LDATE( 2 ), LDATE( 3 ) )
+!         LTIME( 1 ) = SEC2TIME( MIN(
+!     &                         TIME2SEC( LTIME( 1 ) ),
+!     &                         TIME2SEC( LTIME( 2 ) ),
+!     &                         TIME2SEC( LTIME( 3 ) )
+!     &                         ) )
 
          WRITE( COMMSTR,'(4I2)' )  1, 0, 2, 0
 
@@ -216,32 +216,32 @@ C Get/compute DX1 & DX2
 
          CALL SUBHFILE ( MET_DOT_3D, GXOFF, GYOFF,
      &                   STRTCOLMD, ENDCOLMD, STRTROWMD, ENDROWMD )
-         CALL SUBHFILE ( MET_CRO_3D, GXOFF, GYOFF,
-     &                   STRTCOLMC, ENDCOLMC, STRTROWMC, ENDROWMC )
+!         CALL SUBHFILE ( MET_CRO_3D, GXOFF, GYOFF,
+!     &                   STRTCOLMC, ENDCOLMC, STRTROWMC, ENDROWMC )
 
-         NCOLSDENS = ENDCOLMC - STRTCOLMC + 1
-         NROWSDENS = ENDROWMC - STRTROWMC + 1
+!         NCOLSDENS = ENDCOLMC - STRTCOLMC + 1
+!         NROWSDENS = ENDROWMC - STRTROWMC + 1
 
-         IF ( NCOLSDENS .NE. MY_NCOLS .OR.
-     &        NROWSDENS .NE. MY_NROWS ) THEN
-            WRITE( XMSG,'( A, 4I8 )' ) 'Local Columns or Rows incorrect',
-     &      NCOLSDENS, MY_NCOLS, NROWSDENS, MY_NROWS
-            CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
-         END IF
+!         IF ( NCOLSDENS .NE. MY_NCOLS .OR.
+!     &        NROWSDENS .NE. MY_NROWS ) THEN
+!            WRITE( XMSG,'( A, 4I8 )' ) 'Local Columns or Rows incorrect',
+!     &      NCOLSDENS, MY_NCOLS, NROWSDENS, MY_NROWS
+!            CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
+!         END IF
 
 C currently not implemented: case where only one origin component matches file's
-         IF ( GXOFF .NE. 0 .AND. GYOFF .NE. 0 ) THEN
-            WINDOW = .TRUE. ! windowing from file
-            STRTCOL = STRTCOLMC - 1
-            ENDCOL  = ENDCOLMC  + 1
-            STRTROW = STRTROWMC - 1
-            ENDROW  = ENDROWMC  + 1
-         ELSE
-            STRTCOL = STRTCOLMC
-            ENDCOL  = ENDCOLMC
-            STRTROW = STRTROWMC
-            ENDROW  = ENDROWMC
-         END IF
+!         IF ( GXOFF .NE. 0 .AND. GYOFF .NE. 0 ) THEN
+!            WINDOW = .TRUE. ! windowing from file
+!            STRTCOL = STRTCOLMC - 1
+!            ENDCOL  = ENDCOLMC  + 1
+!            STRTROW = STRTROWMC - 1
+!            ENDROW  = ENDROWMC  + 1
+!         ELSE
+!            STRTCOL = STRTCOLMC
+!            ENDCOL  = ENDCOLMC
+!            STRTROW = STRTROWMC
+!            ENDROW  = ENDROWMC
+!         END IF
 
       END IF  ! if firstime
  
@@ -250,10 +250,10 @@ C currently not implemented: case where only one origin component matches file's
 !     STEP   = TIME2SEC( TSTEP )
 !     CALL NEXTIME( MDATE, MTIME, SEC2TIME( STEP / 2 ) )
 
-      IF ( MDATE .LT. LDATE( 1 ) ) THEN
+      IF ( MDATE .LT. LDATE ) THEN
          REVERT = .FALSE.
-      ELSE IF ( MDATE .EQ. LDATE( 1 ) ) THEN
-         IF ( MTIME .LE. LTIME( 1 ) ) THEN
+      ELSE IF ( MDATE .EQ. LDATE ) THEN
+         IF ( MTIME .LE. LTIME ) THEN
             REVERT = .FALSE.
          ELSE
             REVERT = .TRUE.
@@ -264,94 +264,95 @@ C currently not implemented: case where only one origin component matches file's
  
       IF ( REVERT ) THEN
          XMSG = 'Current scenario interpolation step not available in all of '
-     &        // MET_CRO_3D(1:TRIMLEN( MET_CRO_3D ) ) // ', '
-     &        // MET_BDY_3D(1:TRIMLEN( MET_BDY_3D ) ) // ' and '
+!     &        // MET_CRO_3D(1:TRIMLEN( MET_CRO_3D ) ) // ', '
+!     &        // MET_BDY_3D(1:TRIMLEN( MET_BDY_3D ) ) // ' and '
      &        // MET_DOT_3D(1:TRIMLEN( MET_DOT_3D ) )
          CALL M3MESG( XMSG )
 !        CALL NEXTIME( MDATE, MTIME, -SEC2TIME( STEP / 2 ) )
-         WRITE( AMSG,'( 2I8 )' ) LDATE( 1 ), LTIME( 1 )
+         WRITE( AMSG,'( 2I8 )' ) LDATE, LTIME
          XMSG = 'Using data for last file step: ' // AMSG
          CALL M3MESG( XMSG )
-         MDATE = LDATE( 1 )
-         MTIME = LTIME( 1 )
+         MDATE = LDATE
+         MTIME = LTIME
       END IF
  
 C Interpolate Jacobian X Air Density
 
-      IF ( WINDOW ) THEN
+!      IF ( WINDOW ) THEN
+!
+!         VNAME = 'DENSA_J'
+!         IF ( .NOT. INTERPX ( MET_CRO_3D, VNAME, PNAME,
+!     &                        STRTCOL,ENDCOL, STRTROW,ENDROW, 1,MLAYS,
+!     &                        MDATE, MTIME, DENSJ ) ) THEN
+!            XMSG = 'Could not read ' // VNAME // ' from ' // MET_CRO_3D
+!            CALL M3EXIT( PNAME, MDATE, MTIME, XMSG, XSTAT1 )
+!         END IF
+!
+!      ELSE ! need to extend data from bndy file
+!
+!         VNAME = 'DENSA_J'
+!         IF ( .NOT. INTERPX ( MET_CRO_3D, VNAME, PNAME,
+!     &                        STRTCOL,ENDCOL, STRTROW,ENDROW, 1,NLAYS,
+!     &                        MDATE, MTIME, DENSJ_BUF ) ) THEN
+!            XMSG = 'Could not read ' // VNAME // ' from ' // MET_CRO_3D
+!            CALL M3EXIT( PNAME, MDATE, MTIME, XMSG, XSTAT1 )
+!         END IF
 
-         VNAME = 'DENSA_J'
-         IF ( .NOT. INTERPX ( MET_CRO_3D, VNAME, PNAME,
-     &                        STRTCOL,ENDCOL, STRTROW,ENDROW, 1,MLAYS,
-     &                        MDATE, MTIME, DENSJ ) ) THEN
-            XMSG = 'Could not read ' // VNAME // ' from ' // MET_CRO_3D
-            CALL M3EXIT( PNAME, MDATE, MTIME, XMSG, XSTAT1 )
-         END IF
-
-      ELSE ! need to extend data from bndy file
-
-         VNAME = 'DENSA_J'
-         IF ( .NOT. INTERPX ( MET_CRO_3D, VNAME, PNAME,
-     &                        STRTCOL,ENDCOL, STRTROW,ENDROW, 1,NLAYS,
-     &                        MDATE, MTIME, DENSJ_BUF ) ) THEN
-            XMSG = 'Could not read ' // VNAME // ' from ' // MET_CRO_3D
-            CALL M3EXIT( PNAME, MDATE, MTIME, XMSG, XSTAT1 )
-         END IF
-
-         VNAME = 'DENSA_J'
-         IF ( .NOT. INTERPB ( MET_BDY_3D, VNAME, PNAME,
-     &                        MDATE, MTIME, NBNDY*MLAYS,
-     &                        DENSJ_BND ) ) THEN
-            XMSG = 'Could not read ' // VNAME // ' from ' // MET_BDY_3D
-            CALL M3EXIT( PNAME, MDATE, MTIME, XMSG, XSTAT1 )
-         END IF
-
-C Load DENSJ array
-
-         DO LVL = 1, MLAYS
-            DO ROW = 1, MY_NROWS
-               DO COL = 1, MY_NCOLS
-                  DENSJ( COL,ROW,LVL ) = DENSJ_BUF( COL,ROW,LVL )
-               END DO
-            END DO
-         END DO
-
-C Fill in DENSJ array for boundaries
-
-         DO LVL = 1, MLAYS
-            COUNT = 0
-            DO ROW = 0, 0
-               DO COL = 1, MY_NCOLS + 1
-                  COUNT = COUNT + 1
-                  DENSJ( COL,ROW,LVL ) = DENSJ_BND( COUNT,LVL )  ! South
-               END DO
-            END DO
-            DO ROW = 1, MY_NROWS + 1
-               DO COL = MY_NCOLS + 1, MY_NCOLS + 1
-                  COUNT = COUNT + 1
-                  DENSJ( COL,ROW,LVL ) = DENSJ_BND( COUNT,LVL )  ! East
-               END DO
-            END DO
-            DO ROW = MY_NROWS + 1, MY_NROWS + 1
-               DO COL = 0, MY_NCOLS
-                  COUNT = COUNT + 1
-                  DENSJ( COL,ROW,LVL ) = DENSJ_BND( COUNT,LVL )  ! North
-               END DO
-            END DO
-            DO ROW = 0, MY_NROWS
-               DO COL = 0, 0
-                  COUNT = COUNT + 1
-                  DENSJ( COL,ROW,LVL ) = DENSJ_BND( COUNT,LVL )  ! West
-               END DO
-            END DO
-         END DO
-
-      END IF   ! WINDOW
+!         VNAME = 'DENSA_J'
+!         IF ( .NOT. INTERPB ( MET_BDY_3D, VNAME, PNAME,
+!     &                        MDATE, MTIME, NBNDY*MLAYS,
+!     &                        DENSJ_BND ) ) THEN
+!            XMSG = 'Could not read ' // VNAME // ' from ' // MET_BDY_3D
+!            CALL M3EXIT( PNAME, MDATE, MTIME, XMSG, XSTAT1 )
+!         END IF
+!
+!C Load DENSJ array
+!
+!         DO LVL = 1, MLAYS
+!            DO ROW = 1, MY_NROWS
+!               DO COL = 1, MY_NCOLS
+!                  DENSJ( COL,ROW,LVL ) = DENSJ_BUF( COL,ROW,LVL )
+!               END DO
+!            END DO
+!         END DO
+!
+!C Fill in DENSJ array for boundaries
+!
+!         DO LVL = 1, MLAYS
+!            COUNT = 0
+!            DO ROW = 0, 0
+!               DO COL = 1, MY_NCOLS + 1
+!                  COUNT = COUNT + 1
+!                  DENSJ( COL,ROW,LVL ) = DENSJ_BND( COUNT,LVL )  ! South
+!               END DO
+!            END DO
+!            DO ROW = 1, MY_NROWS + 1
+!               DO COL = MY_NCOLS + 1, MY_NCOLS + 1
+!                  COUNT = COUNT + 1
+!                  DENSJ( COL,ROW,LVL ) = DENSJ_BND( COUNT,LVL )  ! East
+!               END DO
+!            END DO
+!            DO ROW = MY_NROWS + 1, MY_NROWS + 1
+!               DO COL = 0, MY_NCOLS
+!                  COUNT = COUNT + 1
+!                  DENSJ( COL,ROW,LVL ) = DENSJ_BND( COUNT,LVL )  ! North
+!               END DO
+!            END DO
+!            DO ROW = 0, MY_NROWS
+!               DO COL = 0, 0
+!                  COUNT = COUNT + 1
+!                  DENSJ( COL,ROW,LVL ) = DENSJ_BND( COUNT,LVL )  ! West
+!               END DO
+!            END DO
+!         END DO
+!
+!      END IF   ! WINDOW
  
 C Interpolate Contravariant Velocity components (already at flux points)
 C X Jacobian X Air Density
 
-      VNAME = 'UHAT_JD'   ! x1 component of CV-vel * Jacobian * air density
+!      VNAME = 'UHAT_JD'   ! x1 component of CV-vel * Jacobian * air density
+      VNAME = 'UWINDC'   ! x1 component of CV-vel
       IF ( .NOT. INTERPX ( MET_DOT_3D, VNAME, PNAME,
      &                     STRTCOLMD,ENDCOLMD, STRTROWMD,ENDROWMD, 1,MLAYS,
      &                     MDATE, MTIME, UWIND ) ) THEN
@@ -359,7 +360,8 @@ C X Jacobian X Air Density
          CALL M3EXIT( PNAME, MDATE, MTIME, XMSG, XSTAT1 )
       END IF
 
-      VNAME = 'VHAT_JD'   ! x2 component of CV-vel * Jacobian * air density
+!      VNAME = 'VHAT_JD'   ! x2 component of CV-vel * Jacobian * air density
+      VNAME = 'VWINDC'   ! x2 component of CV-vel
       IF ( .NOT. INTERPX ( MET_DOT_3D, VNAME, PNAME,
      &                     STRTCOLMD,ENDCOLMD, STRTROWMD,ENDROWMD, 1,MLAYS,
      &                     MDATE, MTIME, VWIND ) ) THEN
@@ -372,26 +374,26 @@ C contravariant velocities
 
 C create U/RhoJ - update ghost regions for RhoJ
 
-      CALL SUBST_COMM ( DENSJ, DSPL_N0_E1_S0_W1, DRCN_E_W, COMMSTR )
+!      CALL SUBST_COMM ( DENSJ, DSPL_N0_E1_S0_W1, DRCN_E_W, COMMSTR )
 
       DO LVL = 1, MLAYS
          DO ROW = 1, MY_NROWS
             DO COL = 1, MY_NCOLS + 1
-               DJ = 0.5*( DENSJ( COL,ROW,LVL ) + DENSJ( COL-1,ROW,LVL ) )
-               LOC_UWIND( COL,ROW,LVL ) = UWIND( COL,ROW,LVL ) / DJ
+!               DJ = 0.5*( DENSJ( COL,ROW,LVL ) + DENSJ( COL-1,ROW,LVL ) )
+               LOC_UWIND( COL,ROW,LVL ) = UWIND( COL,ROW,LVL ) ! / DJ
             END DO
          END DO
       END DO
 
 C create V/RhoJ - update ghost regions for RhoJ
 
-      CALL SUBST_COMM ( DENSJ, DSPL_N1_E0_S1_W0, DRCN_N_S, COMMSTR )
+!      CALL SUBST_COMM ( DENSJ, DSPL_N1_E0_S1_W0, DRCN_N_S, COMMSTR )
 
       DO LVL = 1, MLAYS
          DO ROW = 1, MY_NROWS + 1
             DO COL = 1, MY_NCOLS
-               DJ = 0.5*( DENSJ( COL,ROW,LVL ) + DENSJ( COL,ROW-1,LVL ) )
-               LOC_VWIND( COL,ROW,LVL ) = VWIND( COL,ROW,LVL ) / DJ
+!               DJ = 0.5*( DENSJ( COL,ROW,LVL ) + DENSJ( COL,ROW-1,LVL ) )
+               LOC_VWIND( COL,ROW,LVL ) = VWIND( COL,ROW,LVL ) ! / DJ
             END DO
          END DO
       END DO

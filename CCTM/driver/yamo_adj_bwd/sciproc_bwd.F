@@ -24,7 +24,8 @@ C what(1) key, module and SID; SCCS file; date and time of last delta:
 C %W% %P% %G% %U%
 
 C:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      SUBROUTINE SCIPROC_BWD(LGRID, LGRID_EM, LGRID_EM_SF, 
+!      SUBROUTINE SCIPROC_BWD(LGRID, LGRID_EM, LGRID_EM_SF, 
+      SUBROUTINE SCIPROC_BWD(LGRID, LGRID_EM,
      &                       JDATE, JTIME, TSTEP, ASTEP, XFIRST)
 
 C-----------------------------------------------------------------------
@@ -53,7 +54,7 @@ C Arguments:
 !      REAL, INTENT(INOUT) :: LGRID_EM_SF(:, :, :, :) ! adjoint variable
       REAL, POINTER :: LGRID(:, :, :, :) ! adjoint variable
       REAL, POINTER :: LGRID_EM(:, :, :, :) ! adjoint variable
-      REAL, POINTER :: LGRID_EM_SF(:, :, :, :) ! adjoint variable
+!      REAL, POINTER :: LGRID_EM_SF(:, :, :, :) ! adjoint variable
 !      REAL, POINTER :: LGRID_EM_NRM(:, :, :, :) ! adjoint variable
 !      REAL, POINTER :: LGRID_FRC(:, :, :, :) ! adjoint variable
 !      REAL, POINTER :: LGRID_FRC_TOT(:, :, :, :) ! adjoint variable
@@ -126,11 +127,12 @@ C Local Variables:
             INTEGER, INTENT(IN) :: JDATE, JTIME
             INTEGER, INTENT(IN) :: TSTEP(2)
          END SUBROUTINE COUPLE
-         SUBROUTINE VDIFF_BWD(LGRID, LGRID_EM, LGRID_EM_SF, JDATE, JTIME, TSTEP)
+!         SUBROUTINE VDIFF_BWD(LGRID, LGRID_EM, LGRID_EM_SF, JDATE, JTIME, TSTEP)
+         SUBROUTINE VDIFF_BWD(LGRID, LGRID_EM, JDATE, JTIME, TSTEP)
             IMPLICIT NONE
             REAL, POINTER       :: LGRID(:, :, :, :)
             REAL, POINTER       :: LGRID_EM(:, :, :, :) ! adjoint variable
-            REAL, POINTER       :: LGRID_EM_SF(:, :, :, :) ! adjoint variable
+!           REAL, POINTER       :: LGRID_EM_SF(:, :, :, :) ! adjoint variable
 !           REAL, POINTER       :: LGRID_EM_NRM(:, :, :, :) ! adjoint variable
             INTEGER, INTENT(IN) :: JDATE, JTIME
             INTEGER, INTENT(IN) :: TSTEP(2)
@@ -171,7 +173,8 @@ C-----------------------------------------------------------------------
 
       CALL COUPLE(LGRID, JDATE, JTIME, TSTEP)
 
-      CALL VDIFF_BWD(LGRID, LGRID_EM, LGRID_EM_SF, JDATE, JTIME, TSTEP)
+!      CALL VDIFF_BWD(LGRID, LGRID_EM, LGRID_EM_SF, JDATE, JTIME, TSTEP)
+      CALL VDIFF_BWD(LGRID, LGRID_EM, JDATE, JTIME, TSTEP)
 
       RETURN
       END

@@ -224,7 +224,8 @@
          CASE ( ADJ_VDIFF_CHK )
             ! No longer want to limit the vertical diffusion checkpointing to the first layer
             !    - need to account for stack emissions (6.2015.slc)
-            !CHK%NLAYS = 1
+            ! return to 1 layer chkpoint, stack emissions not relevant for fourdvar application
+            CHK%NLAYS = 1
             CHK%FDESC(1) = 'Vertical diffusion checkpoint file'
             CHK%FDESC(2) = 'From CMAQ model dyn alloc version CTM'
             CHK%NVARS = N_GC_SPC + 1 + N_AE_SPC + N_NR_SPC + N_TR_SPC

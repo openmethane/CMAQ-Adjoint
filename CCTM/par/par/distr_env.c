@@ -43,7 +43,7 @@
 
 extern char **environ;
 #define TEMP_BUF_SIZE   204800
-#define CURR_STR_SIZE   2048
+#define CURR_STR_SIZE   16384
 
 extern void distr_env_ (int *myid_p, int *numprocs_p)
 {

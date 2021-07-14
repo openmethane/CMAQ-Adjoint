@@ -14,7 +14,8 @@
 # =================================================================== #
 
 # CHANGE: put root repository directory here
- setenv M3MODEL /home/563/spt563/cmaq_adj
+ setenv M3MODEL /home/563/spt563/cmaq/cmaq_adj
+ setenv M3MODEL2 /home/563/spt563/cmaq/CMAQv5.0.2
 
 #===============================================================================
 
@@ -24,12 +25,13 @@
  setenv BLD_OS "`/bin/uname -s``/bin/uname -r | cut -d. -f1`"
 
 # CHANGE: set M3LIB to base directory for MPI, netCDF, IOAPI, STENEX, PARIO libraries
- setenv lib_basedir ${M3MODEL}/lib
+ setenv lib_basedir ${M3MODEL2}/lib
  set MACH = `uname -m`
  setenv COMPILER intel
  setenv compiler_ext ifort
  setenv M3LIB ${lib_basedir}/${system}/{$COMPILER}
- setenv MPI_INC "/apps/openmpi/1.6.3/include -I/apps/openmpi/1.6.3/include/Intel"
+ #setenv MPI_INC "/apps/openmpi/2.1.6/include -I/apps/openmpi/2.1.6/include/Intel"
+ setenv MPI_INC "/apps/openmpi/4.0.3/include -I/apps/openmpi/4.0.3/include/Intel"
 
 ## Check for M3MODEL and M3LIB settings:
  if ( ! -e $M3MODEL || ! -e $M3LIB ) then
@@ -39,7 +41,8 @@
  echo "   Model archive path: $M3MODEL"
  echo "         library path: $M3LIB"
 
- set $BLD_OS = `uname -s``uname -r | cut -d. -f1`  ## Script set up for Linux
+ ## set $BLD_OS = `uname -s``uname -r | cut -d. -f1`  ## Script set up for Linux
+ setenv BLD_OS Linux2
  if ($BLD_OS != 'Linux2') then
     echo "   $BLD_OS -> wrong makit script for host!"
     exit 1
@@ -90,11 +93,13 @@
 
 #set ModDriver = driver/ctm
 #set ModDriver = driver/yamo
- set ModDriver = driver/yamo_adj_fwd
+# set ModDriver = driver/yamo_adj_fwd
+ set ModDriver = driver/yamo_adj_ceil_fwd
 #set ModDriver = driver/yamo_adj_bwd
 
 #set ModChkpnt = chkpnt/chkpnt_bin
- set ModChkpnt = chkpnt/chkpnt_ioapi
+# set ModChkpnt = chkpnt/chkpnt_ioapi
+ set ModChkpnt = chkpnt/chkpnt_ceil_ioapi
 #set ModChkpnt = chkpnt/chkpnt_pnetcdf
 #set ModChkpnt = chkpnt/chkpnt_multi
 
@@ -113,7 +118,8 @@
 #set ModAdjc   = adjcon/denrate
  set ModAdjc   = ( // yamo option does not need denrate )
 
- set ModCpl    = couple/gencoor
+# set ModCpl    = couple/gencoor
+ set ModCpl    = couple/gencoor_ceil_fwd
 
 #set ModHadv   = hadv/hadv_noop
 #set ModHadv   = hadv/hppm
@@ -126,7 +132,8 @@
 #set ModVadv   = vadv/vadv_noop
 #set ModVadv   = vadv/vppm
 #set ModVadv   = vadv/yamo
- set ModVadv   = vadv/vyamo_cadj_fwd
+# set ModVadv   = vadv/vyamo_cadj_fwd
+ set ModVadv   = vadv/vyamo_cadj_ceil_fwd
 #set ModVadv   = vadv/vyamo_cadj_bwd
 #set ModVadv   = vadv/vyamo_dadj_fwd
 #set ModVadv   = vadv/vyamo_dadj_bwd
@@ -176,7 +183,8 @@
 #set ModCloud  = cloud/cloud_acm_ae5
 
 # set ModPa     = ( module pa                 $Revision; )
- set ModPa     = procan/pa
+# set ModPa     = procan/pa
+ set ModPa     = procan/pa_ceil_fwd
 
 #set ModUtil   = util/util
  set ModUtil   = util/util_adj
@@ -215,32 +223,32 @@
 
 # CHANGE: Set full path of Fortran 90 and c compilers
 # set FC = /apps/openmpi/wrapper/fortran/mpif90
-# set CC = /apps/openmpi/1.6.3/bin/mpicc
- set FC = /apps/openmpi/wrapper/fortran/mpif90
- set CC = /apps/openmpi/1.6.3/bin/mpicc
+# set CC = /apps/openmpi/2.1.6/bin/mpicc
+ set FC = mpif90
+ set CC = mpicc
  set FP = $FC
 
 # CHANGE: Set location of MPICH if using multiple processors
- set MPICH  =  "/apps/openmpi/1.6.3"
+ set MPICH  =  "/apps/openmpi/4.0.3"
 
 # CHANGE: Set location for stenex library/include/and mod files
 # set STENEX = $M3LIB/se_noop
  set STENEX = ${M3LIB}/se_snl
 
 # CHANGE: Set compiler flags
- set FSTD       = "-extend_source 132 -vec-report0 -nodefines -warn nousage -stand none -traceback -CB -c -g"
+ set FSTD       = "-extend_source 132 -qopt-report0 -nodefines -warn nousage -stand none -traceback -CB -c -g"
  set F_FLAGS    = "${FSTD} -O2 -module ${MODLOC} -I."
  set CPP_FLAGS  = ""
- set C_FLAGS    = "-g -I/apps/openmpi/1.6.3/include"
- set LINK_FLAGS = "-openmp"
+ set C_FLAGS    = "-g -I/apps/openmpi/4.0.3/include"
+ set LINK_FLAGS = "-qopenmp"
 
 # Set location of M3Bld executable
  set Blder = "$M3MODEL/BLDMAKE_git/bldmake -verbose"
 
 # CHANGE: Set location of libraries/include files
- set IOAPI = "${M3LIB}/ioapi_3.1/Linux2_${system}${compiler_ext} -lioapi"
- set ICL_IOAPI = "${M3LIB}/ioapi_3.1/ioapi/fixed_src"
- set NETCDF = "/apps/netcdf/4.2.1.1/lib -lnetcdf -L/apps/netcdf/4.2.1.1/lib/Intel -lnetcdff"
+ set IOAPI = "/home/563/spt563/cmaq/ioapi-3.1/Linux2_${system}${compiler_ext} -lioapi"
+ set ICL_IOAPI = "/home/563/spt563/cmaq/ioapi-3.1/ioapi/fixed_src"
+ set NETCDF = "/apps/netcdf/4.7.1/lib -lnetcdf -L/apps/netcdf/4.7.1/lib/Intel -lnetcdff"
  set PARIO = "${M3LIB}/pario -lpario"
 
 #:#:#:#:#:#:#:#:#:#:#:# End of User Input Section :#:#:#:#:#:#:#:#:#:#:#:#:#
@@ -270,9 +278,9 @@
 #    cp -p ${STENEX}/se_*.mod ${STENEX}/swap_sandia.mod $Bld
     set LIB2 = "-L${PARIO}"
     set LIB3 =
-    set LIB4 = "-L${Mpich}/lib -lmpi"
+    set LIB4 = "-L${Mpich}/lib -lmpi -L${Mpich}/lib/Intel -lmpi_mpifh"
     set Str1 = (// Parallel / Include message passing definitions)
-    set Str2 = (include SUBST_MPICH ${Mpich}/include/mpif.h;)
+    set Str2 = (include SUBST_MPICH ${Mpich}/include/Intel/mpif.h;)
  else
     set Mpich =           # Single processor system configuration
     set seL = sef90_noop

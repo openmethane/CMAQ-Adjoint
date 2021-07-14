@@ -11,7 +11,7 @@
 
 # source ./setcase_12km_test
 set APPL   = adj_emlays
-set M3DATA = /home/563/spt563/cmaq_adj/CMAQadjBnmkData
+set M3DATA = /home/563/spt563/cmaq/cmaq_adj/data
 
 #> Check that M3DATA is set:
  if ( ! -e $M3DATA ) then
@@ -21,7 +21,7 @@ set M3DATA = /home/563/spt563/cmaq_adj/CMAQadjBnmkData
  echo " "; echo " Input data path, M3DATA set to $M3DATA"; echo " "
 
 #> Set the working directory:
- set BASE     = /home/563/spt563/cmaq_adj/scripts
+ set BASE     = /home/563/spt563/cmaq/cmaq_adj/scripts
 
 #> Application name (no default)
  if ( ! $?APPL ) then
@@ -30,7 +30,7 @@ set M3DATA = /home/563/spt563/cmaq_adj/CMAQadjBnmkData
  endif
 
 #> Run mode: "ser" or "par" (default is par)
-set RM       = ser
+set RM       = par
  if ( ! $?RM ) then
     echo 'RM (run mode) was not set; this will be a parallel run'
     set RM = par
@@ -52,7 +52,7 @@ set RM       = ser
  set APPL_CASE = bwd_CO2only
  set CFG  = $BASE/../BLD_${APPL_CASE}/cfg.bwd
  set EXEC = $BASE/../BLD_${APPL_CASE}/ADJOINT_BWD
- set CHECK_NLAYS_FRC = $BASE/check_nlays_frc
+ #set CHECK_NLAYS_FRC = $BASE/check_nlays_frc
 
  cd $BASE; date; cat ${CFG}; echo "    "; set echo
 # cd $BASE; date; set timestamp;
@@ -113,7 +113,12 @@ set RM       = ser
  setenv CTM_MINSYNC 600
 
 #> define number of emissions layers
- setenv CTM_EMLAYS 24
+ #setenv CTM_EMLAYS 24
+ setenv CTM_EMLAYS 1
+
+#> define number of emission sensitivity layers
+# NOTE: CTM_EMSENSL >= CTM_EMLAYS
+ setenv CTM_EMSENSL 1
 
 #> sync time step (sec) (default is 600)
 #setenv CTM_SYNC_STEP 600
@@ -165,7 +170,8 @@ set RM       = ser
  setenv CONC_SPCS "CO2"
 
 #> layer range for standard conc
- setenv CONC_BLEV_ELEV " 1 4"
+ #setenv CONC_BLEV_ELEV " 1 4"
+ setenv CONC_BLEV_ELEV " 1 34"
 
 #> species for integral average conc
 # setenv AVG_CONC_SPCS "O3 NO CO NO2"
@@ -232,8 +238,8 @@ while ( $day >= $eday )
  set STTIME   = 000000        # beginning hour (GMT)
  set NSTEPS   = 240000        # time duration (HHMMSS) for this run
 # set NSTEPS   = 002000
-# set TSTEP    = 010000        # output time step interval (HHMMSS)
- set TSTEP    = 001000
+ set TSTEP    = 010000        # output time step interval (HHMMSS)
+# set TSTEP    = 001000
 
  set yest = `echo $day | awk '{printf("%2.2d",$1+1)}'`
  set yesterday = $YEAR$MONTH$yest
@@ -367,6 +373,7 @@ while ( $day >= $eday )
  setenv ADJ_VADV_CHK "$OUTDIR/VADV_CHK.${FLDATE} -v"
  setenv ADJ_EMIS_CHK "$OUTDIR/EMIS_CHK.${FLDATE} -v"
  setenv ADJ_EMIST_CHK "$OUTDIR/EMIST_CHK.${FLDATE} -v"
+ setenv ADJ_CPL_CHK "$OUTDIR/CPL_CHK.${FLDATE} -v"
 
 #set TR_EMpath =
 #set TR_EMfile =
@@ -390,16 +397,19 @@ while ( $day >= $eday )
 
  setenv EMISDATE ${YEAR}${MONTH}${STDAT}
  set EMISpath = ${M3DATA}/emis
- set EMISfile  = emis_CMAQ-BENCHMARK_${EMISDATE}.ncf
+ #set EMISfile  = emis_CMAQ-BENCHMARK_${EMISDATE}.ncf
+ set EMISfile  = emis_CMAQ-CO2test_${EMISDATE}.ncf
 
- setenv NLAYS_FRC 2
- setenv ADJ_FORCE "$OUTDIR/ADJ_FORCE.${FLDATE}"
+ #setenv NLAYS_FRC 2
+ setenv NLAYS_FRC 34
+ #setenv ADJ_FORCE "$OUTDIR/ADJ_FORCE.${FLDATE}"
+ setenv ADJ_FORCE "${M3DATA}/force/ADJ_FORCE.${FLDATE}"
 
- $CHECK_NLAYS_FRC $ADJ_FORCE $NLAYS_FRC
- if ( $status != 0 ) then
-    echo "invalid NLAYS_FRC for data"
-    exit 1
- endif
+ #$CHECK_NLAYS_FRC $ADJ_FORCE $NLAYS_FRC
+ #if ( $status != 0 ) then
+ #   echo "invalid NLAYS_FRC for data"
+ #   exit 1
+ #endif
 
  set METpath   = $M3DATA/mcip
  set extn      = $YEAR$MONTH$STDAT
@@ -433,7 +443,7 @@ while ( $day >= $eday )
 
 #> input and output files and directories (boilerplate)
 # source $M3HOME/scripts/cctm/in_out.q
- source /home/563/spt563/cmaq_adj/scripts/in_out.q 
+ source /home/563/spt563/cmaq/cmaq_adj/scripts/in_out.q 
  if ( $status ) exit 1
 
 #> for the run control ...

@@ -44,7 +44,7 @@ C-----------------------------------------------------------------------
       INTEGER, SAVE :: N_SPC_EMIS ! global emissions species
       INTEGER, SAVE :: EMLAYS     ! no. of emis integration layers
                                   ! EMLAYS must be .LT. NLAYS
-      INTEGER, PUBLIC, SAVE :: EMSENSL = 24   ! no. of emis integration layers
+      INTEGER, PUBLIC, SAVE :: EMSENSL     ! no. of emis integration layers
       INTEGER,          SAVE :: EMLYRS     ! no. of layers on base emis input file -
                                            ! a 2d file if inline, otherwise a 3d file
       INTEGER, PRIVATE, SAVE :: NEMIS_AE   ! no. of aero emis species
@@ -63,6 +63,41 @@ C-----------------------------------------------------------------------
       INTEGER, PRIVATE, SAVE :: NDATE, NTIME  ! step next date/time (beis)
 
       CONTAINS
+C-----------------------------------------------------------------------
+         SUBROUTINE SET_EMSENSL ( JDATE, JTIME )
+         
+         IMPLICIT NONE
+         
+C Includes:
+
+         INCLUDE SUBST_IOPARMS   ! I/O parameters definitions
+
+C Arguments:
+         
+         INTEGER JDATE, JTIME
+
+C External Functions:
+
+         INTEGER, EXTERNAL :: ENVINT
+
+C Local Variables:
+         
+         CHARACTER(16) :: PNAME = 'SET_EMSENSL'
+         CHARACTER(16) :: CTM_EMSENSL = 'CTM_EMSENSL'
+         CHARACTER(96) :: XMSG = ' '
+         CHARACTER(96) :: VARDESC = ' '
+         INTEGER :: STATUS
+         
+C-----------------------------------------------------------------------
+         
+         VARDESC = 'Number of emission sensitivity layers'
+         EMSENSL = ENVINT( CTM_EMSENSL, VARDESC, 1, STATUS )
+         IF ( STATUS .NE. 0 ) THEN
+            XMSG = 'failed to set EMSENSL'
+            CALL M3EXIT( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
+         END IF
+         
+         END SUBROUTINE SET_EMSENSL
 
 C-----------------------------------------------------------------------
          FUNCTION EMIS_INIT ( JDATE, JTIME, TSTEP ) RESULT ( SUCCESS ) 

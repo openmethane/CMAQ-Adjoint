@@ -19,7 +19,8 @@ C***********************************************************************
 
 C:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       SUBROUTINE INIT_LGRID(SDATE, STIME, EDATE, ETIME, TSTEP, NSTEPS,
-     &                      LGRID, LGRID_EM, LGRID_EM_SF)
+     &                      LGRID, LGRID_EM)
+!     &                      LGRID, LGRID_EM, LGRID_EM_SF)
 
 C-----------------------------------------------------------------------
 C Function:
@@ -58,7 +59,7 @@ C Arguments:
       INTEGER, INTENT(OUT) :: NSTEPS ! run duration: number of output time steps
       REAL, POINTER :: LGRID(:, :, :, :)
       REAL, POINTER :: LGRID_EM(:, :, :, :)
-      REAL, POINTER :: LGRID_EM_SF(:, :, :, :)
+!      REAL, POINTER :: LGRID_EM_SF(:, :, :, :)
 
 C Local Variables:
       INTEGER, SAVE :: LOGDEV   ! FORTRAN unit number for log file
@@ -136,7 +137,7 @@ C Initialize LGRID
 !         CALL DEFINE_RECEPTOR(LGRID)
       ELSE
          WRITE(LOGDEV,*) 'init_lgrid, EDATE/ETIME: ',EDATE, ETIME
-         CALL RD_ADJ_EM_FILE(LGRID, EDATE, ETIME, INIT_LGRID_1)
+         CALL RD_ADJ_FILE(LGRID, EDATE, ETIME, INIT_LGRID_1)
          WRITE(LOGDEV,*) 'Sum LGRID: ', SUM(LGRID)
 !         CALL RD_ADJ_FILE(LGRID_EM, EDATE, ETIME, INIT_EM_1)
 !         CALL RD_ADJ_FILE(LGRID_EM_SF, EDATE, ETIME, INIT_EM_SF_1)
@@ -155,18 +156,18 @@ C Initialize LGRID
 !         CALL RD_ADJ_FILE(LGRID_EM_SF, EDATE, ETIME, INIT_EM_SF_1)
       END IF
 
-      IF ( .NOT. OPEN3(INIT_EM_SF_1, FSREAD3, PNAME) ) THEN
-         XMSG = 'Could not open ' // TRIM(INIT_EM_SF_1) //
-     &        '; initializing LGRID using only adjoint forcing'
-         CALL M3WARN(PNAME, EDATE, ETIME, XMSG)
+!      IF ( .NOT. OPEN3(INIT_EM_SF_1, FSREAD3, PNAME) ) THEN
+!         XMSG = 'Could not open ' // TRIM(INIT_EM_SF_1) //
+!     &        '; initializing LGRID using only adjoint forcing'
+!         CALL M3WARN(PNAME, EDATE, ETIME, XMSG)
 !         CALL DEFINE_RECEPTOR(LGRID)
-      ELSE
-         WRITE(LOGDEV,*) 'init_lgrid_em_sf, EDATE/ETIME: ',EDATE, ETIME
+!      ELSE
+!         WRITE(LOGDEV,*) 'init_lgrid_em_sf, EDATE/ETIME: ',EDATE, ETIME
 !         CALL RD_ADJ_FILE(LGRID, EDATE, ETIME, INIT_LGRID_1)
 !         CALL RD_ADJ_FILE(LGRID_EM, EDATE, ETIME, INIT_EM_1)
-         CALL RD_ADJ_EM_FILE(LGRID_EM_SF, EDATE, ETIME, INIT_EM_SF_1)
-         WRITE(LOGDEV,*) 'Sum LGRID_EM_SF: ', SUM(LGRID_EM_SF)         
-      END IF
+!         CALL RD_ADJ_EM_FILE(LGRID_EM_SF, EDATE, ETIME, INIT_EM_SF_1)
+!         WRITE(LOGDEV,*) 'Sum LGRID_EM_SF: ', SUM(LGRID_EM_SF)         
+!      END IF
 
 
 ! Now the reading of the adjoint forcing is done in the driver_bwd

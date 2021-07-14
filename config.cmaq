@@ -18,7 +18,7 @@
  set echo
 
 #> model repository location
- setenv M3HOME  /home/563/spt563/cmaq_adj 
+ setenv M3HOME  /home/563/spt563/cmaq/cmaq_adj
  setenv M3MODEL $M3HOME/CCTM
 # setenv M3DATA  /home/slc/bnmk/CMAQv5.0.1/data
  setenv COMPILER intel
@@ -48,18 +48,19 @@
        setenv compiler intel
        setenv compiler_ext ifort
        setenv myFC ifort
-       setenv myFC /apps/openmpi/wrapper/fortran/mpif90
+       setenv myFC mpif90
 ######## vvvvv infinity
 #    setenv myFC /share/linux86_64/intel/fc/11.1.059/bin/intel64/ifort
        setenv myCC icc
-       setenv myCC /apps/openmpi.1.6.3/bin/mpicc
+       setenv myCC mpicc
 ######## vvvvv infinity
 #    setenv myCC /share/linux86_64/intel/cc/11.1.059/bin/intel64/icc
-       setenv myLINK_FLAG "-i-static"
+       setenv myLINK_FLAG ""
        setenv myFFLAGS "-fixed -132 -O3 -override-limits -fno-alias -mp1 -fp-model precise"
        setenv myFRFLAGS "-free -O3 -fno-alias -mp1 -fp-model precise"
        setenv myCFLAGS "-O2"
        setenv mpi "-lmpi"
+       setenv mpi ""
        setenv extra_lib ""
        breaksw
 
@@ -108,6 +109,7 @@
 #> generate library locations
        setenv M3LIB ${lib_basedir}/${system}/${compiler}
        setenv MPI_INC $M3LIB/mpich/include
+       setenv MPI_INC 
 
 #> set executable id
  setenv EXEC_ID ${bld_os}_${system}${compiler}

@@ -65,7 +65,7 @@ C-----------------------------------------------------------------------
       REAL, ALLOCATABLE, SAVE, TARGET :: PCGRID( :,:,:,: )
       REAL, ALLOCATABLE, SAVE, TARGET :: PLGRID( :,:,:,: )
       REAL, ALLOCATABLE, SAVE, TARGET :: PLGRID_EM( :,:,:,: )
-      REAL, ALLOCATABLE, SAVE, TARGET :: PLGRID_EM_SF( :,:,:,: )
+!      REAL, ALLOCATABLE, SAVE, TARGET :: PLGRID_EM_SF( :,:,:,: )
 
       CONTAINS
          FUNCTION PCGRID_INIT () RESULT ( SUCCESS )
@@ -116,8 +116,8 @@ C PCGRID extents
      &                 STAT = ALLOCSTAT )
             ALLOCATE ( PLGRID_EM( LCOL:HCOL,LROW:HROW,EMSENSL,N_SPC_DIFF ),
      &                 STAT = ALLOCSTAT )
-            ALLOCATE ( PLGRID_EM_SF( LCOL:HCOL,LROW:HROW,EMSENSL,N_SPC_DIFF ),
-     &                 STAT = ALLOCSTAT )
+!            ALLOCATE ( PLGRID_EM_SF( LCOL:HCOL,LROW:HROW,EMSENSL,N_SPC_DIFF ),
+!     &                 STAT = ALLOCSTAT )
 
             IF ( ALLOCSTAT .NE. 0 ) THEN
                XMSG = 'Failure allocating PCGRID'
@@ -128,7 +128,7 @@ C PCGRID extents
             PCGRID = 0.0
             PLGRID = 0.0
             PLGRID_EM = 0.0
-            PLGRID_EM_SF = 0.0
+!            PLGRID_EM_SF = 0.0
 !           PCGRID = -999.999
 
             ELSE

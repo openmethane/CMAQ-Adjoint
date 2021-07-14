@@ -125,7 +125,7 @@ C for INTERPX
       REAL :: DT(MAXSS+1)
 
       INTERFACE
-         SUBROUTINE VPPM(NI, DT, DS, VEL, CON, FLX)
+         SUBROUTINE VPPM_BWD(NI, DT, DS, VEL, CON, FLX)
             IMPLICIT NONE
             INTEGER, INTENT(IN) :: NI
             REAL, INTENT(IN)    :: DT
@@ -133,7 +133,7 @@ C for INTERPX
             REAL, INTENT(INOUT) :: VEL(NI+1)
             REAL, INTENT(INOUT) :: CON(NI)
             REAL, INTENT(IN), OPTIONAL :: FLX(NI+1)
-         END SUBROUTINE VPPM
+         END SUBROUTINE VPPM_BWD
       END INTERFACE
 
 C-----------------------------------------------------------------------
@@ -281,7 +281,7 @@ C sub-steps.
                   DELT = DELT - DTNEW
 
                   DT(SS) = DTNEW
-                  CALL VPPM ( NLAYS, DT(SS), DS, VEL(:,SS), RJT, FLX )
+                  CALL VPPM_BWD ( NLAYS, DT(SS), DS, VEL(:,SS), RJT, FLX )
 
                   IF ( SS .GT. MAXSS ) THEN
                      WRITE( LOGDEV,2005 ) COL, ROW, CC, DELT, SS, JTIME
@@ -306,7 +306,7 @@ C sub-steps.
                ELSE
 
                   DT(SS) = DELT
-                  CALL VPPM ( NLAYS, DT(SS), DS, VEL(:,SS), RJT, FLX )
+                  CALL VPPM_BWD ( NLAYS, DT(SS), DS, VEL(:,SS), RJT, FLX )
                   EXIT
 
                END IF
@@ -320,7 +320,7 @@ C Update concentrations of trace species
                A2C = ADV_MAP( SPC )
                DO SS = NSS, 1, -1
                   NEG_VEL_SS(:) = -VEL(:,SS)
-                  CALL VPPM(NLAYS, DT(SS), DS, NEG_VEL_SS, LGRID(COL,ROW,:,A2C))
+                  CALL VPPM_BWD(NLAYS, DT(SS), DS, NEG_VEL_SS, LGRID(COL,ROW,:,A2C))
                END DO
             END DO
 

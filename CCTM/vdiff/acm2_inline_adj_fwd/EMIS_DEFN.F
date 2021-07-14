@@ -36,8 +36,8 @@ C     26 Jan 2010 J.Young: fix bug overwriting point source layer 1 NH3; inline 
 C-----------------------------------------------------------------------
 
       USE GRID_CONF           ! horizontal & vertical domain specifications
-      USE CHK_FILES_DEFS      ! adjoint checkpoint files definition
-      USE CHK_FILES           ! adjoint checkpoint files routines      
+      !USE CHK_FILES_DEFS      ! adjoint checkpoint files definition
+      !USE CHK_FILES           ! adjoint checkpoint files routines      
       USE VDIFF_MAP
 
       IMPLICIT NONE
@@ -63,9 +63,9 @@ C-----------------------------------------------------------------------
 
       INTEGER, PRIVATE, SAVE :: STRT_GC, FINI_GC, STRT_AE, FINI_AE,
      &                          STRT_NR, FINI_NR, STRT_TR, FINI_TR
-      INTEGER, PRIVATE, SAVE :: SDATE, STIME  ! scenario start date/time (beis)
-      INTEGER, PRIVATE       :: LDATE, LTIME  ! step start date/time (beis)
-      INTEGER, PRIVATE, SAVE :: NDATE, NTIME  ! step next date/time (beis)
+      INTEGER, PRIVATE, SAVE :: SDATE, STIME  ! emis file start date/time
+      INTEGER, PRIVATE, SAVE :: ESTEP         ! emis file tstep
+      INTEGER, PRIVATE       :: CDATE, CTIME  ! step start date/time
 
       REAL, PRIVATE, PARAMETER :: MWAIR  =  28.9628    ! molwt of dry air [ g/mol ]
 
@@ -76,7 +76,7 @@ C External Functions not previously declared in IODECL3.EXT:
 
       INTEGER, EXTERNAL :: SECSDIFF, SEC2TIME, TIME2SEC
 
-      REAL, ALLOCATABLE, SAVE :: EMIS_CHK( :,:,:,: )
+      !REAL, ALLOCATABLE, SAVE :: EMIS_CHK( :,:,:,: )
       
       CONTAINS
 
@@ -98,7 +98,8 @@ C Includes:
          INCLUDE SUBST_TR_EMIS   ! tracer emis surrogate names & map table
          INCLUDE SUBST_CONST     ! constants
          INCLUDE SUBST_IOPARMS   ! I/O parameters definitions
-#include         SUBST_IODECL    # I/O definitions and declarations
+         INCLUDE SUBST_IODECL    ! I/O definitions and declarations
+         INCLUDE SUBST_IOFDESC   ! file header data structure
 
 C Arguments:
 
@@ -239,12 +240,20 @@ C 3D point source emissions (N_SPC_EMIS+1 serves as the null map for PTEM_MAP)
          END IF
          BUFF = 0.0   ! array assignment
 
-         ALLOCATE ( EMIS_CHK( NCOLS,NROWS,NLAYS,N_SPC_DIFF ),
-     &              STAT = ALLOCSTAT )
-         IF ( ALLOCSTAT .NE. 0 ) THEN
-            XMSG = 'EMIS_CHK memory allocation failed'
-            CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
+!         ALLOCATE ( EMIS_CHK( NCOLS,NROWS,NLAYS,N_SPC_DIFF ),
+!     &              STAT = ALLOCSTAT )
+!         IF ( ALLOCSTAT .NE. 0 ) THEN
+!            XMSG = 'EMIS_CHK memory allocation failed'
+!            CALL M3EXIT ( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
+!         END IF
+         
+         IF ( .NOT. DESC3( EMIS_1 ) ) THEN
+            XMSG = 'Could not get '// EMIS_1 //' file description'
+            CALL M3EXIT( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
          END IF
+         SDATE = SDATE3D
+         STIME = STIME3D
+         ESTEP = TSTEP3D
 
 !         CALL CHK_FILE_OPEN ( ADJ_EMIST_CHK, MDATE, MTIME, .TRUE., TSTEP )
 
@@ -307,6 +316,7 @@ C Arguments:
 C External Functions:
 
          INTEGER, EXTERNAL :: TRIMLEN
+         LOGICAL, EXTERNAL :: CURRSTEP
 
 C Local Variables:
 
@@ -334,7 +344,8 @@ C Get domain decomp info from the emissions file
 ! CNVTE  = 28.9628e3 / (DX1 * DX2) 
 ! CONVPA = [1, 1e-2, 1e-3] depending on METCRO3D
             CNVTP = CONVPA * CNVTE
-            CALL CHK_FILE_OPEN ( ADJ_EMIST_CHK, MDATE, MTIME, .TRUE., TSTEP )
+            !EMIST checkpoint is not implemented.
+            !CALL CHK_FILE_OPEN ( ADJ_EMIST_CHK, MDATE, MTIME, .TRUE., TSTEP )
          END IF
 
          !MDATE = JDATE
@@ -343,17 +354,23 @@ C Get domain decomp info from the emissions file
          !DTSEC = FLOAT( MSTEP )
          !CALL NEXTIME ( MDATE, MTIME, SEC2TIME( MSTEP / 2 ) )
 
-C read & interpolate emissions (create VDEMIS in the species class order)
-
+C read  emissions (create VDEMIS in the species class order)
+         
+         IF ( .NOT. CURRSTEP( JDATE, JTIME, SDATE, STIME,
+     &        ESTEP, CDATE, CTIME ) ) THEN
+            XMSG = 'Could not find '// EMIS_1 //' timestep'
+            CALL M3EXIT( PNAME, JDATE, JTIME, XMSG, XSTAT1 )
+         END IF
+         
          VDEMIS = 0.0   ! array assignment
 
          DO V = STRT_GC, FINI_GC
             S = V + 1 - STRT_GC
             BUFF = 0.0   ! array assignment
 C                                       vvvvvvv - emis surrogate names
-            IF ( .NOT. INTERPX( EMIS_1, GC_EMIS( S ), PNAME,
-     &                          STARTCOL,ENDCOL, STARTROW,ENDROW, 1,EMLYRS,
-     &                          JDATE, JTIME, BUFF ) ) THEN
+            IF ( .NOT. XTRACT3( EMIS_1, GC_EMIS( S ), 1,EMLYRS,
+     &                          STARTROW,ENDROW, STARTCOL,ENDCOL,
+     &                          CDATE, CTIME, BUFF ) ) THEN
                XMSG = 'Could not read  '
      &              // GC_EMIS( S )( 1:TRIMLEN( GC_EMIS( S ) ) )
      &              // ' from ' // EMIS_1
@@ -379,7 +396,7 @@ C  loads."
                   DO L = 1, EMLYRS
                      CNVTC = CNVTI * RDX3F( L ) * RRHOJ( C,R,L )
                      ! dbg.7.2015.slc - sum of VDEMIS 
-                     EMIS_CHK( C,R,L,V ) = BUFF( C,R,L ) !* EM_SF(C, R, L, V)  
+                     !EMIS_CHK( C,R,L,V ) = BUFF( C,R,L ) !* EM_SF(C, R, L, V)  
         
                      VDEMIS( V,L,C,R ) = VDEMIS( V,L,C,R )
      &                                 + CNVTC * BUFF( C,R,L )
@@ -394,7 +411,7 @@ C  loads."
 C Write emissions to emission checkpoint file
          ! check JDATE and JTIME
          !write(*, *) 'JDATE, TIME: ',JDATE, JTIME
-         CALL CHK_FILE_WRITE ( ADJ_EMIST_CHK, JDATE, JTIME, EMIS_CHK )
+         !CALL CHK_FILE_WRITE ( ADJ_EMIST_CHK, JDATE, JTIME, EMIS_CHK )
 
 C beis
 
@@ -486,9 +503,9 @@ C non-reactive gases (conversion to ppmv/s) VDEMIS in this order from RDEMIS
             S = V + 1 - STRT_NR
             BUFF = 0.0   ! array assignment
 C                                       vvvvvvv - emis surrogate names
-            IF ( .NOT. INTERPX( EMIS_1, NR_EMIS( S ), PNAME,
-     &                          STARTCOL,ENDCOL, STARTROW,ENDROW, 1,EMLYRS,
-     &                          JDATE, JTIME, BUFF ) ) THEN
+            IF ( .NOT. XTRACT3( EMIS_1, NR_EMIS( S ), 1,EMLYRS,
+     &                          STARTROW,ENDROW, STARTCOL,ENDCOL,
+     &                          CDATE, CTIME, BUFF ) ) THEN
                XMSG = 'Could not read  '
      &              // NR_EMIS( S )( 1:TRIMLEN( NR_EMIS( S ) ) )
      &              // ' from ' // EMIS_1
@@ -518,9 +535,9 @@ C tracer gases (conversion to ppmv/s)
                S = V + 1 - STRT_TR
                BUFF = 0.0   ! array assignment
 C                                               vvvvvvv - emis surrogate names
-               IF ( .NOT. INTERPX( EMIS_TRAC_1, TR_EMIS( S ), PNAME,
-     &                             STARTCOL,ENDCOL, STARTROW,ENDROW, 1,EMLYRS,
-     &                             JDATE, JTIME, BUFF ) ) THEN
+               IF ( .NOT. XTRACT3( EMIS_TRAC_1, TR_EMIS( S ), 1,EMLYRS,
+     &                          STARTROW,ENDROW, STARTCOL,ENDCOL,
+     &                          CDATE, CTIME, BUFF ) ) THEN
                   XMSG = 'Could not read  '
      &                 // TR_EMIS( S )( 1:TRIMLEN( TR_EMIS( S ) ) )
      &                 // ' from ' // EMIS_TRAC_1

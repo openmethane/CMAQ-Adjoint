@@ -18,7 +18,7 @@ C   permissions subject to the above restrictions.                     *
 C***********************************************************************
 
 C RCS file, release, date & time of last delta, author, state, [and locker]
-C $Header: /Volumes/Data/CVS/CMAQ_CVSrepos/CCTM/src/vadv/vyamo_dadj_bwd/vppm.F,v 1.1 2011/02/22 01:40:02 ppercell Exp $
+C $Header: /Volumes/Data/CVS/CMAQ_CVSrepos/CCTM/src/vadv/vyamo_dadj_fwd/vppm.F,v 1.1 2011/02/22 01:40:02 ppercell Exp $
 
 C what(1) key, module and SID; SCCS file; date and time of last delta:
 C %W% %P% %G% %U%
@@ -96,6 +96,9 @@ C----------------------------------------------------------------------
 
       IMPLICIT NONE
 
+C Includes:
+      INCLUDE SUBST_IOPARMS     ! I/O parameters definitions
+
 C Arguments:
 
       INTEGER, INTENT( IN ) :: NI ! number of zones (cells)
@@ -122,8 +125,12 @@ C Local variables:
       REAL X                    ! Courant number
       REAL Y                    ! removed zone slab
       REAL FDN, FUP             ! upstream donor cell versions of fm, fp
+      INTEGER ICNT              ! no. of times fdn, fup exceeds fm, fp error range
+
+      CHARACTER( 120 ) :: XMSG = ' '
 
       INTEGER I, S              ! loop index
+      INTEGER, PARAMETER :: MAXCNT = 50
 
 C----------------------------------------------------------------------
 
@@ -139,25 +146,37 @@ C the flux advected with the upstream donor cell method
          DO I = 1, NI
             IF ( VEL( I ) .LT. 0.0 ) THEN
                FDN = -FLX( I ) * DT
+               ICNT = 0
  66            CONTINUE
                Y = -VEL( I ) * DT
                X = Y / DS( I )
                FM( I ) = Y * ( CL( I ) + 0.5 * X
      &              * ( DC( I ) + C6( I ) * ( 1.0 - TWO3RDS * X ) ) )
                IF ( ABS( FM( I ) - FDN ) .GT. EPSF * FDN ) THEN
-                  VEL( I ) = VEL( I ) * ( FDN / FM( I ) )
+                  VEL( I ) = VEL( I ) * SQRT( FDN / FM( I ) )
+                  ICNT = ICNT + 1
+                  IF ( ICNT .GT. MAXCNT ) THEN
+                     XMSG = 'max iterations exceeded in vppm at 66'
+                     CALL M3EXIT( 'VPPM', 0, 0, XMSG, XSTAT1 )
+                  END IF
                   GO TO 66
                END IF
             END IF
             IF ( VEL( I+1 ) .GT. 0.0 ) THEN
                FUP = FLX( I+1 ) * DT
+               ICNT = 0
  77            CONTINUE
                Y = VEL( I+1 ) * DT
                X = Y / DS( I )
                FP( I ) = Y * ( CR( I ) - 0.5 * X
      &              * ( DC( I ) - C6( I ) * ( 1.0 - TWO3RDS * X ) ) )
                IF ( ABS( FP( I ) - FUP ) .GT. EPSF * FUP ) THEN
-                  VEL( I+1 ) = VEL( I+1 ) * ( FUP / FP( I ) )
+                  VEL( I+1 ) = VEL( I+1 ) * SQRT( FUP / FP( I ) )
+                  ICNT = ICNT + 1
+                  IF ( ICNT .GT. MAXCNT ) THEN
+                     XMSG = 'max iterations exceeded in vppm at 77'
+                     CALL M3EXIT( 'VPPM', 0, 0, XMSG, XSTAT1 )
+                  END IF
                   GO TO 77
                END IF
             END IF

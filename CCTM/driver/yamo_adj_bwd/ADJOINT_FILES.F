@@ -98,7 +98,7 @@ C-----------------------------------------------------------------------
 
       VARDESC =
      &     'LGRID output frequency: SYNC_STEP, OUTPUT_STEP or ONCE (at start time)'
-      LGRID_OUTPUT_FREQ = 'OUTPUT_STEP'
+      LGRID_OUTPUT_FREQ = 'SYNC_STEP'
       CALL ENVSTR('ADJ_LGRID_FREQ', VARDESC, LGRID_OUTPUT_FREQ,
      &     LGRID_OUTPUT_FREQ, STATUS)
       IF ( STATUS /= 0 ) WRITE(LOGDEV, '(5X, A)') VARDESC
@@ -559,6 +559,7 @@ C+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       SUBROUTINE RD_ADJ_FILE(ARRAY, JDATE, JTIME, ADJ_FILE)
 
       USE GRID_CONF             ! horizontal & vertical domain specifications
+      USE VDIFF_MAP
 
       IMPLICIT NONE
 
@@ -602,9 +603,9 @@ C Get file characteristics of ADJ_FILE
       END IF
 
       K = 0
-      DO V = 1, NVARS3D
+      DO V = 1, N_SPC_DIFF
          IF ( .NOT. XTRACT3(ADJ_FILE, VNAME3D(V),
-     &        1, 1, STRTROW, ENDROW, STRTCOL, ENDCOL,
+     &        1, NLAYS, STRTROW, ENDROW, STRTCOL, ENDCOL,
      &        JDATE, JTIME, BUFFER) ) THEN
             XMSG = 'Could not read  ' // VNAME3D(V)
      &           // ' from ' // TRIM(ADJ_FILE)
@@ -648,7 +649,7 @@ C Include Files:
 C Local variables:
       LOGICAL, SAVE :: FIRSTIME = .TRUE.
 
-      CHARACTER(16) :: PNAME = 'RD_ADJ_FILE'
+      CHARACTER(16) :: PNAME = 'RD_ADJ_EM_FILE'
       CHARACTER(96) :: XMSG = ' '
 
       REAL :: BUFFER(1:NCOLS, 1:NROWS, 1:EMSENSL)
@@ -722,6 +723,7 @@ C Include Files:
 C Arguments:
 
       INTEGER, EXTERNAL :: ENVINT
+      INTEGER, EXTERNAL :: INDEX1
       INTEGER           :: IOS
       INTEGER           :: NLAYS_FRC
       INTEGER           :: ALLOCSTAT
@@ -736,6 +738,9 @@ C Local variables:
 
       CHARACTER(16) :: PNAME = 'RD_FORCE_FILE'
       CHARACTER(96) :: XMSG = ' '
+      
+      INTEGER, SAVE :: NVARS_FRC
+      INTEGER, ALLOCATABLE, SAVE :: VMAP_FRC(:)
 
 !      INTEGER, PARAMETER :: NLAYS_FRC = 1
 
@@ -747,9 +752,44 @@ C Local variables:
       INTEGER :: CARRAY, RARRAY, LENROW, LENCOL
 
 
-      INTEGER :: K, C, R, L, V  ! loop counters
+      INTEGER :: C, R, L, V, S  ! loop counters
 
 C-----------------------------------------------------------------------
+
+      IF ( FIRSTIME_FRC ) THEN
+         FIRSTIME_FRC = .FALSE.
+         IF ( .NOT. DESC3(ADJ_FORCE_FILE) ) THEN
+            XMSG = 'Could not get ' // TRIM(ADJ_FORCE_FILE) // ' file description'
+            CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
+         END IF
+         NVARS_FRC = NVARS3D
+         ALLOCATE( VMAP_FRC(NVARS_FRC), STAT=ALLOCSTAT )
+         DO V = 1, NVARS_FRC
+            S = INDEX1( VNAME3D(V), N_GC_SPC, GC_SPC )
+            IF ( S .EQ. 0 ) THEN
+               S = INDEX1( VNAME3D(V), N_AE_SPC, AE_SPC )
+               IF ( S .EQ. 0 ) THEN
+                  S = INDEX1( VNAME3D(V), N_NR_SPC, NR_SPC )
+                  IF ( S .EQ. 0 ) THEN
+                     S = INDEX1( VNAME3D(V), N_TR_SPC, TR_SPC )
+                     IF ( S .EQ. 0 ) THEN
+                        XMSG = 'Could not find ' // VNAME3D(V) // ' in LGRID'
+                        CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
+                     ELSE
+                        S = TR_STRT - 1 + S
+                     END IF
+                  ELSE
+                     S = NR_STRT - 1 + S
+                  END IF
+               ELSE
+                  S = AE_STRT - 1 + S
+               END IF
+            ELSE
+               S = GC_STRT - 1 + S
+            END IF
+            VMAP_FRC(V) = S
+         END DO
+      END IF !firstime_frc
 
          NLAYS_FRC = ENVINT('NLAYS_FRC', 'No. of layers in forcing file', 1, IOS)
          ALLOCATE( BUFFER(1:NCOLS, 1:NROWS, 1:NLAYS_FRC), STAT=ALLOCSTAT )
@@ -785,47 +825,37 @@ C Get file characteristics of ADJ_FILE_FILE
       !WRITE(*,*) 'JDATE: ',JDATE
       !WRITE(*,*) 'JTIME: ',JTIME
 
-      K = 0
-      ! Specify chemical species based on index in *_SPC files 
-      ! in cmaq_adj/ICL directory
-
-      !V = 22 ! CO (NSPC index) 
-      !V = 4 ! O3 (NSPC index)
-      V = 1 ! CO2 in GHG_raijin version
-
-!     Because ADJ_FORCE_FILE will only have one variable,
-!        this one variable should be extracted.
-!        It may also only be at one level, which is indicated by NLAYS_FRC.
-!        The assignment is where V equals the species denoted above.
-      IF ( .NOT. XTRACT3(ADJ_FORCE_FILE, VNAME3D(1),
-     &     1, NLAYS_FRC, STRTROW, ENDROW, STRTCOL, ENDCOL,
-     &     JDATE, JTIME, BUFFER) ) THEN
-         XMSG = 'Could not read  ' // VNAME3D(1)
-     &        // ' from ' // TRIM(ADJ_FORCE_FILE)
-         CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
-
-      ELSE
+      DO V = 1, NVARS_FRC
+         IF ( .NOT. XTRACT3(ADJ_FORCE_FILE, VNAME3D(V),
+     &        1, NLAYS_FRC, STRTROW, ENDROW, STRTCOL, ENDCOL,
+     &        JDATE, JTIME, BUFFER) ) THEN
+            XMSG = 'Could not read  ' // VNAME3D(1)
+     &           // ' from ' // TRIM(ADJ_FORCE_FILE)
+            CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
             
-         LENROW = NROWS 
-         LENCOL = NCOLS   
+         ELSE
+            
+            LENROW = NROWS 
+            LENCOL = NCOLS   
          !WRITE(*,*) 'LENROW: ',LENROW, ', LENCOL: ',LENCOL
          !WRITE(*,*) 'BUFFER(1,1,1): ',BUFFER(1,1,1),' on proc: ',MYPE
          !WRITE(*,*) 'BUFFER(LC,LR,1): ',BUFFER(LENCOL,LENROW,NLAYS_FRC),' on proc: ',MYPE
-         DO R = 1, LENROW
-            DO C = 1, LENCOL
-               DO L = 1, NLAYS_FRC
-                  !RARRAY = R + STRTROW - 1
-                  !CARRAY = C + STRTCOL - 1
-                  !ARRAY(CARRAY, RARRAY, L, V) = BUFFER(C, R, L)
-                  ARRAY(C, R, L, V) = BUFFER(C, R, L)
+            DO R = 1, LENROW
+               DO C = 1, LENCOL
+                  DO L = 1, NLAYS_FRC
+                     !RARRAY = R + STRTROW - 1
+                     !CARRAY = C + STRTCOL - 1
+                     !ARRAY(CARRAY, RARRAY, L, V) = BUFFER(C, R, L)
+                     ARRAY(C, R, L, VMAP_FRC(V)) = BUFFER(C, R, L)
+                  END DO
                END DO
             END DO
-         END DO
       
       !write(*,*) 'sum(array): ',sum(array)
       !write(*,*) 'sum(array(:,:,:,4)): ',sum(array(:,:,:,4))
       
-      END IF
+         END IF
+      END DO
 
       END SUBROUTINE RD_FORCE_FILE
 
