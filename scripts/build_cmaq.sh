@@ -14,10 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-export ROOT=/home/peter/work/openmethane-beta/cmaq-cu/
+. scripts/common.sh
 
 set -e
 pushd ${ROOT}
+# make some libraries
+for item in pario stenex/se; do
+  pushd $item
+  echo "Building $item"
+  cp ${ROOT}/templates/${item}/makefile.gcc .
+  make -f makefile.gcc
+  popd
+done
+
 pushd BLDMAKE_git
 make
 popd
