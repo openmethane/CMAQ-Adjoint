@@ -14,6 +14,7 @@ export ROOT=$PWD
 export CMAQ_REPO=/home/peter/work/openmethane-beta/cmaq-zenodo/
 export CMAQ_DIRNAME=CCTM
 export CONDA_INC=${HOME}/anaconda3/envs/cmaq/include
+export CONDA_LIB=${HOME}/anaconda3/envs/cmaq/lib
 export MPICH_DIR=/home/peter/anaconda3/lib/
 export MPICH_INC=/home/peter/anaconda3/include
 export IOAPI_DIR=${ROOT}/ioapi
