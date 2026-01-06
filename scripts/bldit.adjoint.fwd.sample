@@ -111,7 +111,7 @@ set ModInit   = init/yamo
 set ModAdjc   = ( // yamo option does not need denrate )
 
 # set ModCpl    = couple/gencoor
-set ModCpl    = couple/gencoor_ceil_fwd
+set ModCpl    = couple/gencoor_ceil
 
 #set ModHadv   = hadv/hadv_noop
 #set ModHadv   = hadv/hppm
@@ -233,7 +233,7 @@ set F_NOAUTO_FLAGS = -fno-automatic
 set F_FLAGS = "$F_BASE_FLAGS $F_NOAUTO_FLAGS"
 set CPP_FLAGS  = ""
 set C_FLAGS    = "-O2 -I$CONDA_INC"
-set LINK_FLAGS = "-qopenmp"
+set LINK_FLAGS = ""
 
 # Set location of M3Bld executable
 set Blder = "$M3MODEL/BLDMAKE_git/bldmake -verbose"
@@ -242,7 +242,7 @@ set Blder = "$M3MODEL/BLDMAKE_git/bldmake -verbose"
 set IOAPI = "$IOAPI_DIR/Linux6_x86_64gfort -lioapi"
 set ICL_IOAPI = "$IOAPI_DIR/ioapi/fixed_src"
 set NETCDF = "-L$CONDA_LIB -lnetcdff -lnetcdf"
- set PARIO = "${M3LIB}/pario -lpario"
+ set PARIO = "${M3LIB}/${CMAQ_DIRNAME}/pario -lpario"
 
 #:#:#:#:#:#:#:#:#:#:#:# End of User Input Section :#:#:#:#:#:#:#:#:#:#:#:#:#
 
@@ -271,7 +271,7 @@ set NETCDF = "-L$CONDA_LIB -lnetcdff -lnetcdf"
 #    cp -p ${STENEX}/se_*.mod ${STENEX}/swap_sandia.mod $Bld
     set LIB2 = "-L${PARIO}"
     set LIB3 =
-    set LIB4 = "-L${Mpich}/lib -lmpi -L${Mpich}/lib/Intel -lmpi_mpifh"
+    set LIB4 = "-L${Mpich} -lmpich"
     set Str1 = (// Parallel / Include message passing definitions)
     set Str2 = (include SUBST_MPICH ${MPI_INC}/mpif.h;)
  else
