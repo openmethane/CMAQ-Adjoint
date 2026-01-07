@@ -62,7 +62,7 @@ set Project = ${M3MODEL}/CCTM #CCTM
 #> user choices: base working directory
 set Base = $cwd
 
-set MODEL = ADJOINT_FWD
+set MODEL = ADJOINT_BWD
 
 #set Local   # do NOT copy the source files into the BLD directory -
              # comment out to copy the source files (default if not set)
@@ -86,7 +86,7 @@ set ParOpt             # set for multiple PE's; comment out for single PE
 #>       m3bld will tell you, but will still compile the original code.
 #>       The workaround is to remove your "BLD" directory and start fresh.
 
-set ModDriver = driver/yamo_adj_fwd
+set ModDriver = driver/yamo_adj_bwd
 #set ModDriver = driver/yamo_adj_bwd
 
 #set ModChkpnt = chkpnt/chkpnt_bin
@@ -116,7 +116,7 @@ set ModCpl    = couple/gencoor_ceil
 #set ModHadv   = hadv/hadv_noop
 #set ModHadv   = hadv/hppm
 #set ModHadv   = hadv/yamo
-set ModHadv   = hadv/yamo_cadj_fwd
+set ModHadv   = hadv/yamo_cadj_bwd
 #set ModHadv   = hadv/yamo_cadj_bwd
 #set ModHadv   = hadv/yamo_dadj_fwd
 #set ModHadv   = hadv/yamo_dadj_bwd
@@ -125,21 +125,20 @@ set ModHadv   = hadv/yamo_cadj_fwd
 #set ModVadv   = vadv/vppm
 #set ModVadv   = vadv/yamo
 # set ModVadv   = vadv/vyamo_cadj_fwd
-set ModVadv   = vadv/vyamo_cadj_ceil_fwd
+set ModVadv   = vadv/vyamo_cadj_ceil_bwd
 #set ModVadv   = vadv/vyamo_cadj_bwd
 #set ModVadv   = vadv/vyamo_dadj_fwd
 #set ModVadv   = vadv/vyamo_dadj_bwd
 
 #set ModHdiff  = hdiff/hdiff_noop
 #set ModHdiff  = hdiff/multiscale
-set ModHdiff  = hdiff/multiscale_adj_fwd
-#set ModHdiff  = hdiff/multiscale_adj_bwd
+set ModHdiff  = hdiff/multiscale_adj_bwd
 
 #set ModVdiff  = vdiff/vdiff_noop
 #set ModVdiff  = vdiff/eddy
 #set ModVdiff  = vdiff/acm2
 #set ModVdiff  = vdiff/acm2_inline
-set ModVdiff  = vdiff/acm2_inline_adj_fwd
+set ModVdiff  = vdiff/acm2_inline_adj_bwd
 #set ModVdiff  = vdiff/acm2_inline_adj_bwd
 #set ModVdiff  = vdiff/noacm_adj_fwd
 
@@ -204,7 +203,7 @@ set PAOpt     = procan/pa_noop
 #>    library paths
 
 # set Base = $cwd
-set APPL  = fwd_CH4only
+set APPL  = bwd_CH4only
 # set APPL  = aero_adj
 set CFG   = cfg.$APPL
 #
