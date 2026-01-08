@@ -53,7 +53,7 @@ C==============================================
       INCLUDE SUBST_CONST       ! constants
       INCLUDE SUBST_FILES_ID    ! file name parameters
       INCLUDE SUBST_IOPARMS     ! I/O parameters definitions
-#     INCLUDE SUBST_IODECL      ! I/O definitions and declarations
+      INCLUDE SUBST_IODECL      ! I/O definitions and declarations
 
 C Arguments:
 
