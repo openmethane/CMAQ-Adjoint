@@ -102,7 +102,7 @@ set ModChkpnt = chkpnt/chkpnt_ioapi
  endif
 
 #set ModInit   = init/init
-set ModInit   = init/yamo
+set ModInit   = init/adj_bwd
 #set ModInit   = init/adj_bwd
 #set ModInit   = init/yamo_ddm3d
 
@@ -147,8 +147,8 @@ set ModPhot   = phot/phot_noop
 #set ModPhot   = phot/phot_sat
 #set ModPhot   = phot/phot_inline
 
-set ModChem   = chem/chem_noop
-#set ModChem   = chem/chem_bwd_noop
+#set ModChem   = chem/chem_noop
+set ModChem   = chem/chem_bwd_noop
 #set ModChem   = chem/smvgear
 #set ModChem   = chem/ros3
 #set ModChem   = chem/ebi_cb05cl
