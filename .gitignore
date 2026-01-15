@@ -10,3 +10,6 @@
 
 # Ignore work/
 work
+
+# JetBrains IDEs
+.idea
