@@ -13,3 +13,6 @@ work
 
 # JetBrains IDEs
 .idea
+
+# Test data is too large for the repo
+tests/test-data
