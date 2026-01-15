@@ -70,7 +70,7 @@ set MODEL = ADJOINT_FWD
 #> user choices: m3bld command, see M3BLD_README for options
 set Opt = verbose      # show requested commands as they are executed
 #> user choices: bldmake command
-set MakeFileOnly   # builds a Makefile to make the model, but does not compile -
+#set MakeFileOnly   # builds a Makefile to make the model, but does not compile -
                     # comment out to also compile the model (default if not set)
 
 #> user choices:  single or multiple processors

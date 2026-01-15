@@ -34,20 +34,21 @@ COPY --from=conda /opt/venv /opt/venv
 # Build ioapi
 COPY templates/ioapi /opt/cmaq/templates/ioapi
 COPY scripts/common.sh /opt/cmaq/scripts/common.sh
-COPY scripts/build_00_ioapi.sh /opt/cmaq/scripts/build_00_ioapi.sh
-RUN bash /opt/cmaq/scripts/build_00_ioapi.sh
+COPY scripts/build_ioapi.sh /opt/cmaq/scripts/build_ioapi.sh
+RUN bash /opt/cmaq/scripts/build_ioapi.sh
 
 # Build a modified version of CMAQ in ch4 only mode
-COPY templates/cmaq /opt/cmaq/templates/cmaq
-COPY src/CMAQv5.0.2_notpollen /opt/cmaq/CMAQv5.0.2_notpollen
-COPY scripts/build_10_cmaq.sh /opt/cmaq/scripts/build_10_cmaq.sh
-RUN bash /opt/cmaq/scripts/build_10_cmaq.sh
-
-# Build the CMAQ adjoint
-COPY scripts/build_11_cmaq_adj.sh /opt/cmaq/scripts/build_11_cmaq_adj.sh
-COPY src/cmaq_adj /opt/cmaq/cmaq_adj
-RUN bash /opt/cmaq/scripts/build_11_cmaq_adj.sh
-
+COPY BLDMAKE_git /opt/cmaq/BLDMAKE_git
+COPY CCTM /opt/cmaq/CCTM
+COPY ICL /opt/cmaq/ICL
+COPY pario /opt/cmaq/pario
+COPY stenex /opt/cmaq/stenex
+COPY templates/pario /opt/cmaq/templates/pario
+COPY templates/stenex /opt/cmaq/templates/stenex
+COPY scripts/build_all.sh /opt/cmaq/scripts/build_all.sh
+COPY scripts/bldit.adjoint.fwd.openmethane /opt/cmaq/scripts/bldit.adjoint.fwd.openmethane
+COPY scripts/bldit.adjoint.bwd.openmethane /opt/cmaq/scripts/bldit.adjoint.bwd.openmethane
+RUN bash /opt/cmaq/scripts/build_all.sh
 
 FROM debian:bookworm AS runtime
 
@@ -62,8 +63,16 @@ WORKDIR /opt/cmaq
 COPY --from=conda /opt/venv /opt/venv
 COPY --from=build /opt/cmaq /opt/cmaq
 
-RUN apt-get update && \
-    apt-get install -y make csh wget && \
-    rm -rf /var/lib/apt/lists/*
+RUN <<EOT
+apt-get update -qy
+apt-get install -qyy \
+    -o APT::Install-Recommends=false \
+    -o APT::Install-Suggests=false \
+    ca-certificates \
+    wget
+
+apt-get clean
+rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+EOT
 
 ENTRYPOINT ["/bin/bash"]

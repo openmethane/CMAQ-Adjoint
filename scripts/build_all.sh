@@ -18,21 +18,21 @@
 
 set -e
 pushd ${ROOT}
-# make some libraries
-# for item in pario stenex/se; do
-#   pushd $item
-#   echo "Building $item"
-#   cp ${ROOT}/templates/${item}/makefile.gcc .
-#   make -f makefile.gcc
-#   popd
-# done
 
-csh scripts/bldit.adjoint.fwd.openmethane
-csh scripts/bldit.adjoint.bwd.openmethane
-exit
+# build required libraries
+for item in pario stenex/se; do
+   pushd $item
+   echo "Building $item"
+   cp ${ROOT}/templates/${item}/makefile.gcc .
+   make -f makefile.gcc
+   popd
+done
 
+# build the bldmake tool
 pushd BLDMAKE_git
 make
 popd
 
-
+# use bldmake to build forward and backward adjoint
+csh scripts/bldit.adjoint.fwd.openmethane
+csh scripts/bldit.adjoint.bwd.openmethane
