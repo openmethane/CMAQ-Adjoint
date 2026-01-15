@@ -1,0 +1,80 @@
+m3lib = $(ROOT)/$(CMAQ_DIRNAME)
+dest = $(m3lib)/stenex/se_gcc8.3.0
+
+fc = mpif90
+fstd = -O2 -ffixed-line-length-132 -fbacktrace -fno-automatic -fallow-argument-mismatch -c
+
+VPATH=.:src:
+
+objects = \
+ se_comm_info_ext.o \
+ se_disp_info_ext.o \
+ se_domain_info_ext.o \
+ se_ori_ext.o \
+ se_pe_info_ext.o \
+ se_subgrid_info_ext.o \
+ se_reconfig_grid_info_ext.o \
+ se_bndy_copy_info_ext.o \
+ se_internal_util_module.o \
+ se_global_max_module.o \
+ se_global_min_module.o \
+ se_global_sum_module.o \
+ se_util_module.o \
+ se_data_send_module.o \
+ se_data_recv_module.o \
+ se_slice_module.o \
+ se_comm_module.o \
+ se_gather_module.o \
+ se_data_copy_module.o \
+ se_reconfig_grid_module.o \
+ se_bndy_copy_module.o \
+ swap_sandia.o \
+ swap_sandia_routines.o \
+ se_init_module.o \
+ se_term_module.o \
+ se_modules.o
+
+modules = \
+ se_bndy_copy_info_ext.mod \
+ se_bndy_copy_module.mod \
+ se_comm_info_ext.mod \
+ se_comm_module.mod \
+ se_data_copy_module.mod \
+ se_data_recv_module.mod \
+ se_data_send_module.mod \
+ se_disp_info_ext.mod \
+ se_domain_info_ext.mod \
+ se_gather_module.mod \
+ se_global_max_module.mod \
+ se_global_min_module.mod \
+ se_global_sum_module.mod \
+ se_init_module.mod \
+ se_internal_util_module.mod \
+ se_modules.mod \
+ se_ori_ext.mod \
+ se_pe_info_ext.mod \
+ se_reconfig_grid_info_ext.mod \
+ se_reconfig_grid_module.mod \
+ se_slice_module.mod \
+ se_subgrid_info_ext.mod \
+ se_term_module.mod \
+ se_util_module.mod \
+ swap_sandia.mod
+
+lib = libse_snl.a
+
+.SUFFIXES: .f
+
+$(lib): $(objects)
+	ar rsv $(lib) $(objects)
+#	chmod 444 $(lib)
+	rm $(objects)
+	mkdir -p $(dest)
+	mv $(lib) $(dest)
+	mv $(modules) $(dest)
+
+.f.o:
+	$(fc) -c $(fstd) $<
+
+.F.o:
+	$(fc) -c $(fstd) $<
