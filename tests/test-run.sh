@@ -33,21 +33,42 @@ if [ ! -d "${TEST_DATA_DIR}" ]; then
   tar -xf "${TEST_RUNS_ROOT}/test-data.tar.gz" -C "${TEST_DATA_DIR}"
   rm "${TEST_RUNS_ROOT}/test-data.tar.gz"
 fi
-
-# run a single threaded test
 DATA_DIR="${TEST_DATA_DIR}"
-RUN_DIR="${TEST_RUNS_ROOT}/001-sp"
-if [ -d "${RUN_DIR}" ]; then
-  echo "Clearing previous run"
-  rm -rf "${RUN_DIR}"
-fi
-mkdir -p "${RUN_DIR}/output"
-mkdir -p "${RUN_DIR}/chkpnt"
-set -o allexport && source "${TEST_DATA_DIR}/test.env" && set +o allexport
 
+prepare_test_run () {
+  TEST_RUN_DIR=$1
+  if [ -d "${TEST_RUN_DIR}" ]; then
+    echo "Clearing previous run"
+    rm -rf "${TEST_RUN_DIR}"
+  fi
+  mkdir -p "${TEST_RUN_DIR}/output"
+  mkdir -p "${TEST_RUN_DIR}/chkpnt"
+
+  RUN_DIR="${TEST_RUN_DIR}"
+  DATA_DIR="${TEST_DATA_DIR}"
+}
+
+read_environment_vars () {
+  ENV_FILE=$1
+  # set environment variables which will control the adjoint run
+  set -o allexport && source "${ENV_FILE}" && set +o allexport
+}
+
+# run a single process test
+prepare_test_run "${TEST_RUNS_ROOT}/001-sp"
+read_environment_vars "${TEST_DATA_DIR}/test.env"
+pushd "${RUN_DIR}"
 /opt/cmaq/BLD_fwd_CH4only/ADJOINT_FWD
-
 cat "${LOGFILE}"
+popd
+
+# run a multi process test
+prepare_test_run "${TEST_RUNS_ROOT}/002-mp"
+read_environment_vars "${TEST_DATA_DIR}/test.env"
+pushd "${RUN_DIR}"
+NPCOL_NPROW="2 1" mpirun -np 2 /opt/cmaq/BLD_fwd_CH4only/ADJOINT_FWD
+cat "${LOGFILE}"
+popd
 
 # clean up
 rm -rf "${TEST_RUNS_ROOT}"
