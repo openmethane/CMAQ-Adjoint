@@ -52,7 +52,18 @@ RUN bash /opt/cmaq/scripts/build_all.sh
 
 FROM debian:bookworm AS runtime
 
-MAINTAINER Jared Lewis <jared.lewis@climate-resource.com>
+
+# These will be overwritten in GHA due to https://github.com/docker/metadata-action/issues/295
+# These must be duplicated in .github/workflows/build_docker.yaml
+LABEL org.opencontainers.image.title="CMAQ Adjoint"
+LABEL org.opencontainers.image.description="CMAQ forward and backward adjoint"
+LABEL org.opencontainers.image.authors="Peter Rayner <peter.rayner@superpowerinstitute.com.au>, Jared Lewis <jared.lewis@climate-resource.com>"
+LABEL org.opencontainers.image.vendor="The Superpower Institute"
+
+# CMAQ_ADJ_VERSION will be overridden in release builds with semver vX.Y.Z
+ARG CMAQ_ADJ_VERSION=development
+# Make the $CMAQ_ADJ_VERSION available as an env var inside the container
+ENV CMAQ_ADJ_VERSION=$CMAQ_ADJ_VERSION
 
 ENV TZ=Etc/UTC
 ENV CMAQ_VERSION="5.0.2"
