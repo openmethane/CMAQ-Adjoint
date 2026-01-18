@@ -1,35 +1,45 @@
+# Install required dependencies from conda
 FROM continuumio/miniconda3 as conda
 
+# Install and package up the conda environment
+# Creates a standalone environment in /opt/venv
 COPY environment.yml /opt/environment.yml
 RUN conda env create -f /opt/environment.yml
-
-# Install conda-pack:
 RUN conda install -c conda-forge conda-pack
-
-# Use conda-pack to create a standalone enviornment
-# in /venv:
-RUN conda-pack -n cmaq -o /tmp/env.tar && \
-  mkdir /opt/venv && cd /opt/venv && tar xf /tmp/env.tar && \
+RUN conda-pack -n cmaq_adj -o /tmp/env.tar && \
+  mkdir /opt/venv && cd /opt/venv && \
+  tar xf /tmp/env.tar && \
   rm /tmp/env.tar
 
 # We've put venv in same path it'll be in final image,
 # so now fix up paths:
 RUN /opt/venv/bin/conda-unpack
 
-FROM debian:bookworm as build
+# Build dependencies and adjoint from source
+FROM debian:bookworm-slim as builder
 
 ARG DEBIAN_FRONTEND=noninteractive
-ENV CMAQ_VERSION="5.0.2"
 ENV PATH=/opt/venv/bin:$PATH
 ENV LD_LIBRARY_PATH=/opt/venv/bin:$LD_LIBRARY_PATH
 
-RUN apt-get update && \
-    apt-get install -y build-essential m4 csh wget && \
-    rm -rf /var/lib/apt/lists/*
+RUN <<EOT
+apt-get update -qy
+apt-get install -qyy \
+    -o APT::Install-Recommends=false \
+    -o APT::Install-Suggests=false \
+    ca-certificates \
+    build-essential \
+    m4 \
+    csh \
+    wget
 
-WORKDIR /opt/cmaq
+apt-get clean
+rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+EOT
 
 COPY --from=conda /opt/venv /opt/venv
+
+WORKDIR /opt/cmaq
 
 # Build ioapi
 COPY templates/ioapi /opt/cmaq/templates/ioapi
@@ -50,8 +60,8 @@ COPY scripts/bldit.adjoint.fwd.openmethane /opt/cmaq/scripts/bldit.adjoint.fwd.o
 COPY scripts/bldit.adjoint.bwd.openmethane /opt/cmaq/scripts/bldit.adjoint.bwd.openmethane
 RUN bash /opt/cmaq/scripts/build_all.sh
 
-FROM debian:bookworm AS runtime
-
+# Then, use a final image without extra packages for our runtime environment
+FROM debian:bookworm-slim
 
 # These will be overwritten in GHA due to https://github.com/docker/metadata-action/issues/295
 # These must be duplicated in .github/workflows/build_docker.yaml
@@ -70,9 +80,9 @@ ENV CMAQ_VERSION="5.0.2"
 ENV PATH=/opt/venv/bin:$PATH
 ENV LD_LIBRARY_PATH=/opt/venv/bin:$LD_LIBRARY_PATH
 
-WORKDIR /opt/cmaq
 COPY --from=conda /opt/venv /opt/venv
-COPY --from=build /opt/cmaq /opt/cmaq
+
+COPY --from=builder /opt/cmaq /opt/cmaq
 
 RUN <<EOT
 apt-get update -qy
@@ -85,5 +95,7 @@ apt-get install -qyy \
 apt-get clean
 rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 EOT
+
+WORKDIR /opt/cmaq
 
 ENTRYPOINT ["/bin/bash"]

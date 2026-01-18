@@ -1,4 +1,4 @@
-name: cmaq
+name: cmaq_adj
 channels:
   - conda-forge
   - defaults
@@ -8,6 +8,3 @@ dependencies:
   - mpich=4.2.1
   - netcdf-fortran=4.6.1
   - gfortran=10.4
-  # Development dependencies
-  - pytest
-  - python-dotenv
