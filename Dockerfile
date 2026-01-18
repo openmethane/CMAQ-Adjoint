@@ -53,8 +53,6 @@ COPY CCTM /opt/cmaq/CCTM
 COPY ICL /opt/cmaq/ICL
 COPY pario /opt/cmaq/pario
 COPY stenex /opt/cmaq/stenex
-COPY templates/pario /opt/cmaq/templates/pario
-COPY templates/stenex /opt/cmaq/templates/stenex
 COPY scripts/build_all.sh /opt/cmaq/scripts/build_all.sh
 COPY scripts/bldit.adjoint.fwd.openmethane /opt/cmaq/scripts/bldit.adjoint.fwd.openmethane
 COPY scripts/bldit.adjoint.bwd.openmethane /opt/cmaq/scripts/bldit.adjoint.bwd.openmethane

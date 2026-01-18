@@ -23,7 +23,6 @@ pushd ${ROOT}
 for item in pario stenex/se; do
    pushd $item
    echo "Building $item"
-   cp ${ROOT}/templates/${item}/makefile.gcc .
    make -f makefile.gcc
    popd
 done
