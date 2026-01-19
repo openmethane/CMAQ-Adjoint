@@ -86,12 +86,12 @@ set ParOpt             # set for multiple PE's; comment out for single PE
 #>       m3bld will tell you, but will still compile the original code.
 #>       The workaround is to remove your "BLD" directory and start fresh.
 
-set ModDriver = driver/yamo_adj_fwd
+set ModDriver = driver/yamo_adj_ceil_fwd
 #set ModDriver = driver/yamo_adj_bwd
 
 #set ModChkpnt = chkpnt/chkpnt_bin
 # set ModChkpnt = chkpnt/chkpnt_ioapi
-set ModChkpnt = chkpnt/chkpnt_ioapi
+set ModChkpnt = chkpnt/chkpnt_ceil_ioapi
 #set ModChkpnt = chkpnt/chkpnt_pnetcdf
 #set ModChkpnt = chkpnt/chkpnt_multi
 
@@ -111,7 +111,7 @@ set ModInit   = init/yamo
 set ModAdjc   = ( // yamo option does not need denrate )
 
 # set ModCpl    = couple/gencoor
-set ModCpl    = couple/gencoor_ceil
+set ModCpl    = couple/gencoor_ceil_fwd
 
 #set ModHadv   = hadv/hadv_noop
 #set ModHadv   = hadv/hppm
@@ -176,7 +176,7 @@ set ModCloud  = cloud/cloud_noop
 
 # set ModPa     = ( module pa                 $Revision; )
 # set ModPa     = procan/pa
-set ModPa     = procan/pa
+set ModPa     = procan/pa_ceil_fwd
 
 #set ModUtil   = util/util
 set ModUtil   = util/util_adj
