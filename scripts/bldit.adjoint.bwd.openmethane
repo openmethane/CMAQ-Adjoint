@@ -125,8 +125,7 @@ set ModHadv   = hadv/yamo_cadj_bwd
 #set ModVadv   = vadv/vppm
 #set ModVadv   = vadv/yamo
 # set ModVadv   = vadv/vyamo_cadj_fwd
-set ModVadv   = vadv/vyamo_cadj_ceil_bwd
-#set ModVadv   = vadv/vyamo_cadj_bwd
+set ModVadv   = vadv/vyamo_cadj_bwd
 #set ModVadv   = vadv/vyamo_dadj_fwd
 #set ModVadv   = vadv/vyamo_dadj_bwd
 
@@ -158,7 +157,7 @@ set ModChem   = chem/chem_bwd_noop
 #set ModChem   = chem/kpp_cb05cl_ae5_adj_fwd
 #set ModChem   = chem/kpp_cb05cl_ae5_adj_bwd
 
-set ModAero   = aero/aero_noop
+set ModAero   = aero/aero_bwd_noop
 #set ModAero   = aero/aero_bwd_noop
 #set ModAero   = aero/aero4
 #set ModAero   = aero/aero5
@@ -168,8 +167,7 @@ set ModAero   = aero/aero_noop
 set ModAdepv  = aero_depv/aero_depv_noop
 #set ModAdepv  = aero_depv/aero_depv2
 
-set ModCloud  = cloud/cloud_noop
-#set ModCloud  = cloud/cloud_bwd_noop
+set ModCloud  = cloud/cloud_bwd_noop
 #set ModCloud  = cloud/cloud_acm
 #set ModCloud  = cloud/cloud_acm_ae5
 
