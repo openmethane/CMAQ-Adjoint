@@ -17,7 +17,6 @@ set echo
 
 # CHANGE: put root repository directory here
 setenv M3MODEL $ROOT
-setenv M3MODEL2 /home/peter/work/openmethane-beta/cmaq-docker/cmaq-adj-20200501-gmd
 
 #===============================================================================
 
@@ -25,8 +24,6 @@ setenv M3MODEL2 /home/peter/work/openmethane-beta/cmaq-docker/cmaq-adj-20200501-
 #-------------------------------------------------------------------------------
 setenv system "`/bin/uname -i`"
 
-# CHANGE: set M3LIB to base directory for MPI, netCDF, IOAPI, STENEX, PARIO libraries
-setenv lib_basedir ${M3MODEL2}/lib
 set MACH = `uname -m`
 setenv COMPILER gfortran
 setenv compiler_ext gfortran
@@ -203,9 +200,9 @@ set PAOpt     = procan/pa_noop
 
 # set Base = $cwd
 set APPL  = fwd_CH4only
-# set APPL  = aero_adj
+
 set CFG   = cfg.$APPL
-#
+
 set Bld = $Base/BLD_${APPL}
 set MODLOC = ${Bld}/MOD_DIR
  if ( -d "$MODLOC" ) /bin/rm -Rf $MODLOC
@@ -239,8 +236,8 @@ set Blder = "$M3MODEL/BLDMAKE_git/bldmake -verbose"
 # CHANGE: Set location of libraries/include files
 set IOAPI = "$IOAPI_DIR/Linux6_x86_64gfort -lioapi"
 set ICL_IOAPI = "$IOAPI_DIR/ioapi/fixed_src"
-set NETCDF = "-L$CONDA_LIB -lnetcdff -lnetcdf"
- set PARIO = "${M3LIB}/${CMAQ_DIRNAME}/pario -lpario"
+set NETCDF = "$CONDA_LIB -lnetcdff -lnetcdf"
+set PARIO = "${Project}/pario -lpario"
 
 #:#:#:#:#:#:#:#:#:#:#:# End of User Input Section :#:#:#:#:#:#:#:#:#:#:#:#:#
 
