@@ -543,6 +543,11 @@ set STX3 = ( -DSUBST_HI_LO_BND_PE=${Popt}_HI_LO_BND_PE \
     else
        $Blder $Cfile
     endif
+
+    if ( ! -e $Bld/$MODEL ) then
+      echo "   *** failure to compile ${MODEL} ***"
+      exit 1
+    endif
  endif
 
  mv Makefile $Bld/Makefile.$COMPILER
