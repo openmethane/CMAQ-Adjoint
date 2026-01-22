@@ -669,7 +669,7 @@ C read & interpolate emissions data => VDEMIS from EMIS_DEFN module
 !            EM_SF = 1.0            ! always
 !         END IF ! Date and time qualification
 !      END IF ! Run type flag
-      PERT( :,:,:,: ) = 1.d0 ! fractional
+!      PERT( :,:,:,: ) = 1.d0 ! fractional
       EM_SF = 1.0            ! always
 
       IF ( FIRST ) THEN

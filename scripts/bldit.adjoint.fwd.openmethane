@@ -17,7 +17,6 @@ set echo
 
 # CHANGE: put root repository directory here
 setenv M3MODEL $ROOT
-setenv M3MODEL2 /home/peter/work/openmethane-beta/cmaq-docker/cmaq-adj-20200501-gmd
 
 #===============================================================================
 
@@ -25,8 +24,6 @@ setenv M3MODEL2 /home/peter/work/openmethane-beta/cmaq-docker/cmaq-adj-20200501-
 #-------------------------------------------------------------------------------
 setenv system "`/bin/uname -i`"
 
-# CHANGE: set M3LIB to base directory for MPI, netCDF, IOAPI, STENEX, PARIO libraries
-setenv lib_basedir ${M3MODEL2}/lib
 set MACH = `uname -m`
 setenv COMPILER gfortran
 setenv compiler_ext gfortran
@@ -70,7 +67,7 @@ set MODEL = ADJOINT_FWD
 #> user choices: m3bld command, see M3BLD_README for options
 set Opt = verbose      # show requested commands as they are executed
 #> user choices: bldmake command
-set MakeFileOnly   # builds a Makefile to make the model, but does not compile -
+#set MakeFileOnly   # builds a Makefile to make the model, but does not compile -
                     # comment out to also compile the model (default if not set)
 
 #> user choices:  single or multiple processors
@@ -110,8 +107,7 @@ set ModInit   = init/yamo
 #set ModAdjc   = adjcon/denrate
 set ModAdjc   = ( // yamo option does not need denrate )
 
-# set ModCpl    = couple/gencoor
-set ModCpl    = couple/gencoor_ceil
+set ModCpl    = couple/gencoor
 
 #set ModHadv   = hadv/hadv_noop
 #set ModHadv   = hadv/hppm
@@ -124,8 +120,7 @@ set ModHadv   = hadv/yamo_cadj_fwd
 #set ModVadv   = vadv/vadv_noop
 #set ModVadv   = vadv/vppm
 #set ModVadv   = vadv/yamo
-# set ModVadv   = vadv/vyamo_cadj_fwd
-set ModVadv   = vadv/vyamo_cadj_ceil_fwd
+set ModVadv   = vadv/vyamo_cadj_fwd
 #set ModVadv   = vadv/vyamo_cadj_bwd
 #set ModVadv   = vadv/vyamo_dadj_fwd
 #set ModVadv   = vadv/vyamo_dadj_bwd
@@ -175,8 +170,8 @@ set ModCloud  = cloud/cloud_noop
 #set ModCloud  = cloud/cloud_acm_ae5
 
 # set ModPa     = ( module pa                 $Revision; )
-# set ModPa     = procan/pa
 set ModPa     = procan/pa
+#set ModPa     = procan/pa_ceil_fwd
 
 #set ModUtil   = util/util
 set ModUtil   = util/util_adj
@@ -205,9 +200,9 @@ set PAOpt     = procan/pa_noop
 
 # set Base = $cwd
 set APPL  = fwd_CH4only
-# set APPL  = aero_adj
+
 set CFG   = cfg.$APPL
-#
+
 set Bld = $Base/BLD_${APPL}
 set MODLOC = ${Bld}/MOD_DIR
  if ( -d "$MODLOC" ) /bin/rm -Rf $MODLOC
@@ -228,12 +223,12 @@ set MPICH  = $MPICH_DIR
 set STENEX = ${Project}/stenex/se_gcc8.3.0
 
 # CHANGE: Set compiler flags
-set F_BASE_FLAGS =   "-O2 -fallow-argument-mismatch -ffixed-line-length-132 -I.  -fd-lines-as-comments -I$MPICH_DIR -I$STENEX"
+set F_BASE_FLAGS =   "-g  -fallow-argument-mismatch -ffixed-line-length-132 -I.  -fd-lines-as-comments -I$MPICH_DIR -I$STENEX"
 set F_NOAUTO_FLAGS = -fno-automatic
 set F_FLAGS = "$F_BASE_FLAGS $F_NOAUTO_FLAGS"
 set CPP_FLAGS  = ""
-set C_FLAGS    = "-O2 -I$CONDA_INC"
-set LINK_FLAGS = ""
+set C_FLAGS    = "-g -I$CONDA_INC"
+set LINK_FLAGS = "-g "
 
 # Set location of M3Bld executable
 set Blder = "$M3MODEL/BLDMAKE_git/bldmake -verbose"
@@ -241,8 +236,8 @@ set Blder = "$M3MODEL/BLDMAKE_git/bldmake -verbose"
 # CHANGE: Set location of libraries/include files
 set IOAPI = "$IOAPI_DIR/Linux6_x86_64gfort -lioapi"
 set ICL_IOAPI = "$IOAPI_DIR/ioapi/fixed_src"
-set NETCDF = "-L$CONDA_LIB -lnetcdff -lnetcdf"
- set PARIO = "${M3LIB}/${CMAQ_DIRNAME}/pario -lpario"
+set NETCDF = "$CONDA_LIB -lnetcdff -lnetcdf"
+set PARIO = "${Project}/pario -lpario"
 
 #:#:#:#:#:#:#:#:#:#:#:# End of User Input Section :#:#:#:#:#:#:#:#:#:#:#:#:#
 
@@ -548,6 +543,11 @@ set STX3 = ( -DSUBST_HI_LO_BND_PE=${Popt}_HI_LO_BND_PE \
        $Blder -git_local $Cfile
     else
        $Blder $Cfile
+    endif
+
+    if ( ! -e $Bld/$MODEL ) then
+      echo "   *** failure to compile ${MODEL} ***"
+      exit 1
     endif
  endif
 

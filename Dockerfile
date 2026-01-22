@@ -1,69 +1,100 @@
+# Install required dependencies from conda
 FROM continuumio/miniconda3 as conda
 
+# Install and package up the conda environment
+# Creates a standalone environment in /opt/venv
 COPY environment.yml /opt/environment.yml
 RUN conda env create -f /opt/environment.yml
-
-# Install conda-pack:
 RUN conda install -c conda-forge conda-pack
-
-# Use conda-pack to create a standalone enviornment
-# in /venv:
-RUN conda-pack -n cmaq -o /tmp/env.tar && \
-  mkdir /opt/venv && cd /opt/venv && tar xf /tmp/env.tar && \
+RUN conda-pack -n cmaq_adj -o /tmp/env.tar && \
+  mkdir /opt/venv && cd /opt/venv && \
+  tar xf /tmp/env.tar && \
   rm /tmp/env.tar
 
 # We've put venv in same path it'll be in final image,
 # so now fix up paths:
 RUN /opt/venv/bin/conda-unpack
 
-FROM debian:bookworm as build
+# Build dependencies and adjoint from source
+FROM debian:bookworm-slim as builder
 
 ARG DEBIAN_FRONTEND=noninteractive
-ENV CMAQ_VERSION="5.0.2"
 ENV PATH=/opt/venv/bin:$PATH
 ENV LD_LIBRARY_PATH=/opt/venv/bin:$LD_LIBRARY_PATH
 
-RUN apt-get update && \
-    apt-get install -y build-essential m4 csh wget && \
-    rm -rf /var/lib/apt/lists/*
+RUN <<EOT
+apt-get update -qy
+apt-get install -qyy \
+    -o APT::Install-Recommends=false \
+    -o APT::Install-Suggests=false \
+    ca-certificates \
+    build-essential \
+    m4 \
+    csh \
+    wget
 
-WORKDIR /opt/cmaq
+apt-get clean
+rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+EOT
 
 COPY --from=conda /opt/venv /opt/venv
+
+WORKDIR /opt/cmaq
 
 # Build ioapi
 COPY templates/ioapi /opt/cmaq/templates/ioapi
 COPY scripts/common.sh /opt/cmaq/scripts/common.sh
-COPY scripts/build_00_ioapi.sh /opt/cmaq/scripts/build_00_ioapi.sh
-RUN bash /opt/cmaq/scripts/build_00_ioapi.sh
+COPY scripts/build_ioapi.sh /opt/cmaq/scripts/build_ioapi.sh
+RUN bash /opt/cmaq/scripts/build_ioapi.sh
 
 # Build a modified version of CMAQ in ch4 only mode
-COPY templates/cmaq /opt/cmaq/templates/cmaq
-COPY src/CMAQv5.0.2_notpollen /opt/cmaq/CMAQv5.0.2_notpollen
-COPY scripts/build_10_cmaq.sh /opt/cmaq/scripts/build_10_cmaq.sh
-RUN bash /opt/cmaq/scripts/build_10_cmaq.sh
+COPY BLDMAKE_git /opt/cmaq/BLDMAKE_git
+COPY CCTM /opt/cmaq/CCTM
+COPY ICL /opt/cmaq/ICL
+COPY pario /opt/cmaq/pario
+COPY stenex /opt/cmaq/stenex
+COPY scripts/build_all.sh /opt/cmaq/scripts/build_all.sh
+COPY scripts/bldit.adjoint.fwd.openmethane /opt/cmaq/scripts/bldit.adjoint.fwd.openmethane
+COPY scripts/bldit.adjoint.bwd.openmethane /opt/cmaq/scripts/bldit.adjoint.bwd.openmethane
+RUN bash /opt/cmaq/scripts/build_all.sh
 
-# Build the CMAQ adjoint
-COPY scripts/build_11_cmaq_adj.sh /opt/cmaq/scripts/build_11_cmaq_adj.sh
-COPY src/cmaq_adj /opt/cmaq/cmaq_adj
-RUN bash /opt/cmaq/scripts/build_11_cmaq_adj.sh
+# Then, use a final image without extra packages for our runtime environment
+FROM debian:bookworm-slim
 
+# These will be overwritten in GHA due to https://github.com/docker/metadata-action/issues/295
+# These must be duplicated in .github/workflows/build_docker.yaml
+LABEL org.opencontainers.image.title="CMAQ Adjoint"
+LABEL org.opencontainers.image.description="CMAQ forward and backward adjoint"
+LABEL org.opencontainers.image.authors="Peter Rayner <peter.rayner@superpowerinstitute.com.au>, Jared Lewis <jared.lewis@climate-resource.com>"
+LABEL org.opencontainers.image.vendor="The Superpower Institute"
 
-FROM debian:bookworm AS runtime
-
-MAINTAINER Jared Lewis <jared.lewis@climate-resource.com>
+# CMAQ_ADJ_VERSION will be overridden in release builds with semver vX.Y.Z
+ARG CMAQ_ADJ_VERSION=development
+# Make the $CMAQ_ADJ_VERSION available as an env var inside the container
+ENV CMAQ_ADJ_VERSION=$CMAQ_ADJ_VERSION
 
 ENV TZ=Etc/UTC
 ENV CMAQ_VERSION="5.0.2"
 ENV PATH=/opt/venv/bin:$PATH
 ENV LD_LIBRARY_PATH=/opt/venv/bin:$LD_LIBRARY_PATH
 
-WORKDIR /opt/cmaq
 COPY --from=conda /opt/venv /opt/venv
-COPY --from=build /opt/cmaq /opt/cmaq
 
-RUN apt-get update && \
-    apt-get install -y make csh wget && \
-    rm -rf /var/lib/apt/lists/*
+COPY --from=builder /opt/cmaq/BLD_fwd_CH4only/ADJOINT_FWD /opt/cmaq/bin/ADJOINT_FWD
+COPY --from=builder /opt/cmaq/BLD_bwd_CH4only/ADJOINT_BWD /opt/cmaq/bin/ADJOINT_BWD
+
+RUN <<EOT
+apt-get update -qy
+apt-get install -qyy \
+    -o APT::Install-Recommends=false \
+    -o APT::Install-Suggests=false \
+    ca-certificates \
+    wget
+
+apt-get clean
+rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+EOT
+
+WORKDIR /opt/cmaq
 
 ENTRYPOINT ["/bin/bash"]
