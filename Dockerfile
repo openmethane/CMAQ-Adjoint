@@ -42,10 +42,8 @@ COPY --from=conda /opt/venv /opt/venv
 WORKDIR /opt/cmaq
 
 # Build ioapi
-COPY templates/ioapi /opt/cmaq/templates/ioapi
-COPY scripts/common.sh /opt/cmaq/scripts/common.sh
-COPY scripts/build_ioapi.sh /opt/cmaq/scripts/build_ioapi.sh
-RUN bash /opt/cmaq/scripts/build_ioapi.sh
+COPY lib/ioapi /opt/ioapi
+RUN bash /opt/ioapi/build_ioapi.sh
 
 # Build a modified version of CMAQ in ch4 only mode
 COPY BLDMAKE_git /opt/cmaq/BLDMAKE_git
@@ -53,6 +51,7 @@ COPY CCTM /opt/cmaq/CCTM
 COPY ICL /opt/cmaq/ICL
 COPY pario /opt/cmaq/pario
 COPY stenex /opt/cmaq/stenex
+COPY scripts/common.sh /opt/cmaq/scripts/common.sh
 COPY scripts/build_all.sh /opt/cmaq/scripts/build_all.sh
 COPY scripts/bldit.adjoint.fwd.openmethane /opt/cmaq/scripts/bldit.adjoint.fwd.openmethane
 COPY scripts/bldit.adjoint.bwd.openmethane /opt/cmaq/scripts/bldit.adjoint.bwd.openmethane
