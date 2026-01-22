@@ -81,7 +81,6 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           build-args: |
             CMAQ_ADJOINT_VERSION=${{ steps.version.outputs.version }}
-          load: true
           push: true
           pull: false
           cache-from: type=gha
