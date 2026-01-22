@@ -172,6 +172,7 @@ jobs:
       - name: Remove build tag from published image
         uses: dataaxiom/ghcr-cleanup-action@v1
         with:
+          package: cmaq-adj
           token: ${{ secrets.GITHUB_TOKEN }}
           delete-tags: build-${{ github.run_number }}
 
