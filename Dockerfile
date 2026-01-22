@@ -80,7 +80,8 @@ ENV LD_LIBRARY_PATH=/opt/venv/bin:$LD_LIBRARY_PATH
 
 COPY --from=conda /opt/venv /opt/venv
 
-COPY --from=builder /opt/cmaq /opt/cmaq
+COPY --from=builder /opt/cmaq/BLD_fwd_CH4only/ADJOINT_FWD /opt/cmaq/bin/ADJOINT_FWD
+COPY --from=builder /opt/cmaq/BLD_bwd_CH4only/ADJOINT_BWD /opt/cmaq/bin/ADJOINT_BWD
 
 RUN <<EOT
 apt-get update -qy

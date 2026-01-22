@@ -18,6 +18,12 @@
 # fail on any command exiting with non-zero status
 set -e
 
+# path to the adjoint fwd binary being tested
+ADJ_FWD_BIN="${ADJ_FWD_BIN:-/opt/cmaq/bin/ADJOINT_FWD}"
+
+# url to the test data bundle
+TEST_DATA_URL="${TEST_DATA_URL:-https://openmethane.s3.amazonaws.com/tests/cmaq-adj/cmaq-adj-test-data.tar.gz}"
+
 # path to this script and its parent folder
 TESTS_ROOT="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 TEST_RUNS_ROOT="/tmp/docker-cmaq-adj-tests"
@@ -27,7 +33,7 @@ mkdir -p "${TEST_RUNS_ROOT}"
 TEST_DATA_DIR="${TESTS_ROOT}/test-data"
 if [ ! -d "${TEST_DATA_DIR}" ]; then
   echo "Fetching test data"
-  wget -c -nv https://openmethane.s3.amazonaws.com/tests/cmaq-adj/cmaq-adj-test-data.tar.gz \
+  wget -c -nv "${TEST_DATA_URL}" \
     -O "${TEST_RUNS_ROOT}/test-data.tar.gz"
   mkdir -p "${TEST_DATA_DIR}"
   tar -xf "${TEST_RUNS_ROOT}/test-data.tar.gz" -C "${TEST_DATA_DIR}"
@@ -58,7 +64,7 @@ read_environment_vars () {
 prepare_test_run "${TEST_RUNS_ROOT}/001-sp"
 read_environment_vars "${TEST_DATA_DIR}/test.env"
 pushd "${RUN_DIR}"
-/opt/cmaq/BLD_fwd_CH4only/ADJOINT_FWD
+${ADJ_FWD_BIN}
 cat "${LOGFILE}"
 popd
 
@@ -66,7 +72,7 @@ popd
 prepare_test_run "${TEST_RUNS_ROOT}/002-mp"
 read_environment_vars "${TEST_DATA_DIR}/test.env"
 pushd "${RUN_DIR}"
-NPCOL_NPROW="2 1" mpirun -np 2 /opt/cmaq/BLD_fwd_CH4only/ADJOINT_FWD
+NPCOL_NPROW="2 1" mpirun -np 2 ${ADJ_FWD_BIN}
 cat "${LOGFILE}"
 popd
 
