@@ -81,7 +81,6 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           build-args: |
             CMAQ_ADJOINT_VERSION=${{ steps.version.outputs.version }}
-          load: true
           push: true
           pull: false
           cache-from: type=gha
@@ -173,6 +172,7 @@ jobs:
       - name: Remove build tag from published image
         uses: dataaxiom/ghcr-cleanup-action@v1
         with:
+          package: cmaq-adj
           token: ${{ secrets.GITHUB_TOKEN }}
           delete-tags: build-${{ github.run_number }}
 
