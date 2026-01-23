@@ -60,7 +60,6 @@ RUN /opt/scripts/build_libs.sh
 COPY BLDMAKE_git /opt/cmaq/BLDMAKE_git
 COPY CCTM /opt/cmaq/CCTM
 COPY ICL /opt/cmaq/ICL
-COPY scripts/common.sh /opt/cmaq/scripts/common.sh
 COPY scripts/build_all.sh /opt/cmaq/scripts/build_all.sh
 COPY scripts/bldit.adjoint.fwd.openmethane /opt/cmaq/scripts/bldit.adjoint.fwd.openmethane
 COPY scripts/bldit.adjoint.bwd.openmethane /opt/cmaq/scripts/bldit.adjoint.bwd.openmethane
