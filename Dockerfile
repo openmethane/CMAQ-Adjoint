@@ -64,13 +64,12 @@ make
 mv bldmake /usr/local/bin # ensure bldmake is in the PATH
 EOT
 
-# Build a modified version of CMAQ in ch4 only mode
-COPY CCTM /opt/cmaq/CCTM
-COPY ICL /opt/cmaq/ICL
-COPY scripts/build_all.sh /opt/cmaq/scripts/build_all.sh
+# Build a modified version of CMAQ-Adjoint in ch4 only mode
+COPY cmaq /opt/cmaq
+COPY scripts/build_adj.sh /opt/cmaq/scripts/build_adj.sh
 COPY scripts/bldit.adjoint.fwd.openmethane /opt/cmaq/scripts/bldit.adjoint.fwd.openmethane
 COPY scripts/bldit.adjoint.bwd.openmethane /opt/cmaq/scripts/bldit.adjoint.bwd.openmethane
-RUN /opt/cmaq/scripts/build_all.sh
+RUN /opt/cmaq/scripts/build_adj.sh
 
 # Then, use a final image without extra packages for our runtime environment
 FROM debian:bookworm-slim

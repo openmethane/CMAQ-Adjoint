@@ -17,17 +17,14 @@
 
 set -e
 
-ROOT="${PWD:-/opt/cmaq}"
-CMAQ_DIRNAME="${CMAQ_DIRNAME:-CCTM}"
-IOAPI_DIR="${IOAPI_DIR:-$ROOT/ioapi}"
-
+export ROOT="${PWD:-/opt/cmaq}"
+export CMAQ_DIRNAME="${CMAQ_DIRNAME:-CCTM}"
+export IOAPI_DIR="${IOAPI_DIR:-$ROOT/ioapi}"
 export CONDA_INC="/opt/venv/include"
 export CONDA_LIB="/opt/venv/lib"
 export MPICH_DIR=${CONDA_LIB}
 export MPICH_INC=${CONDA_INC}
 
-# use bldmake to build forward and backward adjoint
-pushd ${ROOT}
+# build forward and backward adjoint
 csh scripts/bldit.adjoint.fwd.openmethane
 csh scripts/bldit.adjoint.bwd.openmethane
-popd
