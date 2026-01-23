@@ -56,8 +56,15 @@ COPY lib/stenex /opt/stenex
 COPY scripts/build_libs.sh /opt/scripts/build_libs.sh
 RUN /opt/scripts/build_libs.sh
 
+# Build the bldmake tool, needed by CMAQ build scripts
+COPY tools/BLDMAKE_git /opt/BLDMAKE_git
+RUN <<EOT
+cd /opt/BLDMAKE_git
+make
+mv bldmake /usr/local/bin # ensure bldmake is in the PATH
+EOT
+
 # Build a modified version of CMAQ in ch4 only mode
-COPY BLDMAKE_git /opt/cmaq/BLDMAKE_git
 COPY CCTM /opt/cmaq/CCTM
 COPY ICL /opt/cmaq/ICL
 COPY scripts/build_all.sh /opt/cmaq/scripts/build_all.sh

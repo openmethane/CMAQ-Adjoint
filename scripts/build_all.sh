@@ -26,11 +26,6 @@ export CONDA_LIB="/opt/venv/lib"
 export MPICH_DIR=${CONDA_LIB}
 export MPICH_INC=${CONDA_INC}
 
-# build the bldmake tool
-pushd BLDMAKE_git
-make
-popd
-
 # use bldmake to build forward and backward adjoint
 pushd ${ROOT}
 csh scripts/bldit.adjoint.fwd.openmethane

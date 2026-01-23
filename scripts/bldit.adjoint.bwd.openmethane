@@ -229,7 +229,7 @@ set C_FLAGS    = "-O2 -I$CONDA_INC"
 set LINK_FLAGS = ""
 
 # Set location of M3Bld executable
-set Blder = "$M3MODEL/BLDMAKE_git/bldmake -verbose"
+set Blder = "bldmake -verbose"
 
 # CHANGE: Set location of libraries/include files
 set IOAPI = "$IOAPI_DIR/Linux6_x86_64gfort -lioapi"
