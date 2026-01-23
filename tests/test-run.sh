@@ -22,7 +22,7 @@ set -e
 ADJ_FWD_BIN="${ADJ_FWD_BIN:-/opt/cmaq/bin/ADJOINT_FWD}"
 
 # url to the test data bundle
-TEST_DATA_URL="${TEST_DATA_URL:-https://openmethane.s3.amazonaws.com/tests/cmaq-adj/cmaq-adj-test-data.tar.gz}"
+TEST_DATA_URL="${TEST_DATA_URL:-https://openmethane.s3.amazonaws.com/tests/cmaq-adj/cmaq-adj-au-test-data.tar.gz}"
 
 # path to this script and its parent folder
 TESTS_ROOT="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
