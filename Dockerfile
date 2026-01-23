@@ -39,23 +39,32 @@ EOT
 
 COPY --from=conda /opt/venv /opt/venv
 
+# Define environment variables needed for CMAQ and lib Makefiles
+ENV ROOT=/opt/cmaq
+env CMAQ_DIRNAME=CCTM
+ENV IOAPI_DIR=$ROOT/ioapi
+
 WORKDIR /opt/cmaq
 
 # Build ioapi
 COPY lib/ioapi /opt/ioapi
-RUN bash /opt/ioapi/build_ioapi.sh
+RUN /opt/ioapi/build_ioapi.sh
+
+# Build pario and stenex libraries
+COPY lib/pario /opt/pario
+COPY lib/stenex /opt/stenex
+COPY scripts/build_libs.sh /opt/scripts/build_libs.sh
+RUN /opt/scripts/build_libs.sh
 
 # Build a modified version of CMAQ in ch4 only mode
 COPY BLDMAKE_git /opt/cmaq/BLDMAKE_git
 COPY CCTM /opt/cmaq/CCTM
 COPY ICL /opt/cmaq/ICL
-COPY pario /opt/cmaq/pario
-COPY stenex /opt/cmaq/stenex
 COPY scripts/common.sh /opt/cmaq/scripts/common.sh
 COPY scripts/build_all.sh /opt/cmaq/scripts/build_all.sh
 COPY scripts/bldit.adjoint.fwd.openmethane /opt/cmaq/scripts/bldit.adjoint.fwd.openmethane
 COPY scripts/bldit.adjoint.bwd.openmethane /opt/cmaq/scripts/bldit.adjoint.bwd.openmethane
-RUN bash /opt/cmaq/scripts/build_all.sh
+RUN /opt/cmaq/scripts/build_all.sh
 
 # Then, use a final image without extra packages for our runtime environment
 FROM debian:bookworm-slim
