@@ -47,14 +47,11 @@ setenv BLD_OS Linux2
 
 #:#:#:#:#:#:#:#:#:#:#:# Begin User Input Section #:#:#:#:#:#:#:#:#:#:#:#
 
-#> user choices: adjoint base directory
-set Adj_Home = ${M3MODEL}/CCTM
-
 #> user choices:
-set Project = ${M3MODEL}/CCTM #CCTM
- set GlobInc = $M3MODEL/ICL
+set Project = ${M3MODEL}/${CMAQ_DIRNAME} #CCTM
+set GlobInc = $M3MODEL/ICL
 
- setenv REPOROOT $M3MODEL/CCTM
+setenv REPOROOT $M3MODEL/${CMAQ_DIRNAME}
 
 #> user choices: base working directory
 set Base = $cwd
@@ -229,7 +226,7 @@ set C_FLAGS    = "-O2 -I$CONDA_INC"
 set LINK_FLAGS = ""
 
 # Set location of M3Bld executable
-set Blder = "$M3MODEL/BLDMAKE_git/bldmake -verbose"
+set Blder = "bldmake -verbose"
 
 # CHANGE: Set location of libraries/include files
 set IOAPI = "$IOAPI_DIR/Linux6_x86_64gfort -lioapi"
@@ -564,24 +561,3 @@ set STX3 = ( -DSUBST_HI_LO_BND_PE=${Popt}_HI_LO_BND_PE \
  endif
 
  mv ${CFG}.bld $Bld/${CFG}
-
-#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#
-#  cd $Adj_Home
-# #set brnch = `git --work-tree=$M3MODEL branch`
-# # set brnch = `git branch`
-# set brnch = openmethane
-#  @ i = 0
-#  while ( $i < $#brnch )
-#     @ i++
-#     if ( "$brnch[$i]" == "*" ) @ l = $i + 1
-#  end
-# #set rep = `echo $M3MODEL | tr "/" "#"`
-# set rep = `echo $cwd | tr "/" "#"`
-#  set rln = "repo:${rep},branch:${brnch[$l]},compiler:${COMPILER}"
-# set ref = $Bld/$rln
-#  /bin/touch $ref
-#  if ( -d $Adj_Home/branch ) /bin/cp $Adj_Home/branch/branch.* $Bld
-
-# # /bin/cp -r $Adj_Home
-
-#  exit

@@ -39,24 +39,37 @@ EOT
 
 COPY --from=conda /opt/venv /opt/venv
 
+# Define environment variables needed for CMAQ and lib Makefiles
+ENV ROOT=/opt/cmaq
+env CMAQ_DIRNAME=CCTM
+ENV IOAPI_DIR=$ROOT/ioapi
+
 WORKDIR /opt/cmaq
 
 # Build ioapi
-COPY templates/ioapi /opt/cmaq/templates/ioapi
-COPY scripts/common.sh /opt/cmaq/scripts/common.sh
-COPY scripts/build_ioapi.sh /opt/cmaq/scripts/build_ioapi.sh
-RUN bash /opt/cmaq/scripts/build_ioapi.sh
+COPY lib/ioapi /opt/ioapi
+RUN /opt/ioapi/build_ioapi.sh
 
-# Build a modified version of CMAQ in ch4 only mode
-COPY BLDMAKE_git /opt/cmaq/BLDMAKE_git
-COPY CCTM /opt/cmaq/CCTM
-COPY ICL /opt/cmaq/ICL
-COPY pario /opt/cmaq/pario
-COPY stenex /opt/cmaq/stenex
-COPY scripts/build_all.sh /opt/cmaq/scripts/build_all.sh
+# Build pario and stenex libraries
+COPY lib/pario /opt/pario
+COPY lib/stenex /opt/stenex
+COPY scripts/build_libs.sh /opt/scripts/build_libs.sh
+RUN /opt/scripts/build_libs.sh
+
+# Build the bldmake tool, needed by CMAQ build scripts
+COPY tools/BLDMAKE_git /opt/BLDMAKE_git
+RUN <<EOT
+cd /opt/BLDMAKE_git
+make
+mv bldmake /usr/local/bin # ensure bldmake is in the PATH
+EOT
+
+# Build a modified version of CMAQ-Adjoint in ch4 only mode
+COPY cmaq /opt/cmaq
+COPY scripts/build_adj.sh /opt/cmaq/scripts/build_adj.sh
 COPY scripts/bldit.adjoint.fwd.openmethane /opt/cmaq/scripts/bldit.adjoint.fwd.openmethane
 COPY scripts/bldit.adjoint.bwd.openmethane /opt/cmaq/scripts/bldit.adjoint.bwd.openmethane
-RUN bash /opt/cmaq/scripts/build_all.sh
+RUN /opt/cmaq/scripts/build_adj.sh
 
 # Then, use a final image without extra packages for our runtime environment
 FROM debian:bookworm-slim
