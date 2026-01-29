@@ -1,5 +1,5 @@
 # Install required dependencies from conda
-FROM continuumio/miniconda3 as conda
+FROM continuumio/miniconda3:25.3.1-1 as conda
 
 # Install and package up the conda environment
 # Creates a standalone environment in /opt/venv
