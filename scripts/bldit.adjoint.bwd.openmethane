@@ -15,20 +15,10 @@ set echo
 #             http://www.cmascenter.org/help_desk.cfm                 #
 # =================================================================== #
 
-# CHANGE: put root repository directory here
-setenv M3MODEL $ROOT
+#> Source the config.cmaq file to set the build environment
+ source ./config.cmaq
 
 #===============================================================================
-
-#> architecture & compiler specific settings
-#-------------------------------------------------------------------------------
-setenv system "`/bin/uname -i`"
-
-set MACH = `uname -m`
-setenv COMPILER gfortran
-setenv compiler_ext gfortran
-setenv M3LIB $M3MODEL
-setenv MPI_INC "$MPICH_INC"
 
 ## Check for M3MODEL and M3LIB settings:
  if ( ! -e $M3MODEL || ! -e $M3LIB ) then
@@ -206,33 +196,20 @@ set MODLOC = ${Bld}/MOD_DIR
 # CHANGE: Set full path of Fortran 90 and c compilers
 # set FC = /apps/openmpi/wrapper/fortran/mpif90
 # set CC = /apps/openmpi/2.1.6/bin/mpicc
-set FC = mpif90
-set CC = mpicc
+set FC = ${myFC}
+set CC = ${myCC}
 set FP = $FC
 
-# CHANGE: Set location of MPICH if using multiple processors
-set MPICH  = $MPICH_DIR 
-
-# CHANGE: Set location for stenex library/include/and mod files
-# set STENEX = $M3LIB/se_noop
-set STENEX = ${Project}/stenex/se_gcc8.3.0
-
 # CHANGE: Set compiler flags
-set F_BASE_FLAGS =   "-O2 -fallow-argument-mismatch -ffixed-line-length-132 -I.  -fd-lines-as-comments -I$MPICH_DIR -I$STENEX"
+set F_BASE_FLAGS =   "${myFFLAGS} -fd-lines-as-comments -I$STENEX_MOD"
 set F_NOAUTO_FLAGS = -fno-automatic
 set F_FLAGS = "$F_BASE_FLAGS $F_NOAUTO_FLAGS"
 set CPP_FLAGS  = ""
-set C_FLAGS    = "-O2 -I$CONDA_INC"
-set LINK_FLAGS = ""
+set C_FLAGS    = "${myCFLAGS}"
+set LINK_FLAGS = "-g "
 
 # Set location of M3Bld executable
-set Blder = "bldmake -verbose"
-
-# CHANGE: Set location of libraries/include files
-set IOAPI = "$IOAPI_DIR/Linux6_x86_64gfort -lioapi"
-set ICL_IOAPI = "$IOAPI_DIR/ioapi/fixed_src"
-set NETCDF = "$CONDA_LIB -lnetcdff -lnetcdf"
-set PARIO = "${Project}/pario -lpario"
+set Blder = "$M3LIB/bldmake -verbose"
 
 #:#:#:#:#:#:#:#:#:#:#:# End of User Input Section :#:#:#:#:#:#:#:#:#:#:#:#:#
 
@@ -255,15 +232,15 @@ set PARIO = "${Project}/pario -lpario"
 #:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#:#
 
  if ( $?ParOpt ) then      # Multiprocessor system configuration
-    set Mpich = "$MPICH"
+#    set Mpich = "$MPICH"
     set seL = se_snl
-    cp -p ${STENEX}/*.mod $MODLOC
-#    cp -p ${STENEX}/se_*.mod ${STENEX}/swap_sandia.mod $Bld
-    set LIB2 = "-L${PARIO}"
+    cp -p ${STENEX_MOD}/*.mod $MODLOC
+    cp -p ${STENEX_MOD}/se_*.mod ${STENEX_MOD}/swap_sandia.mod $Bld
+    set LIB2 = "-L${PARIO_LIB}"
     set LIB3 =
-    set LIB4 = "-L${Mpich} -lmpich"
+    set LIB4 = "-lmpich"
     set Str1 = (// Parallel / Include message passing definitions)
-    set Str2 = (include SUBST_MPICH ${MPI_INC}/mpif.h;)
+    set Str2 = (include SUBST_MPICH mpif.h;)
  else
     set Mpich =           # Single processor system configuration
     set seL = sef90_noop
@@ -276,9 +253,9 @@ set PARIO = "${Project}/pario -lpario"
     set Str2 =
  endif
 
- set LIB1 = "-L${STENEX} -l${seL}"
- set LIB5 = "-L${IOAPI}"
- set LIB6 = "-L${NETCDF}"
+ set LIB1 = "-L${STENEX_LIB} -l${seL}"
+ set LIB5 = "${IOAPI_LIB}"
+ set LIB6 = "${NETCDF_LIB}"
  set LIBS = "$LIB1 $LIB2 $LIB3 $LIB4 $LIB5 $LIB6"
 
 #source $Base/relinc3.cctm_adj
@@ -291,6 +268,8 @@ set ICL_EMCTL = $GlobInc/fixed/emctrl
 set ICL_MECH  = $GlobInc/$Mechanism
 set ICL_TRAC  = $GlobInc/$Tracer
 set ICL_PA    = $PABase/$PAOpt
+
+set ICL_IOAPI = "$IOAPI_DIR/ioapi/fixed_src"
 
  if ( $?Cemis ) then
     set CV = -Demis_chem
@@ -355,6 +334,8 @@ set STX3 = ( -DSUBST_HI_LO_BND_PE=${Popt}_HI_LO_BND_PE \
  echo "f_compiler  $FC;"                                           >> $Cfile
  echo                                                              >> $Cfile
  echo "f_flags     $quote$F_FLAGS$quote;"                          >> $Cfile
+ echo                                                              >> $Cfile
+ echo "c_compiler  $CC;"                                           >> $Cfile
  echo                                                              >> $Cfile
  echo "c_flags     $quote$C_FLAGS$quote;"                          >> $Cfile
  echo                                                              >> $Cfile
@@ -543,6 +524,12 @@ set STX3 = ( -DSUBST_HI_LO_BND_PE=${Popt}_HI_LO_BND_PE \
     if ( ! -e $Bld/$MODEL ) then
       echo "   *** failure to compile ${MODEL} ***"
       exit 1
+    endif
+
+    #> If $BIN_DIR is set, move compiled binaries there
+    if ( $?BIN_DIR ) then
+       echo "Moving $MODEL to $BIN_DIR"
+       mv $Bld/$MODEL $BIN_DIR
     endif
  endif
 
