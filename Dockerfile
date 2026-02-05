@@ -1,4 +1,4 @@
-FROM cmaq as builder
+FROM ghcr.io/openmethane/cmaq:latest AS builder
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -32,7 +32,7 @@ COPY scripts/bldit.adjoint.bwd.openmethane /opt/scripts/bldit.adjoint.bwd.openme
 RUN cd /opt/scripts && ./bldit.adjoint.bwd.openmethane
 
 # Then, use a final image without extra packages for our runtime environment
-FROM cmaq
+FROM ghcr.io/openmethane/cmaq:latest
 
 # These will be overwritten in GHA due to https://github.com/docker/metadata-action/issues/295
 # These must be duplicated in .github/workflows/build_docker.yaml
@@ -59,9 +59,6 @@ EOT
 ARG CMAQ_ADJ_VERSION=development
 # Make the $CMAQ_ADJ_VERSION available as an env var inside the container
 ENV CMAQ_ADJ_VERSION=$CMAQ_ADJ_VERSION
-
-ENV TZ=Etc/UTC
-ENV CMAQ_VERSION="5.0.2"
 
 COPY --from=builder /opt/cmaq/bin /opt/cmaq/bin
 
