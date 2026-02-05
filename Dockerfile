@@ -1,4 +1,4 @@
-FROM ghcr.io/openmethane/cmaq:latest AS builder
+FROM ghcr.io/openmethane/cmaq:pr-3 AS builder
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -32,7 +32,7 @@ COPY scripts/bldit.adjoint.bwd.openmethane /opt/scripts/bldit.adjoint.bwd.openme
 RUN cd /opt/scripts && ./bldit.adjoint.bwd.openmethane
 
 # Then, use a final image without extra packages for our runtime environment
-FROM ghcr.io/openmethane/cmaq:latest
+FROM ghcr.io/openmethane/cmaq:pr-3
 
 # These will be overwritten in GHA due to https://github.com/docker/metadata-action/issues/295
 # These must be duplicated in .github/workflows/build_docker.yaml
