@@ -41,16 +41,6 @@ LABEL org.opencontainers.image.description="CMAQ forward and backward adjoint"
 LABEL org.opencontainers.image.authors="Peter Rayner <peter.rayner@superpowerinstitute.com.au>, Jared Lewis <jared.lewis@climate-resource.com>"
 LABEL org.opencontainers.image.vendor="The Superpower Institute"
 
-# CMAQ_ADJ_VERSION will be overridden in release builds with semver vX.Y.Z
-ARG CMAQ_ADJ_VERSION=development
-# Make the $CMAQ_ADJ_VERSION available as an env var inside the container
-ENV CMAQ_ADJ_VERSION=$CMAQ_ADJ_VERSION
-
-ENV TZ=Etc/UTC
-ENV CMAQ_VERSION="5.0.2"
-
-COPY --from=builder /opt/cmaq/bin /opt/cmaq/bin
-
 RUN <<EOT
 apt-get update -qy
 apt-get install -qyy \
@@ -64,6 +54,16 @@ apt-get install -qyy \
 apt-get clean
 rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 EOT
+
+# CMAQ_ADJ_VERSION will be overridden in release builds with semver vX.Y.Z
+ARG CMAQ_ADJ_VERSION=development
+# Make the $CMAQ_ADJ_VERSION available as an env var inside the container
+ENV CMAQ_ADJ_VERSION=$CMAQ_ADJ_VERSION
+
+ENV TZ=Etc/UTC
+ENV CMAQ_VERSION="5.0.2"
+
+COPY --from=builder /opt/cmaq/bin /opt/cmaq/bin
 
 WORKDIR /opt/cmaq
 
