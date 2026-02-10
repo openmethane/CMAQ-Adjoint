@@ -48,11 +48,10 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Extract version number and tags to apply to docker image
-      - name: Extract version from .cmaq-adj-version
+      - name: Extract version from pyproject.toml
         id: version
         run: |
-          PACKAGE_VERSION=$(cat .cmaq-adj-version)
+          PACKAGE_VERSION=$(grep -oP '^version = "\K(.+)(?=")' pyproject.toml)
           echo "version=v$PACKAGE_VERSION" >> $GITHUB_OUTPUT
       - name: Extract metadata (tags, labels) for Docker
         id: meta

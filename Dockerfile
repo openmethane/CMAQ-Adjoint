@@ -55,10 +55,10 @@ apt-get clean
 rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 EOT
 
-# CMAQ_ADJ_VERSION will be overridden in release builds with semver vX.Y.Z
-ARG CMAQ_ADJ_VERSION=development
-# Make the $CMAQ_ADJ_VERSION available as an env var inside the container
-ENV CMAQ_ADJ_VERSION=$CMAQ_ADJ_VERSION
+# CMAQ_ADJOINT_VERSION will be overridden in release builds with semver vX.Y.Z
+ARG CMAQ_ADJOINT_VERSION=development
+# Make the $CMAQ_ADJOINT_VERSION available as an env var inside the container
+ENV CMAQ_ADJOINT_VERSION=$CMAQ_ADJOINT_VERSION
 
 COPY --from=builder /opt/cmaq/bin /opt/cmaq/bin
 

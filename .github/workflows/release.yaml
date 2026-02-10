@@ -1,0 +1,95 @@
+name: Create release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_rule:
+        type: choice
+        description: How to bump the project's version (see https://docs.astral.sh/uv/reference/cli/#uv-version)
+        options:
+          - patch
+          - minor
+          - major
+          - alpha
+          - beta
+          - rc
+          - dev
+        required: true
+
+jobs:
+  bump-version:
+    name: "Bump version and create changelog"
+    if: "!startsWith(github.event.head_commit.message, 'bump:')"
+    runs-on: ubuntu-latest
+    env:
+      CI_COMMIT_EMAIL: "ci-runner@openmethane.invalid"
+    outputs:
+      release-notes: ${{ steps.release-notes.outputs.RELEASE_BODY }}
+      release-version: ${{ steps.release-version.outputs.RELEASE_VERSION }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.PAT }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - name: Determine release version
+        id: release-version
+        run: |
+          BASE_VERSION=`uv version --short`
+          NEW_VERSION=`uv version --short --bump ${{ github.event.inputs.bump_rule }}`
+          echo "BASE_VERSION=$BASE_VERSION" >> $GITHUB_ENV
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          echo "RELEASE_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      # Generates changelog text without removing fragments, for use later in the release
+      - name: Generate release notes
+        id: release-notes
+        run: |
+          echo 'RELEASE_BODY<<EOF' >> $GITHUB_OUTPUT
+          uvx towncrier build --draft --version "v$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
+
+      - name: Bump version and generate changelog
+        run: |
+          git config --global user.name "$GITHUB_ACTOR"
+          git config --global user.email "$CI_COMMIT_EMAIL"
+
+          # Bump
+          echo "Bumping version $BASE_VERSION > $NEW_VERSION"
+          uvx towncrier build --yes --version v$NEW_VERSION
+          git commit -a -m "bump: version $BASE_VERSION -> $NEW_VERSION"
+          git tag v$NEW_VERSION
+
+      - name: Bump to pre-release version
+        run: |
+          git config --global user.name "$GITHUB_ACTOR"
+          git config --global user.email "$CI_COMMIT_EMAIL"
+
+          # Bump to pre-release so that future commits do not have the same
+          # version as the tagged commit
+          NEXT_VERSION=`uv version --short --bump patch --bump dev`
+          echo "Bumping version $NEW_VERSION > $NEXT_VERSION"
+          git commit -a -m "bump(pre-release): version $NEW_VERSION > $NEXT_VERSION"
+          git push && git push --tags
+
+  publish-release:
+    name: Create release
+    runs-on: ubuntu-latest
+    needs: bump-version
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.bump-version.outputs.release-version }}
+          body: ${{ needs.bump-version.outputs.release-notes }}
+          token: "${{ secrets.PAT }}"
