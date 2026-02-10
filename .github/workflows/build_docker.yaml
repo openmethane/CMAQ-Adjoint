@@ -93,23 +93,18 @@ jobs:
       # Run basic tests in the new container image
       - name: Check built container package version
         if: startsWith(github.event.ref, 'refs/tags/v')
-        env:
-          IMAGE_TAG: ${{ env.REGISTRY }}/${{ env.IMAGE }}:build-${{ github.run_number }}
         run: |
           TAG_REF="${{ github.event.ref }}"
           TAG_VERSION=${TAG_REF#"refs/tags/"}
-          docker run --rm -v ./tests:/opt/tests ${{ env.IMAGE_TAG }} /bin/bash -c $'
+          docker run --rm -v ./tests:/opt/tests ${{ steps.remote-image-id.outputs.REMOTE_ID }} /bin/bash -c $'
             if [ "$CMAQ_ADJOINT_VERSION" != "$TAG_VERSION" ]; then
               echo "CMAQ_ADJOINT_VERSION is $CMAQ_ADJOINT_VERSION; expected version is $TAG_VERSION"
               exit 1
             fi
           '
       - name: Run tests
-        env:
-          IMAGE_TAG: ${{ env.REGISTRY }}/${{ env.IMAGE }}:build-${{ github.run_number }}
         run: |
-          docker run --rm -v ./tests:/opt/tests ${{ env.IMAGE_TAG }} /opt/tests/test-run.sh
-
+          docker run --rm -v ./tests:/opt/tests ${{ steps.remote-image-id.outputs.REMOTE_ID }} /opt/tests/test-run.sh
 
   # Determine additional tags to apply to the image
   image-tags:
