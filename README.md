@@ -1,12 +1,18 @@
-# CMAQ-Adjoint docker container
+# CMAQ Adjoint
 
-CMAQ forward and backward adjoint, running in docker, based on
-https://zenodo.org/records/3780216.
+CMAQ forward and backward adjoint, based on
+[CMAQ 5.0 Adjoint](https://zenodo.org/records/3780216),
+forked from the
+[development repo](https://adjoint.colorado.edu:8080) at University of
+Colorado Boulder.
 
-Forked from the repo hosted at University of Colorado Boulder at
-https://adjoint.colorado.edu:8080.
+Additional changes have been made to support CH4 modeling for the Open Methane
+project.
 
-## Build
+## Build and run
+
+The easiest way to run the CMAQ Adjoint is using
+[Docker](https://www.docker.com/get-started/).
 
 To build the docker container, tagged `cmaq-adj`:
 
@@ -58,3 +64,7 @@ adjoint on this input.
 
 **Note:** this does **not** perform a numerical test, it simply ensures that
 the compiled binary will successfully run to completion on known inputs.
+
+# Citations
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3780216.svg)](https://doi.org/10.5281/zenodo.3780216)
