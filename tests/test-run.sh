@@ -26,7 +26,7 @@ TEST_DATA_URL="${TEST_DATA_URL:-https://openmethane.s3.amazonaws.com/tests/cmaq-
 
 # path to this script and its parent folder
 TESTS_ROOT="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-TEST_RUNS_ROOT="/tmp/docker-cmaq-adj-tests"
+TEST_RUNS_ROOT="/tmp/cmaq-adjoint-tests"
 mkdir -p "${TEST_RUNS_ROOT}"
 
 # fetch test data too large to fit in the repo

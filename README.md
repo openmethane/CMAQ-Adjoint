@@ -14,7 +14,7 @@ project.
 The easiest way to run the CMAQ Adjoint is using
 [Docker](https://www.docker.com/get-started/).
 
-To build the docker container, tagged `cmaq-adj`:
+To build the docker container, tagged `cmaq-adjoint`:
 
 ```shell
 make build
@@ -24,10 +24,10 @@ Then run the adjoint in the container with:
 
 ```shell
 # run the fwd adjoint
-docker run -it --rm cmaq-adj /opt/cmaq/bin/ADJOINT_FWD
+docker run -it --rm cmaq-adjoint /opt/cmaq/bin/ADJOINT_FWD
 
 # run the bwd adjoint
-docker run -it --rm cmaq-adj /opt/cmaq/bin/ADJOINT_BWD
+docker run -it --rm cmaq-adjoint /opt/cmaq/bin/ADJOINT_BWD
 ```
 
 These binaries will need input data and a number of environment variables,
@@ -50,10 +50,10 @@ binaries in `/opt/cmaq/bin`. To debug the `builder` image:
 
 ```shell
 # build the "builder" image from the Dockerfile
-docker build . --progress=plain --target builder -t cmaq-adj-builder
+docker build . --progress=plain --target builder -t cmaq-adjoint-builder
 
 # run an interactive bash terminal in the builder
-docker run -it --rm cmaq-adj-builder bash
+docker run -it --rm cmaq-adjoint-builder bash
 ```
 
 The `builder` will include the source code, libraries and build artifacts in

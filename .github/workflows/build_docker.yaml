@@ -11,7 +11,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE: openmethane/cmaq-adj
+  IMAGE: openmethane/cmaq-adjoint
 
 jobs:
   build:
@@ -166,6 +166,6 @@ jobs:
       - name: Remove build tag from published image
         uses: dataaxiom/ghcr-cleanup-action@v1
         with:
-          package: cmaq-adj
+          package: cmaq-adjoint
           token: ${{ secrets.GITHUB_TOKEN }}
           delete-tags: build-${{ github.run_number }}
