@@ -33,6 +33,16 @@ docker run -it --rm cmaq-adj /opt/cmaq/bin/ADJOINT_BWD
 These binaries will need input data and a number of environment variables,
 which should be familiar to users of the adjoint.
 
+### Running without docker
+
+This project uses [openmethane/CMAQ](https://github.com/openmethane/CMAQ) as
+the base docker image, which provides a build environment pre-configured for
+compiling and running CMAQ-based tools.
+
+If you wish to build and run the forward and backward adjoint in a different
+environment, that repo provides a good reference for the packages, dependencies
+and configuration which will need to be provided.
+
 ## Development
 
 The final docker container only includes the forward and backward adjoint
