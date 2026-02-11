@@ -412,9 +412,6 @@ C----------------------------------------------
             efac1(v) = exp(-(depvcr(v)*rdepvht(c,r)*thbar*dts))
             efac2(v) = exp(-(depvcr(v)*rdepvht(c,r)*theta*dts))
           end do
-          pol(nh3_so2) = pvdd(nh3_so2,c,r)/depvcr(nh3_hit)
-          pol(nh3_nh3) = pvdd(nh3_nh3,c,r)/depvcr(nh3_hit)
-          pol(hono_no2) = pvdd(hono_no2,c,r)/depvcr(hono_hit)
           do l = 1, nlays
             do v = 1, n_spc_diff
               conc_bwd(v,l) = conc_bwd(v,l)+cngrd_bwd(diff_map(v),l,c,r)
