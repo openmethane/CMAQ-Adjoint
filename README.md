@@ -6,7 +6,7 @@ forked from the
 [development repo](https://adjoint.colorado.edu:8080) at University of
 Colorado Boulder.
 
-Additional changes have been made to support CH4 modeling for the Open Methane
+Additional changes have been made to support CH4 modelling for the Open Methane
 project.
 
 ## Build and run
@@ -45,11 +45,15 @@ and configuration which will need to be provided.
 
 ## Development
 
-The final docker container only includes the forward and backward adjoint
-binaries in `/opt/cmaq/bin`. To debug the `builder` image:
+The Dockerfile utilises a multi-stage build pattern where first a `builder`
+image is configured with build tooling and project source code to compile the
+adjoint binaries (Dockerfile:1-32). However, the `builder` image isn't retained
+during the docker build process, making build failures hard to debug.
+
+To debug the `builder` image, use:
 
 ```shell
-# build the "builder" image from the Dockerfile
+# build only the "builder" image and tag as "cmaq-adjoint-builder"
 docker build . --progress=plain --target builder -t cmaq-adjoint-builder
 
 # run an interactive bash terminal in the builder
