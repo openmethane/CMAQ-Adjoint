@@ -69,6 +69,7 @@ COPY cmaq /opt/cmaq
 COPY scripts/build_adj.sh /opt/cmaq/scripts/build_adj.sh
 COPY scripts/bldit.adjoint.fwd.openmethane /opt/cmaq/scripts/bldit.adjoint.fwd.openmethane
 COPY scripts/bldit.adjoint.bwd.openmethane /opt/cmaq/scripts/bldit.adjoint.bwd.openmethane
+ARG FORCE_BUILD=unknown
 RUN /opt/cmaq/scripts/build_adj.sh
 
 # Then, use a final image without extra packages for our runtime environment
