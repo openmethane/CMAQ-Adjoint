@@ -19,6 +19,11 @@ of rst and use slightly different categories.
 
 <!-- towncrier release notes start -->
 
+## CMAQ Adjoint v1.0.1 (2026-05-26)
+
+No significant changes.
+
+
 ## CMAQ Adjoint v1.0.0 (2026-05-26)
 
 ### 🆕 Features
