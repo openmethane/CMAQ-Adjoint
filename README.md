@@ -1,14 +1,20 @@
-# CMAQ-Adjoint docker container
+# CMAQ Adjoint
 
-CMAQ forward and backward adjoint, running in docker, based on
-https://zenodo.org/records/3780216.
+CMAQ forward and backward adjoint, based on
+[CMAQ 5.0 Adjoint](https://zenodo.org/records/3780216),
+forked from the
+[development repo](https://adjoint.colorado.edu:8080) at University of
+Colorado Boulder.
 
-Forked from the repo hosted at University of Colorado Boulder at
-https://adjoint.colorado.edu:8080.
+Additional changes have been made to support CH4 modelling for the Open Methane
+project.
 
-## Build
+## Build and run
 
-To build the docker container, tagged `cmaq-adj`:
+The easiest way to run the CMAQ Adjoint is using
+[Docker](https://www.docker.com/get-started/).
+
+To build the docker container, tagged `cmaq-adjoint`:
 
 ```shell
 make build
@@ -18,26 +24,40 @@ Then run the adjoint in the container with:
 
 ```shell
 # run the fwd adjoint
-docker run -it --rm cmaq-adj /opt/cmaq/bin/ADJOINT_FWD
+docker run -it --rm cmaq-adjoint /opt/cmaq/bin/ADJOINT_FWD
 
 # run the bwd adjoint
-docker run -it --rm cmaq-adj /opt/cmaq/bin/ADJOINT_BWD
+docker run -it --rm cmaq-adjoint /opt/cmaq/bin/ADJOINT_BWD
 ```
 
 These binaries will need input data and a number of environment variables,
 which should be familiar to users of the adjoint.
 
+### Running without docker
+
+This project uses [openmethane/CMAQ](https://github.com/openmethane/CMAQ) as
+the base docker image, which provides a build environment pre-configured for
+compiling and running CMAQ-based tools.
+
+If you wish to build and run the forward and backward adjoint in a different
+environment, that repo provides a good reference for the packages, dependencies
+and configuration which will need to be provided.
+
 ## Development
 
-The final docker container only includes the forward and backward adjoint
-binaries in `/opt/cmaq/bin`. To debug the `builder` image:
+The Dockerfile utilises a multi-stage build pattern where first a `builder`
+image is configured with build tooling and project source code to compile the
+adjoint binaries (Dockerfile:1-32). However, the `builder` image isn't retained
+during the docker build process, making build failures hard to debug.
+
+To debug the `builder` image, use:
 
 ```shell
-# build the "builder" image from the Dockerfile
-docker build . --progress=plain --target builder -t cmaq-adj-builder
+# build only the "builder" image and tag as "cmaq-adjoint-builder"
+docker build . --progress=plain --target builder -t cmaq-adjoint-builder
 
 # run an interactive bash terminal in the builder
-docker run -it --rm cmaq-adj-builder bash
+docker run -it --rm cmaq-adjoint-builder bash
 ```
 
 The `builder` will include the source code, libraries and build artifacts in
@@ -58,3 +78,7 @@ adjoint on this input.
 
 **Note:** this does **not** perform a numerical test, it simply ensures that
 the compiled binary will successfully run to completion on known inputs.
+
+# Citations
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3780216.svg)](https://doi.org/10.5281/zenodo.3780216)

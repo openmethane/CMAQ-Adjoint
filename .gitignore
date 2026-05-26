@@ -11,6 +11,9 @@
 # Ignore work/
 work
 
+# Python virtual environment
+.venv
+
 # JetBrains IDEs
 .idea
 

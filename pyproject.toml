@@ -1,0 +1,24 @@
+[project]
+name = "cmaq-adjoint"
+version = "0.1.0"
+dependencies = []
+
+[tool.towncrier]
+filename = "CHANGELOG.md"
+directory = "changelog/"
+title_format = "## CMAQ Adjoint {version} ({project_date})"
+underlines = [
+    "",
+    "",
+    "",
+]
+issue_format = "[#{issue}](https://github.com/openmethane/CMAQ-adjoint/issues/{issue})"
+type = [
+    { directory = "breaking", name = "⚠️ Breaking Changes", showcontent = true },
+    { directory = "deprecation", name = "🗑️ Deprecations", showcontent = true },
+    { directory = "feature", name = "🆕 Features", showcontent = true },
+    { directory = "improvement", name = "🎉 Improvements", showcontent = true },
+    { directory = "fix", name = "🐛 Bug Fixes", showcontent = true },
+    { directory = "docs", name = "📚 Improved Documentation", showcontent = true },
+    { directory = "trivial", name = "🔧 Trivial/Internal Changes", showcontent = false },
+]
