@@ -10,6 +10,6 @@ build-aarch64: Dockerfile  ## build an arm version of the docker container
 run: build  ## run the docker container
 	docker run -it --rm -v ${PWD}:/opt/project cmaq-adj
 
-.phone: test
+.phony: test
 test: build
 	docker run -it --rm -v ${PWD}/tests:/opt/tests cmaq-adj /opt/tests/test-run.sh
