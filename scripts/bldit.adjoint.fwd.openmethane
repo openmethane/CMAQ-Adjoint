@@ -86,13 +86,13 @@ set ModAdjc   = ( // yamo option does not need denrate )
 
 set ModCpl    = couple/gencoor
 
-set ModHadv   = hadv/hadv_noop
+set ModHadv   = hadv/yamo_dadj_fwd
 
-set ModVadv   = vadv/vadv_noop
+set ModVadv   = vadv/vyamo_dadj_fwd
 
-set ModHdiff  = hdiff/hdiff_noop
+set ModHdiff  = hdiff/multiscale_adj_fwd
 
-set ModVdiff  = vdiff/vdiff_noop
+set ModVdiff  = vdiff/zenodo_fwd
 
 set ModPhot   = phot/phot_noop
 #set ModPhot   = phot/phot
