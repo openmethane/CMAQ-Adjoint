@@ -92,7 +92,7 @@ set ModVadv   = vadv/vadv_bwd_noop
 
 set ModHdiff  = hdiff/hdiff_bwd_noop
 
-set ModVdiff  = vdiff/zenodo_bwd_noop
+set ModVdiff  = vdiff/zenodo_bwd
 
 set ModPhot   = phot/phot_noop
 #set ModPhot   = phot/phot
