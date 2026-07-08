@@ -27,6 +27,7 @@ WORKDIR /opt/cmaq
 # Build a modified version of CMAQ-Adjoint in ch4 only mode
 COPY cmaq /opt/cmaq/models
 COPY scripts/bldit.adjoint.fwd.openmethane /opt/scripts/bldit.adjoint.fwd.openmethane
+ARG FORCE_BUILD=unknown
 RUN cd /opt/scripts && ./bldit.adjoint.fwd.openmethane
 COPY scripts/bldit.adjoint.bwd.openmethane /opt/scripts/bldit.adjoint.bwd.openmethane
 RUN cd /opt/scripts && ./bldit.adjoint.bwd.openmethane
