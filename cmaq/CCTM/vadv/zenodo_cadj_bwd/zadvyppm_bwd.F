@@ -231,6 +231,8 @@ C get file local domain offsets
          CALL SUBHFILE ( MET_CRO_3D, GXOFF, GYOFF,
      &        STRTCOLMC3, ENDCOLMC3, STRTROWMC3, ENDROWMC3 )
 
+         
+         CALL ADV_CADJ_INIT( JDATE, JTIME)
       END IF                    ! FIRSTIME
 
 C Time-stepped gridded computation for Z-direction advection.

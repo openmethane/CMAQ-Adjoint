@@ -12,7 +12,11 @@
        CHARACTER( 96 ) :: XMSG = ' '
        INTEGER ALLOCSTAT
        INTEGER JDATE, JTIME
+       logical, save :: firstime = .true.
 
+c protect allocation from being called twice 
+       if (firstime) then
+         firstime = .false.
          ALLOCATE(
      &        ADV_RHOJ(1:NCOLS, 1:NROWS, 1:NLAYS, 1:1),
      &        STAT = ALLOCSTAT)
@@ -20,6 +24,6 @@
             XMSG = 'Failure allocating ADV_RHOJ'
             CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
          END IF
-
+       end if
        END SUBROUTINE ADV_CADJ_INIT
       END MODULE
