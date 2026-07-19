@@ -31,8 +31,8 @@ C Parameters
       CHARACTER(16), PARAMETER :: CTM_CONC_FWD    = 'CTM_CONC_FWD'
       CHARACTER(16), PARAMETER :: INIT_LGRID_1    = 'INIT_LGRID_1'
       CHARACTER(16), PARAMETER :: ADJ_LGRID       = 'ADJ_LGRID'
-      CHARACTER(16), PARAMETER :: ADJ_FORCE       = 'ADJ_FORCE'
       CHARACTER(16), PARAMETER :: ADJ_LGRID_EM    = 'ADJ_LGRID_EM'
+      CHARACTER(16), PARAMETER :: ADJ_FORCE_FILE  = 'ADJ_FORCE'
 
       CHARACTER(16) :: LGRID_OUTPUT_FREQ
       REAL       :: FRCFAC
@@ -541,7 +541,7 @@ C+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
       IMPLICIT NONE
 
-C Include Files:
+C     Include Files:
       INCLUDE SUBST_IOPARMS     ! I/O parameters definitions
       INCLUDE SUBST_IODECL      ! I/O definitions and declarations
       INCLUDE SUBST_IOFDESC     ! file header data structure
@@ -551,116 +551,142 @@ C Include Files:
       INCLUDE SUBST_NR_SPC      ! non-reactive species table
       INCLUDE SUBST_TR_SPC      ! tracer species table
 
-C Arguments:
+C     Arguments:
 
-      INTEGER, PARAMETER :: NLAYS_FRC = 1
-      INTEGER, PARAMETER :: N_PM25_SPC = 35  !!!! ---> Added by Amanda
-      INTEGER :: PM25_SPC(N_PM25_SPC)
-      REAL :: ARRAY(:,:,:,:) !slz intent removed
+      INTEGER, EXTERNAL :: ENVINT
+      INTEGER, EXTERNAL :: INDEX1
+      INTEGER           :: IOS
+      INTEGER           :: NLAYS_FRC
+      INTEGER           :: ALLOCSTAT
+
+      REAL, INTENT(OUT) :: ARRAY(:,:,:,:)
       INTEGER, INTENT(IN) :: JDATE ! current model date, coded YYYYDDD
       INTEGER, INTENT(IN) :: JTIME ! current model time, coded HHMMSS
-!      CHARACTER(16), INTENT(IN) :: ADJ_FORCE
+!     CHARACTER(16), INTENT(IN) :: ADJ_FORCE_FILE
 
-C Local variables:
+C     Local variables:
       LOGICAL, SAVE :: FIRSTIME_FRC = .TRUE.
 
       CHARACTER(16) :: PNAME = 'RD_FORCE_FILE'
       CHARACTER(96) :: XMSG = ' '
+      
+      INTEGER, SAVE :: NVARS_FRC
+      INTEGER, ALLOCATABLE, SAVE :: VMAP_FRC(:)
 
-!      INTEGER, PARAMETER :: NLAYS_FRC = 1
+!     INTEGER, PARAMETER :: NLAYS_FRC = 1
 
-      REAL :: BUFFER(1:NCOLS, 1:NROWS, 1:NLAYS_FRC)
-!      REAL :: BUFFER(1:NCOLS, 1:NROWS)
+!     REAL :: BUFFER(1:NCOLS, 1:NROWS, 1:NLAYS_FRC)
+!     REAL :: BUFFER(1:NCOLS, 1:NROWS)
+      REAL, ALLOCATABLE :: BUFFER(:, :, :)
 
       INTEGER :: STRTCOL, ENDCOL, STRTROW, ENDROW ! local window in global domain
       INTEGER :: CARRAY, RARRAY, LENROW, LENCOL
-      LOGICAL, SAVE :: FIRSTIME = .TRUE.
 
-      INTEGER :: K, C, R, L, V, CNT, LOOP  ! loop counters
+
+      INTEGER :: C, R, L, V, S  ! loop counters
 
 C-----------------------------------------------------------------------
 
-      IF (.NOT.ADJ_FRC) RETURN !slz skip if forcing files are absent
+      IF ( FIRSTIME_FRC ) THEN
+        FIRSTIME_FRC = .FALSE.
+        IF ( .NOT. DESC3(ADJ_FORCE_FILE) ) THEN
+          XMSG = 'Could not get ' // TRIM(ADJ_FORCE_FILE) // ' file description'
+          CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
+        END IF
+        NVARS_FRC = NVARS3D
+        ALLOCATE( VMAP_FRC(NVARS_FRC), STAT=ALLOCSTAT )
+        DO V = 1, NVARS_FRC
+          S = INDEX1( VNAME3D(V), N_GC_SPC, GC_SPC )
+          IF ( S .EQ. 0 ) THEN
+            S = INDEX1( VNAME3D(V), N_AE_SPC, AE_SPC )
+            IF ( S .EQ. 0 ) THEN
+              S = INDEX1( VNAME3D(V), N_NR_SPC, NR_SPC )
+              IF ( S .EQ. 0 ) THEN
+                S = INDEX1( VNAME3D(V), N_TR_SPC, TR_SPC )
+                IF ( S .EQ. 0 ) THEN
+                  XMSG = 'Could not find ' // VNAME3D(V) // ' in LGRID'
+                  CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
+                ELSE
+                  S = TR_STRT - 1 + S
+                END IF
+              ELSE
+                S = NR_STRT - 1 + S
+              END IF
+            ELSE
+              S = AE_STRT - 1 + S
+            END IF
+          ELSE
+            S = GC_STRT - 1 + S
+          END IF
+          VMAP_FRC(V) = S
+        END DO
+      END IF                    !firstime_frc
 
-C Get local window in global domain
-         STRTCOL = COLSX_PE(1, MYPE+1)
-         ENDCOL = STRTCOL + NCOLS - 1
-         STRTROW = ROWSX_PE(1, MYPE+1)
-         ENDROW = STRTROW + NROWS - 1
-         
-         BUFFER = 0.d0
+      NLAYS_FRC = ENVINT('NLAYS_FRC', 'No. of layers in forcing file', 1, IOS)
+      ALLOCATE( BUFFER(1:NCOLS, 1:NROWS, 1:NLAYS_FRC), STAT=ALLOCSTAT )
 
-!!!!!!!!!!!! Changed by Amanda
-!        ARRAY  = 0.d0
-         
-      IF ( FIRSTIME ) THEN
+C     Get local window in global domain
+      STRTCOL = COLSX_PE(1, MYPE+1)
+      ENDCOL = STRTCOL + NCOLS - 1
+      STRTROW = ROWSX_PE(1, MYPE+1)
+      ENDROW = STRTROW + NROWS - 1
+      
+      BUFFER = 0.d0
+      ARRAY  = 0.d0
 
-         FIRSTIME = .FALSE.
-
-
-C Get file characteristics of ADJ_FILE
-      IF ( .NOT. DESC3(ADJ_FORCE) ) THEN
-       XMSG = 'Could not get ' // TRIM(ADJ_FORCE) // ' file description'
-         CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
+C     Get file characteristics of ADJ_FILE_FILE
+      IF ( .NOT. DESC3(ADJ_FORCE_FILE) ) THEN
+        XMSG = 'Could not get ' // TRIM(ADJ_FORCE_FILE) // ' file description'
+        CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
       END IF
 
-!!!!! Added by Amanda
-! *** Create array with species number of i and j mode constituents
-      K=0
-      DO LOOP = 1,28 !! Updated to include A25I and A25J Sept 2017 --- 3 species added.
-         K=K+1
-         PM25_SPC(K) = LOOP + 73
-      END DO
+!     Debug (6.2014.slc)
+!WRITE(*,*) 'NVARS3D: ',NVARS3D
+!WRITE(*,*) 'VNAME3D(1): ',VNAME3D(1)
+!WRITE(*,*) 'FTYPE3D: ',FTYPE3D
+!WRITE(*,*) 'SDATE3D: ',SDATE3D
+!WRITE(*,*) 'ADJOINT files'
+!WRITE(*,*) 'NCOLS: ',NCOLS,' NROWS: ',NROWS
+!WRITE(*,*) 'NLAYS: ',NLAYS,'NSPCSD: ',NSPCSD
+!WRITE(*,*) 'STRTCOL: ',STRTCOL
+!WRITE(*,*) 'ENDCOL: ',ENDCOL
+!WRITE(*,*) 'STRTROW: ',STRTROW
+!WRITE(*,*) 'ENDROW: ',ENDROW
 
-      DO LOOP = 39,42
-         K=K+1
-         PM25_SPC(K) = LOOP + 73
-      END DO
+!WRITE(*,*) 'JDATE: ',JDATE
+!WRITE(*,*) 'JTIME: ',JTIME
 
-      DO LOOP = 49,51
-         K=K+1
-         PM25_SPC(K) = LOOP + 73
-      END DO
-
-      END IF
-
-!     Because ADJ_FORCE will only have one variable,
-!        this one variable should be extracted.
-!        It may also only be at one level, which is indicated by NLAYS_FRC.
-
-      IF ( .NOT. XTRACT3(ADJ_FORCE, 'FRCPMIJ',
-     &     1, NLAYS_FRC, STRTROW, ENDROW, STRTCOL, ENDCOL,
-     &     JDATE, 10000*(JTIME/10000), BUFFER) ) THEN
-         XMSG = 'Could not read FORCE from '
-     &          // TRIM(ADJ_FORCE)
-         CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
-
-      ELSE
-            
-         LENROW = NROWS 
-         LENCOL = NCOLS   
-!         WRITE(*,*) 'LENROW: ',LENROW, ', LENCOL: ',LENCOL
-
-         DO R = 1, LENROW
+      DO V = 1, NVARS_FRC
+        IF ( .NOT. XTRACT3(ADJ_FORCE_FILE, VNAME3D(V),
+     &       1, NLAYS_FRC, STRTROW, ENDROW, STRTCOL, ENDCOL,
+     &       JDATE, JTIME, BUFFER) ) THEN
+          XMSG = 'Could not read  ' // VNAME3D(1)
+     &         // ' from ' // TRIM(ADJ_FORCE_FILE)
+          CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
+          
+        ELSE
+          
+          LENROW = NROWS 
+          LENCOL = NCOLS   
+!WRITE(*,*) 'LENROW: ',LENROW, ', LENCOL: ',LENCOL
+!WRITE(*,*) 'BUFFER(1,1,1): ',BUFFER(1,1,1),' on proc: ',MYPE
+!WRITE(*,*) 'BUFFER(LC,LR,1): ',BUFFER(LENCOL,LENROW,NLAYS_FRC),' on proc: ',MYPE
+          DO R = 1, LENROW
             DO C = 1, LENCOL
-!              RARRAY = R + STRTROW - 1
-!              CARRAY = C + STRTCOL - 1
-!              ARRAY(CARRAY, RARRAY, 1, V) = BUFFER(C, R, 1)
-               DO CNT = 1,N_PM25_SPC
-                  V = PM25_SPC(CNT)
-                  ARRAY(C, R, 1, V) = ARRAY(C, R, 1, V)
-     &            + BUFFER(C, R, 1) * FRCFAC !!!!!! Internal time-step
-               END DO
-
-!             ARRAY(C, R, 1, 4) = ARRAY(C, R, 1, 4)  !slz layer 1; spc#4, o3
-!     &           + BUFFER(C, R, 1)* FRCFAC !!!!!! Internal time-step; layer 1
-
-!NO2               ARRAY(C, R, 1, 1) = ARRAY(C, R, 1, 1)  !slz layer 1; spc#1, no2
-! NO2     &            + BUFFER(C, R, 1) * FRCFAC
+              DO L = 1, NLAYS_FRC
+!RARRAY = R + STRTROW - 1
+!CARRAY = C + STRTCOL - 1
+!ARRAY(CARRAY, RARRAY, L, V) = BUFFER(C, R, L)
+                ARRAY(C, R, L, VMAP_FRC(V)) = BUFFER(C, R, L)
+              END DO
             END DO
-         END DO
-
-      END IF
+          END DO
+          
+!write(*,*) 'sum(array): ',sum(array)
+!write(*,*) 'sum(array(:,:,:,4)): ',sum(array(:,:,:,4))
+          
+        END IF
+      END DO
 
       END SUBROUTINE RD_FORCE_FILE
 
