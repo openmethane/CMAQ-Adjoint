@@ -253,7 +253,7 @@ C Note: "CF" stands for "cost function units"
                FDESC3D(K) = ' '
             END DO
 
-            NLAYS3D = nlays
+            NLAYS3D = emsensl
             NVARS3D = 0
 
             IF ( TRIM(LGRID_OUTPUT_FREQ) == 'SYNC_STEP' ) THEN

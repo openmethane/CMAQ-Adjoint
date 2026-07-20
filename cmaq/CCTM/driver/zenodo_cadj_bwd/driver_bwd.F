@@ -169,7 +169,9 @@ C and vertical layer structure
          XMSG = 'Recompile with an I/O-API lib having a larger MXVARS3'
          WRITE(LOGDEV, '(5X, A)') XMSG
          CALL M3EXIT(PNAME, JDATE, JTIME, ' ', XSTAT1)
-      END IF
+       END IF
+       
+      CALL SET_EMSENSL( JDATE, JTIME )
 
 C Initialize PCGRID
       IF ( .NOT. PCGRID_INIT() ) THEN
