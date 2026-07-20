@@ -50,6 +50,7 @@ C-----------------------------------------------------------------------
       USE ADJOINT_FILES         ! adjoint file data and functions
       USE CHK_FILES_DEFS        ! adjoint checkpoint files definition
       USE CHK_FILES             ! adjoint checkpoint files routines
+      USE EMIS_DEFN, ONLY : SET_EMSENSL, EMSENSL ! layers of emissions sensitivity 
 
       IMPLICIT NONE
 
