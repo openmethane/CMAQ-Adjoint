@@ -172,7 +172,7 @@ C and vertical layer structure
          CALL M3EXIT(PNAME, JDATE, JTIME, ' ', XSTAT1)
        END IF
        
-      CALL SET_EMSENSL( JDATE, JTIME )
+!      CALL set_EMSENSL( JDATE, JTIME )
 
 C Initialize PCGRID
       IF ( .NOT. PCGRID_INIT() ) THEN
