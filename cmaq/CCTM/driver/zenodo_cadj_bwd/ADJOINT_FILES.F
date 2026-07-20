@@ -49,8 +49,7 @@ C+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
       USE GRID_CONF             ! horizontal & vertical domain specifications
       USE CHK_FILES_DEFS        ! adjoint checkpoint files definition
-      USE PMEM_DEFN, only: N_EMIS_PM !slz
-      USE EMIS_DEFN, ONLY: EMLAYS
+      USE EMIS_DEFN, ONLY : EMSENSL
 
       IMPLICIT NONE
 
@@ -59,10 +58,10 @@ C Include Files:
       INCLUDE SUBST_AE_SPC      ! aerosol species table
       INCLUDE SUBST_NR_SPC      ! non-reactive species table
       INCLUDE SUBST_TR_SPC      ! tracer species table
-      INCLUDE SUBST_GC_EMIS     ! gas chem diffusion species and map table
-      INCLUDE SUBST_AE_EMIS     ! aerosol diffusion species and map table
-      INCLUDE SUBST_NR_EMIS     ! non-react diffusion species and map table
-      INCLUDE SUBST_TR_EMIS     ! tracer diffusion species and map table
+      INCLUDE SUBST_GC_DIFF     ! gas chem diffusion species and map table
+      INCLUDE SUBST_AE_DIFF     ! aerosol diffusion species and map table
+      INCLUDE SUBST_NR_DIFF     ! non-react diffusion species and map table
+      INCLUDE SUBST_TR_DIFF     ! tracer diffusion species and map table
       INCLUDE SUBST_IOPARMS     ! I/O parameters definitions
       INCLUDE SUBST_IODECL      ! I/O definitions and declarations
       INCLUDE SUBST_IOFDESC     ! file header data structure
@@ -90,15 +89,13 @@ C Local Variables:
 
       INTEGER :: K, S           ! loop counters
 
-      CHARACTER( 16 ) :: PM_EMIS( N_EMIS_PM ) !slz
-
 C-----------------------------------------------------------------------
 
       LOGDEV = INIT3()
 
       VARDESC =
      &     'LGRID output frequency: SYNC_STEP, OUTPUT_STEP or ONCE (at start time)'
-      LGRID_OUTPUT_FREQ = 'OUTPUT_STEP'
+      LGRID_OUTPUT_FREQ = 'SYNC_STEP'
       CALL ENVSTR('ADJ_LGRID_FREQ', VARDESC, LGRID_OUTPUT_FREQ,
      &     LGRID_OUTPUT_FREQ, STATUS)
       IF ( STATUS /= 0 ) WRITE(LOGDEV, '(5X, A)') VARDESC
@@ -130,45 +127,45 @@ C-----------------------------------------------------------------------
       END IF
 
       IF ( MYPE == 0 ) THEN
-
-!         IF ( ADJ_FILE == ADJ_LGRID ) THEN
-
-C Get file characteristics of CTM_CONC_FWD
-            IF ( .NOT. OPEN3(CTM_CONC_FWD, FSREAD3, PNAME) ) THEN
-               XMSG = 'Could not open ' // TRIM(CTM_CONC_FWD) //
-     &              ' file as OLD:READ-ONLY'
-               CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
-            END IF
-
-            IF ( .NOT. DESC3(CTM_CONC_FWD) ) THEN
-               XMSG = 'Could not get ' // TRIM(CTM_CONC_FWD) // ' file description'
-               CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
-            END IF
-
-            IF ( .NOT. CLOSE3(CTM_CONC_FWD) ) THEN
-               XMSG = 'Could not close ' // TRIM(CTM_CONC_FWD)
-               CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
-            END IF
-
-!         ELSE
 !
-!C Get file characteristics of CTM_CONC_1
-!            IF ( .NOT. OPEN3(CTM_CONC_1, FSREAD3, PNAME) ) THEN
-!               XMSG = 'Could not open ' // TRIM(CTM_CONC_1) //
+!         IF ( ADJ_FILE == ADJ_LGRID ) THEN
+!
+!C Get file characteristics of CTM_CONC_FWD
+!            IF ( .NOT. OPEN3(CTM_CONC_FWD, FSREAD3, PNAME) ) THEN
+!               XMSG = 'Could not open ' // TRIM(CTM_CONC_FWD) //
 !     &              ' file as OLD:READ-ONLY'
 !               CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
 !            END IF
 !
-!            IF ( .NOT. DESC3(CTM_CONC_1) ) THEN
-!               XMSG = 'Could not get ' // TRIM(CTM_CONC_1) // ' file description'
+!            IF ( .NOT. DESC3(CTM_CONC_FWD) ) THEN
+!               XMSG = 'Could not get ' // TRIM(CTM_CONC_FWD) // ' file description'
 !               CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
 !            END IF
 !
-!            IF ( .NOT. CLOSE3(CTM_CONC_1) ) THEN
-!               XMSG = 'Could not close ' // TRIM(CTM_CONC_1)
+!            IF ( .NOT. CLOSE3(CTM_CONC_FWD) ) THEN
+!               XMSG = 'Could not close ' // TRIM(CTM_CONC_FWD)
 !               CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
 !            END IF
 !
+!         ELSE
+
+C Get file characteristics of CTM_CONC_1
+            IF ( .NOT. OPEN3(CTM_CONC_1, FSREAD3, PNAME) ) THEN
+               XMSG = 'Could not open ' // TRIM(CTM_CONC_1) //
+     &              ' file as OLD:READ-ONLY'
+               CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
+            END IF
+
+            IF ( .NOT. DESC3(CTM_CONC_1) ) THEN
+               XMSG = 'Could not get ' // TRIM(CTM_CONC_1) // ' file description'
+               CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
+            END IF
+
+            IF ( .NOT. CLOSE3(CTM_CONC_1) ) THEN
+               XMSG = 'Could not close ' // TRIM(CTM_CONC_1)
+               CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
+            END IF
+
 !         END IF
 
 C Set file characteristics that differ from the base file, CTM_CONC_FWD or
@@ -184,7 +181,7 @@ C CTM_CONC_1
             ELSE
                TSTEP3D = 0      ! make it a time-independent file
             END IF
-
+            
             FDESC3D(1) = 'Sensitivity output'
             FDESC3D(2) = 'From CMAQ model dyn alloc version CTM'
             DO K = 3, MXDESC3
@@ -211,6 +208,7 @@ C Note: "CF" stands for "cost function units"
             VDESC3D(NVARS3D) = 'Sensitivity of cost function to ' //
      &           TRIM(VNAME3D(NVARS3D))
 
+!     Aerosol species - slc.4.2014
             DO S = 1, N_AE_SPC
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
@@ -226,6 +224,7 @@ C Note: "CF" stands for "cost function units"
      &              TRIM(VNAME3D(NVARS3D))
             END DO
 
+!        Ammonia and semi-volatile compounds
             DO S = 1, N_NR_SPC
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
@@ -254,7 +253,7 @@ C Note: "CF" stands for "cost function units"
                FDESC3D(K) = ' '
             END DO
 
-            NLAYS3D = EMLAYS !slz defined in PCGRID
+            NLAYS3D = nlays
             NVARS3D = 0
 
             IF ( TRIM(LGRID_OUTPUT_FREQ) == 'SYNC_STEP' ) THEN
@@ -266,40 +265,52 @@ C Note: "CF" stands for "cost function units"
             END IF
 
 C Note: "CF" stands for "cost function units"
-!slz sens to emitted species
-!
-!slz emitted PM species
-            PM_EMIS(1)="POC"
-            PM_EMIS(2)="PSO4"
-            PM_EMIS(3)="PNO3"
-            PM_EMIS(4)="PEC"
-            PM_EMIS(5)="PMFINE"
-            PM_EMIS(6)="PMC" !slz could be tricky; check PMEM_DEFN
-            DO S = 1, N_EMIS_PM
+!       Only diffused species are calculated as emissions currently. so
+!       the loop is over the diffused species. 
+
+            ! dbg.1.2015.slc
+            !write(*,*) 'N_*_DIFF, GC: ',N_GC_DIFF,' AE: ',N_AE_DIFF
+            !write(*,*) 'NR: ',N_NR_DIFF,' TR: ',N_TR_DIFF 
+            DO S = 1, N_GC_DIFF
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = PM_EMIS(S)
-               UNITS3D(NVARS3D) = 'CF/(g/s)'
+               VNAME3D(NVARS3D) = GC_DIFF(S)
+               UNITS3D(NVARS3D) = 'CF/(ppmv/s)'
                VDESC3D(NVARS3D) = 
      &              'Sensitivity of cost function to emissions of ' //
      &              TRIM(VNAME3D(NVARS3D))
             END DO
 
-            DO S = 1, N_GC_EMIS
+!            NVARS3D = NVARS3D + 1
+!            VTYPE3D(NVARS3D) = M3REAL
+!            VNAME3D(NVARS3D) = 'RHOJ'
+!            UNITS3D(NVARS3D) = 'CF/m*kg/m**3'
+!            VDESC3D(NVARS3D) = 
+!     &           'Sensitivity of cost function to emissions of  ' //
+!     &           TRIM(VNAME3D(NVARS3D))
+
+!     Aerosol species - slc.7.2014
+            DO S = 1, N_AE_DIFF
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = GC_EMIS(S)
-               UNITS3D(NVARS3D) = 'CF/(mol/s)'
+               VNAME3D(NVARS3D) = AE_DIFF(S)
+               IF ( VNAME3D(NVARS3D)(1:3) == 'NUM' ) THEN
+                  UNITS3D(NVARS3D) = 'CF/(g/s)'
+               ELSE IF ( VNAME3D(NVARS3D)(1:3) == 'SRF' ) THEN
+                  UNITS3D(NVARS3D) = 'CF/(g/s)'
+               ELSE
+                  UNITS3D(NVARS3D) = 'CF/(g/s)'
+               END IF
                VDESC3D(NVARS3D) = 
      &              'Sensitivity of cost function to emissions of ' //
      &              TRIM(VNAME3D(NVARS3D))
             END DO
 
 !        Ammonia and semi-volatile compounds
-            DO S = 1, N_NR_EMIS
+            DO S = 1, N_NR_DIFF
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = NR_EMIS(S)
+               VNAME3D(NVARS3D) = NR_DIFF(S)
                UNITS3D(NVARS3D) = 'CF/(mol/s)'
                VDESC3D(NVARS3D) = 
      &              'Sensitivity of cost function to emissions of ' //
@@ -307,15 +318,16 @@ C Note: "CF" stands for "cost function units"
             END DO
 
 !        Tracer species - slc.7.2014
-            DO S = 1, N_TR_EMIS
+            DO S = 1, N_TR_DIFF
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = TR_EMIS(S)
+               VNAME3D(NVARS3D) = TR_DIFF(S)
                UNITS3D(NVARS3D) = 'CF/(mol/s)'
                VDESC3D(NVARS3D) = 
      &              'Sensitivity of cost function to emissions of ' //
      &              TRIM(VNAME3D(NVARS3D))
             END DO
+
 
          CASE DEFAULT
 
@@ -324,7 +336,7 @@ C Note: "CF" stands for "cost function units"
             CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT3)
 
          END SELECT
-
+         print*,'nlays in op_adj_file ',nlays3d
 C Create new file
          IF ( .NOT. OPEN3(ADJ_FILE, FSCREA3, PNAME) ) THEN
             XMSG = 'Could not create ' // TRIM(ADJ_FILE) // ' file'
