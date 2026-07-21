@@ -70,9 +70,9 @@ set ParOpt             # set for multiple PE's; comment out for single PE
 #>       m3bld will tell you, but will still compile the original code.
 #>       The workaround is to remove your "BLD" directory and start fresh.
 
-set ModDriver = driver/yamo_adj_bwd
+set ModDriver = driver/zenodo_cadj_bwd
 
-set ModChkpnt = chkpnt/chkpnt_ioapi
+set ModChkpnt = chkpnt/chkpnt_zenodo
 
  if ( $?ParOpt ) then
     set ModPar = par/par
@@ -80,15 +80,15 @@ set ModChkpnt = chkpnt/chkpnt_ioapi
     set ModPar = par/par_noop
  endif
 
-set ModInit   = init/adj_bwd
+set ModInit   = init/zenodo_cadj_bwd
 
 set ModAdjc   = ( // yamo option does not need denrate )
 
-set ModCpl    = couple/gencoor
+set ModCpl    = couple/zenodo
 
-set ModHadv   = hadv/hadv_bwd_noop
+set ModHadv   = hadv/zenodo_cadj_bwd
 
-set ModVadv   = vadv/vadv_bwd_noop
+set ModVadv   = vadv/zenodo_cadj_bwd
 
 set ModHdiff  = hdiff/zenodo_bwd
 
@@ -176,7 +176,7 @@ set F_NOAUTO_FLAGS = -fno-automatic
 set F_FLAGS = "$F_BASE_FLAGS $F_NOAUTO_FLAGS"
 set CPP_FLAGS  = ""
 set C_FLAGS    = "${myCFLAGS}"
-set LINK_FLAGS = "-g "
+set LINK_FLAGS = "-g -fbacktrace"
 
 # Set location of M3Bld executable
 set Blder = "$M3LIB/bldmake -verbose"
