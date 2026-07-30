@@ -160,8 +160,19 @@ C-----------------------------------------------------------------------
          WRITE( CONCMIN,'(1PE8.2)' ) CMIN
 
 C create advected species map to bc's
- 
+
          CALL ADVBC_MAP_ADJ ( CONCMIN, BCNAME, BCFAC, FZERO)
+
+C The adjoint lateral boundary condition at a prescribed (Dirichlet)
+C forward inflow boundary is zero: no cost-function sensitivity flows
+C back into the domain through a boundary whose value does not depend
+C on the interior state. Force the zero-BC path unconditionally, since
+C the presence of a forward BCON file does not change this. Without
+C this, XADV_BWD/YADV_BWD were substituting real forward concentration
+C values from the boundary condition file for BCON_ADJ, injecting
+C spurious nonzero sensitivities into LGRID at every inflow boundary
+C crossing, unrelated to any adjoint forcing.
+         FZERO = .TRUE.
 
          IF (.NOT.FZERO) THEN !slz
             CALL SUBHFILE ( MET_CRO_3D, GXOFF, GYOFF,
