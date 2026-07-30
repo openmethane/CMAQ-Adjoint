@@ -64,7 +64,6 @@ C Local Variables:
 
       INTEGER :: SDATE          ! current science process date, coded YYYYDDD
       INTEGER :: STIME          ! current science process time, coded HHMMSS
-      integer force_time 
       INTERFACE
          SUBROUTINE AERO_BWD(LGRID, JDATE, JTIME, TSTEP)
             IMPLICIT NONE
@@ -149,13 +148,6 @@ C-----------------------------------------------------------------------
 
       CALL NEXTIME(JDATE, JTIME, -TSTEP(2))
       WRITE(LOGDEV, '(/ 5X, A, I8, I7.6)') NMSG, JDATE, JTIME
-
-      if (mod(jtime, 10000).eq.0) then
-        force_time = jtime
-      else
-        force_time = 10000 *( jtime / 10000)
-      end if
-      CALL RD_FORCE_FILE(LGRID, JDATE, force_time)
 
       CALL AERO_BWD(LGRID, JDATE, JTIME, TSTEP)
 
