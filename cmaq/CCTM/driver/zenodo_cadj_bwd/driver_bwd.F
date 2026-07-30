@@ -77,6 +77,7 @@ C Local Variables:
       LOGICAL, ALLOCATABLE, SAVE :: XFIRST(:)
       REAL, POINTER :: LGRID(:, :, :, :)
       REAL, POINTER :: LGRID_EM(:, :, :, :)
+      REAL, ALLOCATABLE :: LGRID_FRC( :,:,:,: ) !adjoint forcing for this output step
       REAL, ALLOCATABLE :: ALGRID( :,:,:,: ) !average lgrid
       REAL, ALLOCATABLE :: ALGRID_EM( :,:,:,: ) !accumulated lgrid_em
       REAL              :: DIVFAC
@@ -187,6 +188,7 @@ C Allocate memory
       ALLOCATE(
      &     ASTEP(1:NLAYS),
      &     XFIRST(1:NLAYS),
+     &     LGRID_FRC(1:NCOLS, 1:NROWS, 1:NLAYS, 1:NSPCSD),
      &     STAT = ALLOCSTAT)
       IF ( ALLOCSTAT /= 0 ) THEN
          XMSG = 'Failure allocating LGRID, ASTEP, XFIRST'
@@ -267,6 +269,16 @@ C step, NREPS, just for this output step
 
 C Get the advection time steps, ASTEP(L)
          CALL ADVSTEP(SDATE, STIME, TSTEP, ASTEP)
+
+C Read adjoint forcing once per output step (SDATE/STIME is the hour
+C boundary at the start of this output step, matching the ADJ_FORCE
+C file's time resolution) and add it into LGRID exactly once, rather
+C than once per (dynamic, wind-dependent) sync sub-step
+         IF ( ADJ_FRC ) THEN
+            LGRID_FRC = 0.0
+            CALL RD_FORCE_FILE(LGRID_FRC, SDATE, STIME)
+            LGRID = LGRID + LGRID_FRC
+         END IF
 
          IF ( TRIM(LGRID_OUTPUT_FREQ) == 'OUTPUT_STEP' ) THEN
             ALGRID=LGRID
