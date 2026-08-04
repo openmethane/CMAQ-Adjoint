@@ -82,3 +82,7 @@ the compiled binary will successfully run to completion on known inputs.
 # Citations
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3780216.svg)](https://doi.org/10.5281/zenodo.3780216)
+
+This repo contains the work of many contributors. Attribution for specific
+features and changes can be found in the change log present in the headers of
+some individual files, and in the authors in git history.
