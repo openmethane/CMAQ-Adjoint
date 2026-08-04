@@ -235,8 +235,6 @@ C Create new adjoint output files and open for update
          CALL WR_ADJ_FILE(LGRID_EM, EDATE, ETIME, ADJ_LGRID_EM)
       END IF
 
-      FRCFAC=1./REAL(NREPS)
-
 C Read XFIRST from the file CTM_XFIRST_IN
       IUNIT = GETEFILE(CTM_XFIRST_IN, .TRUE., .TRUE., PNAME)
       IF ( IUNIT > 0 ) THEN
@@ -269,13 +267,26 @@ C step, NREPS, just for this output step
 C Get the advection time steps, ASTEP(L)
          CALL ADVSTEP(SDATE, STIME, TSTEP, ASTEP)
 
-C Read adjoint forcing once per output step (SDATE/STIME is the hour
-C boundary at the start of this output step, matching the ADJ_FORCE
-C file's time resolution) and add it into LGRID exactly once, rather
-C than once per (dynamic, wind-dependent) sync sub-step
+C Read the adjoint forcing once per output step and add it into LGRID
+C exactly once, rather than once per (dynamic, wind-dependent) sync
+C sub-step.
+C
+C The record is read at JDATE/JTIME, the END of this output step, and is
+C injected before the sub-step loop so that it enters the adjoint at that
+C same instant. This is the adjoint of a cost function defined on the
+C instantaneous concentrations the forward model writes to CTM_CONC_1,
+C whose records are also stamped at output-step ends (see WR_CONC in
+C driver_fwd.F). SDATE/STIME, the start of the output step, would be one
+C output step early and would ask for a record at the run start time,
+C for which the forward run writes no concentrations.
+C
+C Note: this is NOT the adjoint of the hour-averaged A_CONC_1 output. If
+C the cost function is ever moved onto ACONC, the forcing has to be spread
+C across the NREPS sub-steps with the same trapezoidal weights the forward
+C model uses to build AGRID, not applied in a single lump here.
          IF ( ADJ_FRC ) THEN
             LGRID_FRC = 0.0
-            CALL RD_FORCE_FILE(LGRID_FRC, SDATE, STIME)
+            CALL RD_FORCE_FILE(LGRID_FRC, JDATE, JTIME)
             LGRID = LGRID + LGRID_FRC
          END IF
 
