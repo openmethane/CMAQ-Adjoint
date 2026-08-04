@@ -49,7 +49,7 @@ C+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
       USE GRID_CONF             ! horizontal & vertical domain specifications
       USE CHK_FILES_DEFS        ! adjoint checkpoint files definition
-      USE EMIS_DEFN, ONLY : EMLAYS ! no. of emissions layers, set in PCGRID
+      USE EMIS_DEFN, ONLY : EMSENSL ! emis sensitivity layers, set in PCGRID
       USE PCGRID_DEFN, ONLY : N_SPC_PEMIS ! species slots in PLGRID_EM
       USE PMEM_DEFN, ONLY : N_EMIS_PM, VPOC, VPSO4, VPNO3, VPEC, VPMF,
      &                      VPMC
@@ -266,7 +266,7 @@ C and the same species, in the same order, as the "isens" slots that
 C GET_EMIS_B (EMIS_DEFN_B) fills. WR_ADJ_FILE writes the array with a single
 C WRITE3/ALLVAR3 call from a flat buffer, so any disagreement silently
 C mislabels or truncates the output rather than raising an error.
-            NLAYS3D = EMLAYS    ! set from CTM_EMLAYS in PCGRID_INIT
+            NLAYS3D = EMSENSL   ! set from CTM_EMSENSL in PCGRID_INIT
             NVARS3D = 0
 
             IF ( TRIM(LGRID_OUTPUT_FREQ) == 'SYNC_STEP' ) THEN

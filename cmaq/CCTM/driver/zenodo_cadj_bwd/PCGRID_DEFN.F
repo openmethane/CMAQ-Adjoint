@@ -53,7 +53,7 @@ C-----------------------------------------------------------------------
 
       USE GRID_CONF           ! horizontal & vertical domain specifications
       USE CGRID_SPCS          ! CGRID species number and offsets
-      USE EMIS_DEFN, ONLY: EMLAYS
+      USE EMIS_DEFN, ONLY: EMLAYS, EMSENSL
       USE PMEM_DEFN, ONLY: N_EMIS_PM
 
       IMPLICIT NONE
@@ -93,6 +93,7 @@ C PCGRID extents
          INTEGER :: LROW
          INTEGER :: HROW
          CHARACTER( 16 ), SAVE :: CTM_EMLAYS = 'CTM_EMLAYS'
+         CHARACTER( 16 ), SAVE :: CTM_EMSENSL = 'CTM_EMSENSL'
          INTEGER :: STATUS
          INTEGER, EXTERNAL :: ENVINT
 
@@ -104,6 +105,24 @@ C PCGRID extents
 
 !slz read emlays from environment
             EMLAYS = ENVINT( CTM_EMLAYS, 'Number of Emissions Layers', NLAYS, STATUS )
+
+C Depth of the emissions sensitivity output. This is a separate setting
+C from EMLAYS: the driving 4D-Var system sizes ADJ_LGRID_EM from its own
+C template and asks for that depth via CTM_EMSENSL, which may be deeper
+C than the emissions input. GET_EMIS_B only fills layers 1:EMLAYS, so any
+C layers above that stay zero. It may not be shallower than EMLAYS, or
+C GET_EMIS_B would write past the end of PLGRID_EM, nor deeper than
+C NLAYS, which is as far as the vertical coordinate is defined.
+            EMSENSL = ENVINT( CTM_EMSENSL,
+     &           'Number of emission sensitivity layers', EMLAYS, STATUS )
+            IF ( EMSENSL .LT. EMLAYS .OR. EMSENSL .GT. NLAYS ) THEN
+               WRITE( XMSG,'(A, I3, A, I3, A, I3)' )
+     &              'CTM_EMSENSL = ', EMSENSL,
+     &              ' must lie between CTM_EMLAYS = ', EMLAYS,
+     &              ' and NLAYS = ', NLAYS
+               CALL M3WARN ( 'PCGRID_INIT', 0, 0, XMSG )
+               SUCCESS = .FALSE.; RETURN
+            END IF
 
 #ifdef parallel
             LCOL = 1 - NTHIK
@@ -127,7 +146,7 @@ C PCGRID extents
      &                 STAT = ALLOCSTAT )
             ALLOCATE ( PLGRID( LCOL:HCOL,LROW:HROW,NLAYS,NSPCSD ),
      &                 STAT = ALLOCSTAT )
-            ALLOCATE ( PLGRID_EM( LCOL:HCOL,LROW:HROW,EMLAYS,N_SPC_PEMIS ),
+            ALLOCATE ( PLGRID_EM( LCOL:HCOL,LROW:HROW,EMSENSL,N_SPC_PEMIS ),
      &                 STAT = ALLOCSTAT )
 
             IF ( ALLOCSTAT .NE. 0 ) THEN
