@@ -49,7 +49,10 @@ C+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
       USE GRID_CONF             ! horizontal & vertical domain specifications
       USE CHK_FILES_DEFS        ! adjoint checkpoint files definition
-      USE EMIS_DEFN, ONLY : EMSENSL
+      USE EMIS_DEFN, ONLY : EMSENSL ! emis sensitivity layers, set in PCGRID
+      USE PCGRID_DEFN, ONLY : N_SPC_PEMIS ! species slots in PLGRID_EM
+      USE PMEM_DEFN, ONLY : N_EMIS_PM, VPOC, VPSO4, VPNO3, VPEC, VPMF,
+     &                      VPMC
 
       IMPLICIT NONE
 
@@ -58,10 +61,9 @@ C Include Files:
       INCLUDE SUBST_AE_SPC      ! aerosol species table
       INCLUDE SUBST_NR_SPC      ! non-reactive species table
       INCLUDE SUBST_TR_SPC      ! tracer species table
-      INCLUDE SUBST_GC_DIFF     ! gas chem diffusion species and map table
-      INCLUDE SUBST_AE_DIFF     ! aerosol diffusion species and map table
-      INCLUDE SUBST_NR_DIFF     ! non-react diffusion species and map table
-      INCLUDE SUBST_TR_DIFF     ! tracer diffusion species and map table
+      INCLUDE SUBST_GC_EMIS     ! gas chem emissions species and map table
+      INCLUDE SUBST_NR_EMIS     ! non-react emissions species and map table
+      INCLUDE SUBST_TR_EMIS     ! tracer emissions species and map table
       INCLUDE SUBST_IOPARMS     ! I/O parameters definitions
       INCLUDE SUBST_IODECL      ! I/O definitions and declarations
       INCLUDE SUBST_IOFDESC     ! file header data structure
@@ -88,6 +90,12 @@ C Local Variables:
       INTEGER :: STATUS
 
       INTEGER :: K, S           ! loop counters
+
+C Names of the PM emissions species, in the PMEM_DEFN index order used by
+C GET_AERO_EMIS_B. PMEM_DEFN's own PM_EMIS array cannot be used here: it is
+C filled by GET_PMEM_MAP from EMIS_INIT, which does not run until the first
+C VDIFF_BWD call, long after this routine creates the output files.
+      CHARACTER(16) :: PM_EMIS_NAME(N_EMIS_PM)
 
 C-----------------------------------------------------------------------
 
@@ -253,7 +261,12 @@ C Note: "CF" stands for "cost function units"
                FDESC3D(K) = ' '
             END DO
 
-            NLAYS3D = nlays
+C The variables below must describe PLGRID_EM exactly: the same layer count
+C and the same species, in the same order, as the "isens" slots that
+C GET_EMIS_B (EMIS_DEFN_B) fills. WR_ADJ_FILE writes the array with a single
+C WRITE3/ALLVAR3 call from a flat buffer, so any disagreement silently
+C mislabels or truncates the output rather than raising an error.
+            NLAYS3D = EMSENSL   ! set from CTM_EMSENSL in PCGRID_INIT
             NVARS3D = 0
 
             IF ( TRIM(LGRID_OUTPUT_FREQ) == 'SYNC_STEP' ) THEN
@@ -265,69 +278,67 @@ C Note: "CF" stands for "cost function units"
             END IF
 
 C Note: "CF" stands for "cost function units"
-!       Only diffused species are calculated as emissions currently. so
-!       the loop is over the diffused species. 
 
-            ! dbg.1.2015.slc
-            !write(*,*) 'N_*_DIFF, GC: ',N_GC_DIFF,' AE: ',N_AE_DIFF
-            !write(*,*) 'NR: ',N_NR_DIFF,' TR: ',N_TR_DIFF 
-            DO S = 1, N_GC_DIFF
+C Aerosol (PM) emissions species. GET_EMIS_B only calls GET_AERO_EMIS_B,
+C and so only fills these slots, when the mechanism carries aerosols.
+            IF ( N_AE_SPC .GT. 0 ) THEN
+               PM_EMIS_NAME(VPOC)  = 'POC'
+               PM_EMIS_NAME(VPSO4) = 'PSO4'
+               PM_EMIS_NAME(VPNO3) = 'PNO3'
+               PM_EMIS_NAME(VPEC)  = 'PEC'
+               PM_EMIS_NAME(VPMF)  = 'PMFINE'
+               PM_EMIS_NAME(VPMC)  = 'PMC'
+
+               DO S = 1, N_EMIS_PM
+                  NVARS3D = NVARS3D + 1
+                  VTYPE3D(NVARS3D) = M3REAL
+                  VNAME3D(NVARS3D) = PM_EMIS_NAME(S)
+                  UNITS3D(NVARS3D) = 'CF/(g/s)'
+                  VDESC3D(NVARS3D) =
+     &                 'Sensitivity of cost function to emissions of ' //
+     &                 TRIM(VNAME3D(NVARS3D))
+               END DO
+            END IF
+
+C Gas chemistry emissions species
+            DO S = 1, N_GC_EMIS
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = GC_DIFF(S)
-               UNITS3D(NVARS3D) = 'CF/(ppmv/s)'
-               VDESC3D(NVARS3D) = 
-     &              'Sensitivity of cost function to emissions of ' //
-     &              TRIM(VNAME3D(NVARS3D))
-            END DO
-
-!            NVARS3D = NVARS3D + 1
-!            VTYPE3D(NVARS3D) = M3REAL
-!            VNAME3D(NVARS3D) = 'RHOJ'
-!            UNITS3D(NVARS3D) = 'CF/m*kg/m**3'
-!            VDESC3D(NVARS3D) = 
-!     &           'Sensitivity of cost function to emissions of  ' //
-!     &           TRIM(VNAME3D(NVARS3D))
-
-!     Aerosol species - slc.7.2014
-            DO S = 1, N_AE_DIFF
-               NVARS3D = NVARS3D + 1
-               VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = AE_DIFF(S)
-               IF ( VNAME3D(NVARS3D)(1:3) == 'NUM' ) THEN
-                  UNITS3D(NVARS3D) = 'CF/(g/s)'
-               ELSE IF ( VNAME3D(NVARS3D)(1:3) == 'SRF' ) THEN
-                  UNITS3D(NVARS3D) = 'CF/(g/s)'
-               ELSE
-                  UNITS3D(NVARS3D) = 'CF/(g/s)'
-               END IF
-               VDESC3D(NVARS3D) = 
-     &              'Sensitivity of cost function to emissions of ' //
-     &              TRIM(VNAME3D(NVARS3D))
-            END DO
-
-!        Ammonia and semi-volatile compounds
-            DO S = 1, N_NR_DIFF
-               NVARS3D = NVARS3D + 1
-               VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = NR_DIFF(S)
+               VNAME3D(NVARS3D) = GC_EMIS(S)
                UNITS3D(NVARS3D) = 'CF/(mol/s)'
-               VDESC3D(NVARS3D) = 
+               VDESC3D(NVARS3D) =
      &              'Sensitivity of cost function to emissions of ' //
      &              TRIM(VNAME3D(NVARS3D))
             END DO
 
-!        Tracer species - slc.7.2014
-            DO S = 1, N_TR_DIFF
+C Non-reactive emissions species (ammonia and semi-volatile compounds)
+            DO S = 1, N_NR_EMIS
                NVARS3D = NVARS3D + 1
                VTYPE3D(NVARS3D) = M3REAL
-               VNAME3D(NVARS3D) = TR_DIFF(S)
+               VNAME3D(NVARS3D) = NR_EMIS(S)
                UNITS3D(NVARS3D) = 'CF/(mol/s)'
-               VDESC3D(NVARS3D) = 
+               VDESC3D(NVARS3D) =
      &              'Sensitivity of cost function to emissions of ' //
      &              TRIM(VNAME3D(NVARS3D))
             END DO
 
+C Tracer emissions species
+            DO S = 1, N_TR_EMIS
+               NVARS3D = NVARS3D + 1
+               VTYPE3D(NVARS3D) = M3REAL
+               VNAME3D(NVARS3D) = TR_EMIS(S)
+               UNITS3D(NVARS3D) = 'CF/(mol/s)'
+               VDESC3D(NVARS3D) =
+     &              'Sensitivity of cost function to emissions of ' //
+     &              TRIM(VNAME3D(NVARS3D))
+            END DO
+
+            IF ( NVARS3D /= N_SPC_PEMIS ) THEN
+               WRITE(XMSG, '(A, I4, A, I4)')
+     &              'ADJ_LGRID_EM header has ', NVARS3D,
+     &              ' variables but PLGRID_EM has ', N_SPC_PEMIS
+               CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT3)
+            END IF
 
          CASE DEFAULT
 

@@ -53,17 +53,24 @@ C-----------------------------------------------------------------------
 
       USE GRID_CONF           ! horizontal & vertical domain specifications
       USE CGRID_SPCS          ! CGRID species number and offsets
-      USE EMIS_DEFN, ONLY: EMLAYS
+      USE EMIS_DEFN, ONLY: EMLAYS, EMSENSL
       USE PMEM_DEFN, ONLY: N_EMIS_PM
 
       IMPLICIT NONE
 
+      INCLUDE SUBST_AE_SPC    ! aerosol species table
       INCLUDE SUBST_GC_EMIS   ! gas chemistry species table
       INCLUDE SUBST_AE_EMIS   ! aerosol species table
       INCLUDE SUBST_NR_EMIS   ! non-reactive species table
       INCLUDE SUBST_TR_EMIS   ! tracer species table
 
-      INTEGER :: N_SPC_PEMIS
+C Number of species slots in the emissions sensitivity array PLGRID_EM.
+C This must match the "isens" slots filled by GET_EMIS_B (EMIS_DEFN_B), in
+C order: the N_EMIS_PM aerosol slots, which GET_AERO_EMIS_B fills only when
+C the mechanism carries aerosol species, then GC_EMIS, NR_EMIS and TR_EMIS.
+C OP_ADJ_FILE builds the ADJ_LGRID_EM header from the same rule and checks
+C the total against this value.
+      INTEGER, SAVE :: N_SPC_PEMIS
       REAL, ALLOCATABLE, SAVE, TARGET :: PCGRID( :,:,:,: )
       REAL, ALLOCATABLE, SAVE, TARGET :: PLGRID( :,:,:,: )
       REAL, ALLOCATABLE, SAVE, TARGET :: PLGRID_EM( :,:,:,: )
@@ -86,6 +93,7 @@ C PCGRID extents
          INTEGER :: LROW
          INTEGER :: HROW
          CHARACTER( 16 ), SAVE :: CTM_EMLAYS = 'CTM_EMLAYS'
+         CHARACTER( 16 ), SAVE :: CTM_EMSENSL = 'CTM_EMSENSL'
          INTEGER :: STATUS
          INTEGER, EXTERNAL :: ENVINT
 
@@ -97,6 +105,24 @@ C PCGRID extents
 
 !slz read emlays from environment
             EMLAYS = ENVINT( CTM_EMLAYS, 'Number of Emissions Layers', NLAYS, STATUS )
+
+C Depth of the emissions sensitivity output. This is a separate setting
+C from EMLAYS: the driving 4D-Var system sizes ADJ_LGRID_EM from its own
+C template and asks for that depth via CTM_EMSENSL, which may be deeper
+C than the emissions input. GET_EMIS_B only fills layers 1:EMLAYS, so any
+C layers above that stay zero. It may not be shallower than EMLAYS, or
+C GET_EMIS_B would write past the end of PLGRID_EM, nor deeper than
+C NLAYS, which is as far as the vertical coordinate is defined.
+            EMSENSL = ENVINT( CTM_EMSENSL,
+     &           'Number of emission sensitivity layers', EMLAYS, STATUS )
+            IF ( EMSENSL .LT. EMLAYS .OR. EMSENSL .GT. NLAYS ) THEN
+               WRITE( XMSG,'(A, I3, A, I3, A, I3)' )
+     &              'CTM_EMSENSL = ', EMSENSL,
+     &              ' must lie between CTM_EMLAYS = ', EMLAYS,
+     &              ' and NLAYS = ', NLAYS
+               CALL M3WARN ( 'PCGRID_INIT', 0, 0, XMSG )
+               SUCCESS = .FALSE.; RETURN
+            END IF
 
 #ifdef parallel
             LCOL = 1 - NTHIK
@@ -110,16 +136,17 @@ C PCGRID extents
             HROW = NROWS
 #endif
 
-            N_SPC_PEMIS = N_EMIS_PM
-     &                  + N_GC_EMIS   ! = N_GC_SPC + 1
+            N_SPC_PEMIS = N_GC_EMIS   ! = N_GC_SPC + 1
      &                  + N_NR_EMIS
      &                  + N_TR_EMIS
-            
+            IF ( N_AE_SPC .GT. 0 )
+     &           N_SPC_PEMIS = N_SPC_PEMIS + N_EMIS_PM
+
             ALLOCATE ( PCGRID( LCOL:HCOL,LROW:HROW,NLAYS,NSPCSD ),
      &                 STAT = ALLOCSTAT )
             ALLOCATE ( PLGRID( LCOL:HCOL,LROW:HROW,NLAYS,NSPCSD ),
      &                 STAT = ALLOCSTAT )
-            ALLOCATE ( PLGRID_EM( LCOL:HCOL,LROW:HROW,EMLAYS,N_SPC_PEMIS ),
+            ALLOCATE ( PLGRID_EM( LCOL:HCOL,LROW:HROW,EMSENSL,N_SPC_PEMIS ),
      &                 STAT = ALLOCSTAT )
 
             IF ( ALLOCSTAT .NE. 0 ) THEN
