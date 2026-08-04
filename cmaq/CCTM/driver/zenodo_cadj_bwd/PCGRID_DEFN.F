@@ -58,12 +58,19 @@ C-----------------------------------------------------------------------
 
       IMPLICIT NONE
 
+      INCLUDE SUBST_AE_SPC    ! aerosol species table
       INCLUDE SUBST_GC_EMIS   ! gas chemistry species table
       INCLUDE SUBST_AE_EMIS   ! aerosol species table
       INCLUDE SUBST_NR_EMIS   ! non-reactive species table
       INCLUDE SUBST_TR_EMIS   ! tracer species table
 
-      INTEGER :: N_SPC_PEMIS
+C Number of species slots in the emissions sensitivity array PLGRID_EM.
+C This must match the "isens" slots filled by GET_EMIS_B (EMIS_DEFN_B), in
+C order: the N_EMIS_PM aerosol slots, which GET_AERO_EMIS_B fills only when
+C the mechanism carries aerosol species, then GC_EMIS, NR_EMIS and TR_EMIS.
+C OP_ADJ_FILE builds the ADJ_LGRID_EM header from the same rule and checks
+C the total against this value.
+      INTEGER, SAVE :: N_SPC_PEMIS
       REAL, ALLOCATABLE, SAVE, TARGET :: PCGRID( :,:,:,: )
       REAL, ALLOCATABLE, SAVE, TARGET :: PLGRID( :,:,:,: )
       REAL, ALLOCATABLE, SAVE, TARGET :: PLGRID_EM( :,:,:,: )
@@ -110,11 +117,12 @@ C PCGRID extents
             HROW = NROWS
 #endif
 
-            N_SPC_PEMIS = N_EMIS_PM
-     &                  + N_GC_EMIS   ! = N_GC_SPC + 1
+            N_SPC_PEMIS = N_GC_EMIS   ! = N_GC_SPC + 1
      &                  + N_NR_EMIS
      &                  + N_TR_EMIS
-            
+            IF ( N_AE_SPC .GT. 0 )
+     &           N_SPC_PEMIS = N_SPC_PEMIS + N_EMIS_PM
+
             ALLOCATE ( PCGRID( LCOL:HCOL,LROW:HROW,NLAYS,NSPCSD ),
      &                 STAT = ALLOCSTAT )
             ALLOCATE ( PLGRID( LCOL:HCOL,LROW:HROW,NLAYS,NSPCSD ),

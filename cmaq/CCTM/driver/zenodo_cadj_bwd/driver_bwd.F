@@ -50,7 +50,7 @@ C-----------------------------------------------------------------------
       USE ADJOINT_FILES         ! adjoint file data and functions
       USE CHK_FILES_DEFS        ! adjoint checkpoint files definition
       USE CHK_FILES             ! adjoint checkpoint files routines
-      USE EMIS_DEFN, ONLY : SET_EMSENSL, EMSENSL ! layers of emissions sensitivity 
+      USE EMIS_DEFN, ONLY : EMLAYS ! no. of emissions layers, set in PCGRID
 
       IMPLICIT NONE
 
@@ -172,10 +172,9 @@ C and vertical layer structure
          WRITE(LOGDEV, '(5X, A)') XMSG
          CALL M3EXIT(PNAME, JDATE, JTIME, ' ', XSTAT1)
        END IF
-       
-!      CALL set_EMSENSL( JDATE, JTIME )
 
-C Initialize PCGRID
+C Initialize PCGRID. This also sets EMLAYS from CTM_EMLAYS and sizes
+C PLGRID_EM, so it must run before OP_ADJ_FILE creates ADJ_LGRID_EM.
       IF ( .NOT. PCGRID_INIT() ) THEN
          XMSG = 'Failure defining horizontal domain'
          CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT2)
@@ -219,7 +218,7 @@ C Create new adjoint output files and open for update
       IF ( TRIM(LGRID_OUTPUT_FREQ) == 'OUTPUT_STEP' ) THEN
          ALLOCATE(
      &       ALGRID(NCOLS, NROWS, NLAYS, NSPCSD),
-     &       ALGRID_EM(NCOLS, NROWS, NLAYS, N_SPC_PEMIS),
+     &       ALGRID_EM(NCOLS, NROWS, EMLAYS, N_SPC_PEMIS),
      &       STAT = ALLOCSTAT)
          IF ( ALLOCSTAT /= 0 ) THEN
             XMSG = 'Failure allocating ALGRID or ALGRID_EM'
