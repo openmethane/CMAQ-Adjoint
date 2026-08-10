@@ -271,6 +271,7 @@ C Arguments:
 C External Functions:
 
          INTEGER, EXTERNAL :: TRIMLEN
+         INTEGER, EXTERNAL :: SEC2TIME, TIME2SEC
 
 C Local Variables:
 
@@ -279,6 +280,7 @@ C Local Variables:
          REAL,    SAVE :: CNVTP         ! intermediate combined conv. factor
          REAL             DELT          ! interpolation factor
          INTEGER          C, R, L, N, S, V ! loop induction variables
+         INTEGER          EDATE, ETIME  ! start of the current output step
 
          CHARACTER( 16 ) :: PNAME = 'GET_EMIS'
          CHARACTER( 120 ) :: XMSG = ' '
@@ -297,7 +299,19 @@ C Get domain decomp info from the emissions file
             CNVTP = CONVPA * CNVTE
          END IF
 
-C read & interpolate emissions (create VDEMIS in the species class order)
+C The emissions files are py4dvar's convention, not met's: the value at hour H
+C is the constant rate for the whole [H, H+1) output step, not an instantaneous
+C sample to interpolate toward H+1's value. JDATE/JTIME here is the current sync
+C sub-step's midpoint, which drifts across the output step; snap it back to the
+C output step's own start so INTERPX returns that hour's record exactly, with no
+C blend toward the next one.
+         EDATE = JDATE
+         ETIME = JTIME
+         CALL NEXTIME ( EDATE, ETIME, -SEC2TIME( MOD( TIME2SEC( JTIME ),
+     &                                                 TIME2SEC( TSTEP( 1 ) ) ) ) )
+
+C read emissions, held constant over the output step (create VDEMIS in the
+C species class order)
 
          VDEMIS = 0.0   ! array assignment
 
@@ -307,7 +321,7 @@ C read & interpolate emissions (create VDEMIS in the species class order)
 C                                       vvvvvvv - emis surrogate names
             IF ( .NOT. INTERPX( EMIS_1, GC_EMIS( S ), PNAME,
      &                          STARTCOL,ENDCOL, STARTROW,ENDROW, 1,EMLYRS,
-     &                          JDATE, JTIME, BUFF ) ) THEN
+     &                          EDATE, ETIME, BUFF ) ) THEN
                XMSG = 'Could not read  '
      &              // GC_EMIS( S )( 1:TRIMLEN( GC_EMIS( S ) ) )
      &              // ' from ' // EMIS_1
@@ -416,7 +430,7 @@ C non-reactive gases (conversion to ppmv/s) VDEMIS in this order from RDEMIS
 C                                       vvvvvvv - emis surrogate names
             IF ( .NOT. INTERPX( EMIS_1, NR_EMIS( S ), PNAME,
      &                          STARTCOL,ENDCOL, STARTROW,ENDROW, 1,EMLYRS,
-     &                          JDATE, JTIME, BUFF ) ) THEN
+     &                          EDATE, ETIME, BUFF ) ) THEN
                XMSG = 'Could not read  '
      &              // NR_EMIS( S )( 1:TRIMLEN( NR_EMIS( S ) ) )
      &              // ' from ' // EMIS_1
@@ -448,7 +462,7 @@ C tracer gases (conversion to ppmv/s)
 C                                               vvvvvvv - emis surrogate names
                IF ( .NOT. INTERPX( EMIS_TRAC_1, TR_EMIS( S ), PNAME,
      &                             STARTCOL,ENDCOL, STARTROW,ENDROW, 1,EMLYRS,
-     &                             JDATE, JTIME, BUFF ) ) THEN
+     &                             EDATE, ETIME, BUFF ) ) THEN
                   XMSG = 'Could not read  '
      &                 // TR_EMIS( S )( 1:TRIMLEN( TR_EMIS( S ) ) )
      &                 // ' from ' // EMIS_TRAC_1
