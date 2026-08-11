@@ -35,7 +35,6 @@ C Parameters
       CHARACTER(16), PARAMETER :: ADJ_FORCE_FILE  = 'ADJ_FORCE'
 
       CHARACTER(16) :: LGRID_OUTPUT_FREQ
-      REAL       :: FRCFAC
       LOGICAL    :: ADJ_FRC
 
 C$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
