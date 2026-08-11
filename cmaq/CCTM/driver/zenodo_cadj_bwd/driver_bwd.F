@@ -235,11 +235,7 @@ C Create new adjoint output files and open for update
          CALL WR_ADJ_FILE(LGRID_EM, EDATE, ETIME, ADJ_LGRID_EM)
       ELSE IF ( TRIM(LGRID_OUTPUT_FREQ) == 'OUTPUT_STEP' ) THEN
 C LGRID_EM's records are labelled one output step earlier than LGRID/CONC
-C (see the SDATE/STIME write below), so that a record's label matches the
-C emissions file record it is actually sensitive to under the "hour H holds
-C until H+1" convention (EMIS_DEFN.F). There is no output step beyond the
-C run's end to consume a record timestamped here, so this boundary value
-C is genuinely zero.
+C so that emissions and sensitivities are equivalently labelled
          CALL WR_ADJ_FILE(LGRID_EM, EDATE, ETIME, ADJ_LGRID_EM)
       END IF
 
@@ -300,13 +296,6 @@ C model uses to build AGRID, not applied in a single lump here.
 
          IF ( TRIM(LGRID_OUTPUT_FREQ) == 'OUTPUT_STEP' ) THEN
             ALGRID=LGRID
-C ALGRID_EM sums each sync sub-step's emissions sensitivity with equal
-C weight, zeroed fresh for this output step. Unlike LGRID, which is
-C averaged over the output step to match the forward model's
-C hour-averaged ACONC, emissions are now held constant for the whole
-C output step (see EMIS_DEFN.F), so every sub-step's contribution
-C belongs entirely to this one hour and none of it is shared, trapezoidal
-C-style, with a neighbouring output step.
             ALGRID_EM=0.0
          ENDIF
          DIVFAC = 0.5 / FLOAT(NREPS)
@@ -330,13 +319,6 @@ C-style, with a neighbouring output step.
          IF ( TRIM(LGRID_OUTPUT_FREQ) == 'OUTPUT_STEP' ) THEN
             ALGRID=DIVFAC * ( ALGRID + LGRID )
             CALL WR_ADJ_FILE(ALGRID, ADATE, ATIME, ADJ_LGRID)
-C ALGRID_EM is written at SDATE/STIME, this output step's start, not ADATE/
-C ATIME. LGRID (and hence ALGRID) is a snapshot, correctly labelled by the
-C instant it describes. Emissions sensitivity is a rate held over the whole
-C step, and EMIS_DEFN.F now reads the emissions file the same way CMAQ's
-C own forward run treats it (hour H's record holds until H+1) -- so this
-C output step's summed sensitivity belongs to the file record at its start,
-C matching the label an emissions file record actually carries.
             CALL WR_ADJ_FILE(ALGRID_EM, SDATE, STIME, ADJ_LGRID_EM)
          END IF
 
