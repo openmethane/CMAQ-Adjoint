@@ -137,6 +137,7 @@
          LOGDEV = INIT3 ()
          FIRSTIME = .FALSE.
 
+         VARDESC = 'Create checkpoint files during the forward run'
          CREATE_CHK = envyn('CREATE_CHK', VARDESC , CREATE_CHK, STATUS)
          IF ( STATUS > 0 ) THEN
             XMSG = 'Invalid value for CREATE_CHK'
@@ -144,7 +145,14 @@
          END IF
       END IF
 
-      IF(.NOT.CREATE_CHK) RETURN !slz check file not created for FDM
+!     CREATE_CHK suppresses checkpointing for finite-difference testing in
+!     the forward run. It must not suppress opening an existing checkpoint
+!     file for reading: this routine serves both directions, and the
+!     backward run calls it with CREATENEW = .FALSE. to open the files the
+!     forward run wrote. CHK_FILE_READ has no equivalent guard, so returning
+!     here on a read-open would leave the backward run reading a file it
+!     never opened.
+      IF ( CREATENEW .AND. .NOT. CREATE_CHK ) RETURN
 
 !     File description structure
       CHK => CHKS(CHK_ID)

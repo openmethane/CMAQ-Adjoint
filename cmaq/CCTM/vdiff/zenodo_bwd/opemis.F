@@ -139,11 +139,21 @@ C Open the emissions file (for gas chem, aerosols and non-reactive species)
          IF ( EMLAYS .EQ. 0 ) THEN
             EMLAYS = NLAYS3D
          ELSE
-!slzx            IF ( EMLAYS .NE. NLAYS3D ) THEN
-!slzx               WRITE( XMSG,'(A, I3, A, I3)' ) 'Tracer No. of emis layers ', EMLAYS,
-!slzx     &         ' Different than Gas No. of emis layers: ', NLAYS3D 
-!slzx               CALL M3EXIT( PNAME, JDATE, JTIME, XMSG, XSTAT2 )
-!slzx            END IF
+
+C EMLAYS already has a value. Unlike the forward copy of this routine,
+C which zeroes it on entry and so always takes it from this file, the
+C backward run arrives here with EMLAYS already set from CTM_EMLAYS by
+C PCGRID_INIT -- it has to be, because PLGRID_EM is sized before the
+C first emissions read. Nothing else compares the two, so without this
+C check an environment that disagrees with the emissions file silently
+C gives the adjoint a different number of emissions layers than the
+C forward run used.
+            IF ( EMLAYS .NE. NLAYS3D ) THEN
+               WRITE( XMSG,'(A, I3, A, I3)' )
+     &         'No. of emis layers ', EMLAYS,
+     &         ' does not match the emissions file: ', NLAYS3D
+               CALL M3EXIT( PNAME, JDATE, JTIME, XMSG, XSTAT2 )
+            END IF
          END IF
 
          DO N = 1, N_GC_EMIS
