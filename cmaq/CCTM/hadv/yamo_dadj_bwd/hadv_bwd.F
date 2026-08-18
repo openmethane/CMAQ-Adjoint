@@ -62,9 +62,9 @@ C Parameters:
      &     + 1                  ! for advecting RHO*SqRDMT
 
 #ifdef parallel
-      INTEGER, PARAMETER :: SWP = 3
+#define SWP 3
 #else
-      INTEGER, PARAMETER :: SWP = 1
+#DEFINE SWP 1
 #endif
 
 C Arguments:

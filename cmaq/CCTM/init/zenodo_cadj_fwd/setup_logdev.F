@@ -18,47 +18,56 @@ C   permissions subject to the above restrictions.                     *
 C***********************************************************************
 
 C RCS file, release, date & time of last delta, author, state, [and locker]
-C $Header: /Volumes/Data/CVS/CMAQ_CVSrepos/CCTM/src/vdiff/vdiff_noop/vdiff_noop.F,v 1.1.1.1 2010/06/14 16:03:11 sjr Exp $ 
+C $Header: /Volumes/Data/CVS/CMAQ_CVSrepos/CCTM/src/init/yamo/setup_logdev.F,v 1.1.1.1 2010/06/14 16:03:05 sjr Exp $
 
 C what(1) key, module and SID; SCCS file; date and time of last delta:
-C @(#)vdiff_noop.F      1.1 /project/mod3/CMAQ/src/vdiff/vdiff_noop/SCCS/s.vdiff_noop.F 24 Jun 1997 12:48:38
+C %W% %P% %G% %U%
 
 C:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-       SUBROUTINE VDIFF ( CGRID, JDATE, JTIME, TSTEP )
+      FUNCTION SETUP_LOGDEV ()  RESULT ( LOGDEV )
 
-C   04/06/96 Jeff Young for upgraded Models-3 min iov
-C    1Mar02  Jeff: generic CGRID declaration
-C-----------------------------------------------------------------------
+C Revision History:
+C
+C   26 Dec, 01 David Wong
+C      -- removed MPI_INIT call since the same function has been called in
+C         subroutine PAR_INIT
+C   11 Jun 02 J.Young - minor mods
 
       IMPLICIT NONE
+#include      SUBST_IODECL      ! I/O definitions and declarations
 
-!     INCLUDE SUBST_HGRD_ID     ! horizontal dimensioning parameters
-!     INCLUDE SUBST_VGRD_ID     ! vertical dimensioning parameters
-      INCLUDE SUBST_IODECL      ! I/O definitions and declarations
+#ifdef parallel      
+      INCLUDE SUBST_MPICH
+#endif
 
-C Arguments:
+      CHARACTER( 48 ) :: EQNAME
+      CHARACTER(  8 ) :: PRESTR = 'CTM_LOG_'
+      CHARACTER(  3 ) :: CMYPE
+      CHARACTER( 96 ) :: IOLOGEQ
+      CHARACTER( 16 ) :: APPL = 'CTM_APPL'
 
-!     REAL         CGRID( NCOLS,NROWS,NLAYS,* ) !  concentrations
-      REAL, POINTER :: CGRID( :,:,:,: )
-      INTEGER      JDATE        ! current model date, coded YYYYDDD
-      INTEGER      JTIME        ! current model time, coded HHMMSS
-      INTEGER      TSTEP( 2 )   ! time step vector (HHMMSS)
-                                ! TSTEP(1) = local output step
-                                ! TSTEP(2) = sciproc sync. step (chem)
+      INTEGER, EXTERNAL :: TRIMLEN
+      INTEGER :: ERROR, MYPE
+      INTEGER :: LOGDEV
 
-C Local variables:
- 
-      LOGICAL, SAVE :: FIRSTIME = .TRUE.
-      INTEGER, SAVE :: LOGDEV
+#ifdef parallel
+      CALL MPI_COMM_RANK ( MPI_COMM_WORLD, MYPE, ERROR )
+#else
+      MYPE = 0
+#endif
 
-      IF ( FIRSTIME ) THEN
-         FIRSTIME = .FALSE.
-         LOGDEV = INIT3()
-         WRITE( LOGDEV,* ) '    '
-         WRITE( LOGDEV,* ) '    Using no-op vertical diffusion process'
-         WRITE( LOGDEV,* ) '    '
-         END IF
+      IF ( MYPE .NE. 0 ) THEN
+         CALL NAMEVAL ( APPL, EQNAME )
+         WRITE ( CMYPE, '(I3.3)' ) MYPE
+         IF ( APPL .NE. EQNAME(1:16 ) ) THEN
+            IOLOGEQ = PRESTR // CMYPE // '.' // EQNAME( 1:TRIMLEN( EQNAME ) )
+            ELSE
+            IOLOGEQ = PRESTR // CMYPE
+            END IF
+         CALL SETENVVAR ( 'LOGFILE', IOLOGEQ )
 
-      RETURN
-      END
+      END IF
 
+      LOGDEV = INIT3()
+
+      END FUNCTION SETUP_LOGDEV 
