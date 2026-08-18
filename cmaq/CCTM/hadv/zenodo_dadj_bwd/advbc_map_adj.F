@@ -45,7 +45,6 @@ C   Jeff - Aug 1997 Based on beta version
 
 C-----------------------------------------------------------------------
 
-      USE ADJOINT_FILES
       IMPLICIT NONE
  
 C Includes:
@@ -96,8 +95,8 @@ C Map advected gas chemistry species to bc's
       SPC = 0
  
       IF ( N_GC_ADV .GT. 0 ) THEN
-         IF ( .NOT. OPEN3( BNDY_ADJ_1, FSREAD3, PNAME ) ) THEN
-            XMSG = 'Could not open ' // trim(BNDY_ADJ_1) // ' file; use zero values'
+         IF ( .NOT. OPEN3( BNDY_GASC_1, FSREAD3, PNAME ) ) THEN
+            XMSG = 'Could not open ' // trim(BNDY_GASC_1) // ' file; use zero values'
 !slzx            CALL M3EXIT( PNAME, XDATE, XTIME, XMSG, XSTAT1 )
             CALL M3WARN(PNAME, XDATE, XTIME, XMSG) !slz
             FZERO=.TRUE. !slz
@@ -105,10 +104,10 @@ C Map advected gas chemistry species to bc's
             END IF
 
          WRITE( LOGDEV,* ) "Adjoint boundary conditions applied"
-         WRITE( LOGDEV,* ) "Adjoint boundary conditions file: "//trim(BNDY_ADJ_1)
+         WRITE( LOGDEV,* ) "Adjoint boundary conditions file: "//trim(BNDY_GASC_1)
  
-         IF ( .NOT. DESC3( BNDY_ADJ_1 ) ) THEN
-            XMSG = 'Could not get ' // trim(BNDY_ADJ_1) // ' file description'
+         IF ( .NOT. DESC3( BNDY_GASC_1 ) ) THEN
+            XMSG = 'Could not get ' // trim(BNDY_GASC_1) // ' file description'
             CALL M3EXIT( PNAME, XDATE, XTIME, XMSG, XSTAT1 )
             END IF
  
@@ -133,7 +132,7 @@ C Map advected gas chemistry species to bc's
                END IF
             END DO
          IF ( WRCNT .GT. 0 ) THEN
-            WRITE( LOGDEV,1009 ) BNDY_ADJ_1( 1:TRIMLEN( BNDY_ADJ_1 ) ),
+            WRITE( LOGDEV,1009 ) BNDY_GASC_1( 1:TRIMLEN( BNDY_GASC_1 ) ),
      &                           CONCMIN( 1:TRIMLEN( CONCMIN ) )
             DO VAR = 1, WRCNT
                WRITE( LOGDEV,1015 ) WRVAR( VAR )( 1:TRIMLEN( WRVAR( VAR ) ) )
@@ -145,13 +144,13 @@ C Map advected aerosol species to bc's
 
       IF ( N_AE_ADV .GT. 0 ) THEN
 
-         IF ( .NOT. OPEN3( BNDY_ADJ_1, FSREAD3, PNAME ) ) THEN
-            XMSG = 'Could not open ' // BNDY_ADJ_1 // ' file'
+         IF ( .NOT. OPEN3( BNDY_AERO_1, FSREAD3, PNAME ) ) THEN
+            XMSG = 'Could not open ' // BNDY_AERO_1 // ' file'
             CALL M3EXIT( PNAME, XDATE, XTIME, XMSG, XSTAT1 )
             END IF
 
-         IF ( .NOT. DESC3( BNDY_ADJ_1 ) ) THEN
-            XMSG = 'Could not get ' // BNDY_ADJ_1 // ' file description'
+         IF ( .NOT. DESC3( BNDY_AERO_1 ) ) THEN
+            XMSG = 'Could not get ' // BNDY_AERO_1 // ' file description'
             CALL M3EXIT( PNAME, XDATE, XTIME, XMSG, XSTAT1 )
             END IF
 
@@ -176,7 +175,7 @@ C Map advected aerosol species to bc's
                END IF
             END DO
          IF ( WRCNT .GT. 0 ) THEN
-            WRITE( LOGDEV,1009 ) BNDY_ADJ_1( 1:TRIMLEN( BNDY_ADJ_1 ) ),
+            WRITE( LOGDEV,1009 ) BNDY_AERO_1( 1:TRIMLEN( BNDY_AERO_1 ) ),
      &                           CONCMIN( 1:TRIMLEN( CONCMIN ) )
             DO VAR = 1, WRCNT
                WRITE( LOGDEV,1015 ) WRVAR( VAR )( 1:TRIMLEN( WRVAR( VAR ) ) )
@@ -188,13 +187,13 @@ C Map advected non-reactive species to bc's
 
       IF ( N_NR_ADV .GT. 0 ) THEN
 
-         IF ( .NOT. OPEN3( BNDY_ADJ_1, FSREAD3, PNAME ) ) THEN
-            XMSG = 'Could not open ' // BNDY_ADJ_1 // ' file'
+         IF ( .NOT. OPEN3( BNDY_NONR_1, FSREAD3, PNAME ) ) THEN
+            XMSG = 'Could not open ' // BNDY_NONR_1 // ' file'
             CALL M3EXIT( PNAME, XDATE, XTIME, XMSG, XSTAT1 )
             END IF
 
-         IF ( .NOT. DESC3( BNDY_ADJ_1 ) ) THEN
-            XMSG = 'Could not get ' // BNDY_ADJ_1 // ' file description'
+         IF ( .NOT. DESC3( BNDY_NONR_1 ) ) THEN
+            XMSG = 'Could not get ' // BNDY_NONR_1 // ' file description'
             CALL M3EXIT( PNAME, XDATE, XTIME, XMSG, XSTAT1 )
             END IF
 
@@ -219,7 +218,7 @@ C Map advected non-reactive species to bc's
                END IF
             END DO
          IF ( WRCNT .GT. 0 ) THEN
-            WRITE( LOGDEV,1009 ) BNDY_ADJ_1( 1:TRIMLEN( BNDY_ADJ_1 ) ),
+            WRITE( LOGDEV,1009 ) BNDY_NONR_1( 1:TRIMLEN( BNDY_NONR_1 ) ),
      &                           CONCMIN( 1:TRIMLEN( CONCMIN ) )
             DO VAR = 1, WRCNT
                WRITE( LOGDEV,1015 ) WRVAR( VAR )( 1:TRIMLEN( WRVAR( VAR ) ) )
@@ -231,13 +230,13 @@ C Map advected tracer species to bc's
 
       IF ( N_TR_ADV .GT. 0 ) THEN
 
-         IF ( .NOT. OPEN3( BNDY_ADJ_1, FSREAD3, PNAME ) ) THEN
-            XMSG = 'Could not open ' // BNDY_ADJ_1 // ' file'
+         IF ( .NOT. OPEN3( BNDY_TRAC_1, FSREAD3, PNAME ) ) THEN
+            XMSG = 'Could not open ' // BNDY_TRAC_1 // ' file'
            CALL M3EXIT( PNAME, XDATE, XTIME, XMSG, XSTAT1 )
             END IF
 
-         IF ( .NOT. DESC3( BNDY_ADJ_1 ) ) THEN
-            XMSG = 'Could not get ' // BNDY_ADJ_1 // ' file description'
+         IF ( .NOT. DESC3( BNDY_TRAC_1 ) ) THEN
+            XMSG = 'Could not get ' // BNDY_TRAC_1 // ' file description'
             CALL M3EXIT( PNAME, XDATE, XTIME, XMSG, XSTAT1 )
             END IF
 
@@ -262,7 +261,7 @@ C Map advected tracer species to bc's
                END IF
             END DO
          IF ( WRCNT .GT. 0 ) THEN
-            WRITE( LOGDEV,1009 ) BNDY_ADJ_1( 1:TRIMLEN( BNDY_ADJ_1 ) ),
+            WRITE( LOGDEV,1009 ) BNDY_TRAC_1( 1:TRIMLEN( BNDY_TRAC_1 ) ),
      &                           CONCMIN( 1:TRIMLEN( CONCMIN ) )
             DO VAR = 1, WRCNT
                WRITE( LOGDEV,1015 ) WRVAR( VAR )( 1:TRIMLEN( WRVAR( VAR ) ) )

@@ -50,7 +50,7 @@ C                      domain specifications in one module
 C-----------------------------------------------------------------------
 
       USE GRID_CONF            ! horizontal & vertical domain specifications
-      USE ADJOINT_FILES
+
       IMPLICIT NONE
  
 C Includes:
@@ -160,8 +160,19 @@ C-----------------------------------------------------------------------
          WRITE( CONCMIN,'(1PE8.2)' ) CMIN
 
 C create advected species map to bc's
- 
+
          CALL ADVBC_MAP_ADJ ( CONCMIN, BCNAME, BCFAC, FZERO)
+
+C The adjoint lateral boundary condition at a prescribed (Dirichlet)
+C forward inflow boundary is zero: no cost-function sensitivity flows
+C back into the domain through a boundary whose value does not depend
+C on the interior state. Force the zero-BC path unconditionally, since
+C the presence of a forward BCON file does not change this. Without
+C this, XADV_BWD/YADV_BWD were substituting real forward concentration
+C values from the boundary condition file for BCON_ADJ, injecting
+C spurious nonzero sensitivities into LGRID at every inflow boundary
+C crossing, unrelated to any adjoint forcing.
+         FZERO = .TRUE.
 
          IF (.NOT.FZERO) THEN !slz
             CALL SUBHFILE ( MET_CRO_3D, GXOFF, GYOFF,
@@ -227,7 +238,8 @@ C currently not implemented: case where only one origin component matches file's
       MDATE  = JDATE
       MTIME  = JTIME
       STEP   = TIME2SEC( TSTEP )
-      CALL NEXTIME( MDATE, MTIME, - SEC2TIME( STEP / 2 ) )
+      !slz CALL NEXTIME( MDATE, MTIME, - SEC2TIME( STEP / 2 ) )
+      CALL NEXTIME( MDATE, MTIME, SEC2TIME( STEP / 2 ) ) !for adj v6
 
 C Read & interpolate boundary SqrDMT, and RhoJ
 
@@ -312,12 +324,12 @@ C Read & interpolate boundary concentrations
          SPC = SPC + 1 
          IF ( BCNAME ( VAR ) .NE. BLNK ) THEN
 
-            IF ( .NOT. INTERPB( BNDY_ADJ_1, BCNAME( VAR ) , PNAME,
+            IF ( .NOT. INTERPB( BNDY_GASC_1, BCNAME( VAR ) , PNAME,
      &                          MDATE, MTIME, NBNDY*NLAYS,
      &                          BBUF( 1,1,VAR ) ) ) THEN
                XMSG = 'Could not read ' //
      &                 BCNAME( VAR )(1:TRIMLEN( BCNAME ( VAR ) ) )  //
-     &                ' from ' // BNDY_ADJ_1
+     &                ' from ' // BNDY_GASC_1
                CALL M3EXIT( PNAME, MDATE, MTIME, XMSG, XSTAT1 )
 
                ELSE   ! found bc's (PPM) on file; convert
@@ -341,12 +353,12 @@ C Read & interpolate boundary concentrations
       DO 151 VAR = STRT, FINI
          SPC = SPC + 1
          IF ( BCNAME ( VAR ) .NE. BLNK ) THEN
-            IF ( .NOT. INTERPB ( BNDY_ADJ_1, BCNAME( VAR ), PNAME,
+            IF ( .NOT. INTERPB ( BNDY_AERO_1, BCNAME( VAR ), PNAME,
      &                           MDATE, MTIME, NBNDY*NLAYS,
      &                           BBUF( 1,1,VAR ) ) ) THEN
                XMSG = 'Could not read ' //
      &                 BCNAME( VAR )(1:TRIMLEN( BCNAME ( VAR ) ) )  //
-     &                ' from ' // BNDY_ADJ_1
+     &                ' from ' // BNDY_AERO_1
                CALL M3EXIT( PNAME, MDATE, MTIME, XMSG, XSTAT1 )
 
                ELSE   ! found bc's (microgram/m**3, m**2/m**3, or number/m**3)
@@ -388,12 +400,12 @@ C Read & interpolate boundary concentrations
          SPC = SPC + 1 
          IF ( BCNAME ( VAR ) .NE. BLNK ) THEN
 
-            IF ( .NOT. INTERPB ( BNDY_ADJ_1, BCNAME ( VAR ), PNAME,
+            IF ( .NOT. INTERPB ( BNDY_NONR_1, BCNAME ( VAR ), PNAME,
      &                           MDATE, MTIME, NBNDY*NLAYS,
      &                           BBUF( 1,1,VAR ) ) ) THEN
                XMSG = 'Could not read ' //
      &                 BCNAME( VAR )(1:TRIMLEN( BCNAME ( VAR ) ) )  //
-     &                ' from ' // BNDY_ADJ_1
+     &                ' from ' // BNDY_NONR_1
                CALL M3EXIT( PNAME, MDATE, MTIME, XMSG, XSTAT1 )
 
                ELSE   ! found bc's (PPM) on file; convert
@@ -418,12 +430,12 @@ C Read & interpolate boundary concentrations
          SPC = SPC + 1 
          IF ( BCNAME ( VAR ) .NE. BLNK ) THEN
 
-            IF ( .NOT. INTERPB ( BNDY_ADJ_1, BCNAME ( VAR ), PNAME,
+            IF ( .NOT. INTERPB ( BNDY_TRAC_1, BCNAME ( VAR ), PNAME,
      &                           MDATE, MTIME, NBNDY*NLAYS,
      &                           BBUF( 1,1,VAR ) ) ) THEN
                XMSG = 'Could not read ' //
      &                 BCNAME( VAR )(1:TRIMLEN( BCNAME ( VAR ) ) )  //
-     &                ' from ' // BNDY_ADJ_1
+     &                ' from ' // BNDY_TRAC_1
                CALL M3EXIT( PNAME, MDATE, MTIME, XMSG, XSTAT1 )
 
                ELSE   ! found bc's (PPM) on file; convert
