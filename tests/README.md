@@ -46,13 +46,13 @@ means rebuilding and re-uploading the bundle rather than editing the repo.
 ## The adjoint forcing file
 
 Case 003 needs an `ADJ_FORCE` input. `FORCE.20221207.nc` in the test-data
-bundle is all zeros except a single cell in its **final** record.
+bundle is all zeros except a single cell in its **final** time step.
 
 That shape is deliberate. The backward driver walks output steps from the run
-end towards the run start, so the final record is the first one it reads. A
-forcing spread across every record would leave the test unable to distinguish
-a correct run from one that reads the record one output step out of step —
-both would produce a plausible non-zero field. With one populated record at
+end towards the run start, so the final time step is the first one it reads. A
+forcing spread across every time step would leave the test unable to distinguish
+a correct run from one that reads the time step one output step out of step —
+both would produce a plausible non-zero field. With one populated time step at
 the run end, an off-by-one read misses it completely and the sensitivities
 come back identically zero.
 

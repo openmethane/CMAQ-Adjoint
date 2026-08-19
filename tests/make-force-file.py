@@ -27,14 +27,11 @@ on a host with py4dvar's virtualenv available, e.g.
         --template /path/to/openmethane/tests/test-data/templates/force_template.nc \\
         --output tests/test-data/FORCE.20221207.nc
 
-The forcing is deliberately a single non-zero cell in the *final* record
+The forcing is deliberately a single non-zero cell in the *final* time step
 rather than a broad field. The backward driver walks output steps from the run
-end towards the run start, so the final record is the first one it reads. If
-the forcing were spread over every record, the test could not tell a correct
-run from one that reads the record one output step out of step -- it would
-pick up a plausible non-zero field either way. With one populated record at
-the run end, an off-by-one read misses it entirely and LGRID stays identically
-zero, which the test asserts against.
+end towards the run start, so the final time step is the first one it reads.
+With one populated time step at the run end, an off-by-one read would miss it
+entirely and LGRID stays identically zero, which the test asserts against.
 """
 
 import argparse
@@ -60,10 +57,10 @@ def main(argv=None):
         "--species", default="CH4", help="forcing variable name (default: CH4)"
     )
     parser.add_argument(
-        "--record",
+        "--timestep",
         type=int,
         default=-1,
-        help="time record index to populate (default: -1, the last record)",
+        help="time step index to populate (default: -1, the last record)",
     )
     parser.add_argument("--layer", type=int, default=0, help="layer index (default: 0)")
     parser.add_argument("--row", type=int, default=5, help="row index (default: 5)")
@@ -87,17 +84,17 @@ def main(argv=None):
             )
         var = ds.variables[args.species]
         var[:] = 0.0
-        var[args.record, args.layer, args.row, args.col] = args.value
+        var[args.timestep, args.layer, args.row, args.col] = args.value
 
-        tflag = ds.variables["TFLAG"][args.record, 0, :]
+        tflag = ds.variables["TFLAG"][args.timestep, 0, :]
         date, time = int(tflag[0]), int(tflag[1])
 
     print(f"wrote {args.output}")
     print(
-        f"  {args.species}[record {args.record}, layer {args.layer}, "
+        f"  {args.species}[timestep {args.timestep}, layer {args.layer}, "
         f"row {args.row}, col {args.col}] = {args.value}"
     )
-    print(f"  that record is stamped {date}:{time:06d}")
+    print(f"  that timestep is stamped {date}:{time:06d}")
     print("  all other values are zero")
     return 0
 
