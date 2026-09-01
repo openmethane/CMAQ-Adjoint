@@ -19,6 +19,13 @@ of rst and use slightly different categories.
 
 <!-- towncrier release notes start -->
 
+## CMAQ Adjoint v2.0.1 (2026-09-01)
+
+### 🎉 Improvements
+
+- Pin the Docker base image to `ghcr.io/openmethane/cmaq:1.0.2` (Debian trixie) instead of the floating `stable` tag, and add `-fbacktrace` to the forward build's link flags to match the backward build. Note that the trixie base compiles with gfortran 14 rather than 12, so numerical output may differ slightly from previous builds. ([#28](https://github.com/openmethane/CMAQ-adjoint/issues/28))
+
+
 ## CMAQ Adjoint v2.0.0 (2026-08-19)
 
 ### 🎉 Improvements
