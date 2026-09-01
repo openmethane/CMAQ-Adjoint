@@ -177,7 +177,7 @@ set F_NOAUTO_FLAGS = -fno-automatic
 set F_FLAGS = "$F_BASE_FLAGS $F_NOAUTO_FLAGS"
 set CPP_FLAGS  = ""
 set C_FLAGS    = "${myCFLAGS}"
-set LINK_FLAGS = "-g "
+set LINK_FLAGS = "-g -fbacktrace"
 
 # Set location of M3Bld executable
 set Blder = "$M3LIB/bldmake -verbose"
