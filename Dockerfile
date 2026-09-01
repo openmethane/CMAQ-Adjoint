@@ -1,4 +1,4 @@
-FROM ghcr.io/openmethane/cmaq:stable AS builder
+FROM ghcr.io/openmethane/cmaq:1.0.2 AS builder
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -27,13 +27,12 @@ WORKDIR /opt/cmaq
 # Build a modified version of CMAQ-Adjoint in ch4 only mode
 COPY cmaq /opt/cmaq/models
 COPY scripts/bldit.adjoint.fwd.openmethane /opt/scripts/bldit.adjoint.fwd.openmethane
-ARG FORCE_BUILD=unknown
 RUN cd /opt/scripts && ./bldit.adjoint.fwd.openmethane
 COPY scripts/bldit.adjoint.bwd.openmethane /opt/scripts/bldit.adjoint.bwd.openmethane
 RUN cd /opt/scripts && ./bldit.adjoint.bwd.openmethane
 
 # Then, use a final image without extra packages for our runtime environment
-FROM ghcr.io/openmethane/cmaq:stable
+FROM ghcr.io/openmethane/cmaq:1.0.2
 
 # These will be overwritten in GHA due to https://github.com/docker/metadata-action/issues/295
 # These must be duplicated in .github/workflows/build_docker.yaml
