@@ -87,25 +87,37 @@ itself:
 - `scripts/bldit.adjoint.fwd.openmethane` → builds `ADJOINT_FWD`
 - `scripts/bldit.adjoint.bwd.openmethane` → builds `ADJOINT_BWD`
 
-Each has a block of `set Mod<Component> = <component>/<variant>` lines, e.g.
-(bwd build, as of this writing):
+Each has a block of `set Mod<Component> = <component>/<variant>` lines. As of
+this writing the two builds select (the `zenodo_*` variants are the ones this
+fork actually uses — the `yamo_*` / `acm2_inline_*` / `multiscale_*` siblings
+are upstream legacy and are **not** built):
 
-```
-set ModDriver = driver/yamo_adj_bwd
-set ModChkpnt = chkpnt/chkpnt_ioapi
-set ModInit   = init/adj_bwd
-set ModCpl    = couple/gencoor
-set ModHadv   = hadv/yamo_cadj_bwd
-set ModVadv   = vadv/vyamo_cadj_bwd
-set ModHdiff  = hdiff/multiscale_adj_bwd
-set ModVdiff  = vdiff/acm2_inline_adj_bwd
-set ModPhot   = phot/phot_noop
-set ModChem   = chem/chem_bwd_noop
-set ModAero   = aero/aero_bwd_noop
-set ModAdepv  = aero_depv/aero_depv_noop
-set ModCloud  = cloud/cloud_bwd_noop
-set ModPa     = procan/pa
-set ModUtil   = util/util_adj
+| Component | fwd (`ADJOINT_FWD`) | bwd (`ADJOINT_BWD`) |
+| --- | --- | --- |
+| `ModDriver` | `driver/zenodo_cadj_fwd` | `driver/zenodo_cadj_bwd` |
+| `ModChkpnt` | `chkpnt/chkpnt_zenodo` | `chkpnt/chkpnt_zenodo` |
+| `ModInit` | `init/zenodo_cadj_fwd` | `init/zenodo_cadj_bwd` |
+| `ModCpl` | `couple/zenodo` | `couple/zenodo` |
+| `ModHadv` | `hadv/zenodo_dadj_fwd` | `hadv/zenodo_dadj_bwd` |
+| `ModVadv` | `vadv/zenodo_dadj_fwd` | `vadv/zenodo_dadj_bwd` |
+| `ModHdiff` | `hdiff/zenodo_fwd` | `hdiff/zenodo_bwd` |
+| `ModVdiff` | `vdiff/zenodo_fwd` | `vdiff/zenodo_bwd` |
+| `ModPhot` | `phot/phot_noop` | `phot/phot_noop` |
+| `ModChem` | `chem/chem_noop` | `chem/chem_bwd_noop` |
+| `ModAero` | `aero/aero_noop` | `aero/aero_bwd_noop` |
+| `ModAdepv` | `aero_depv/aero_depv_noop` | `aero_depv/aero_depv_noop` |
+| `ModCloud` | `cloud/cloud_noop` | `cloud/cloud_bwd_noop` |
+| `ModPa` | `procan/pa` | `procan/pa` |
+| `ModUtil` | `util/util_adj` | `util/util_adj` |
+
+Mechanism: `mech/cb05cl_ae5_aq_CH4only` — one gas species (`CH4`), no
+aerosol or non-reactive species, no dry or wet deposition.
+
+Re-derive the table from the scripts rather than trusting it if the build
+behaviour surprises you:
+
+```shell
+grep -E "^set Mod|^ *set Mod" scripts/bldit.adjoint.{fwd,bwd}.openmethane
 ```
 
 **Before reading or editing any file under `cmaq/CCTM/`, check these two
@@ -113,6 +125,18 @@ scripts first** to confirm the module is actually part of the active build
 for the binary you care about (fwd vs bwd) — otherwise you may be looking at
 an unused legacy variant that has no effect on program behavior. The fwd and
 bwd scripts can (and do) select different variants of the same component.
+
+### Linearity of the CH4 model
+
+`docs/ch4-linearity.md` settles this with code analysis plus direct
+experiment: CH4 is a passive conserved tracer (no chemistry, no deposition, no
+clipping), so the model is **affine** in `(emissions, IC, BC)` and exactly
+homogeneous when all three are scaled together — but the PPM monotonicity
+limiter in `hppm.F`/`vppm.F` makes the emission-to-concentration map
+**non-additive at ~1% rms / a few % peak, independent of perturbation
+amplitude**. `ADJOINT_BWD` is the exact discrete adjoint at the forward state
+and *is* exactly linear in its forcing. Read that document before making any
+argument that relies on linearity.
 
 `cmaq/ICL` holds the global includes (species tables, mechanism definitions,
 etc.) referenced by `INCLUDE SUBST_*` across the Fortran source, independent
