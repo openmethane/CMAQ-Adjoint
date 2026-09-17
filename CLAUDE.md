@@ -118,6 +118,17 @@ bwd scripts can (and do) select different variants of the same component.
 etc.) referenced by `INCLUDE SUBST_*` across the Fortran source, independent
 of the per-component module selection above.
 
+### The vertical advection flux diagnostic
+
+`ADJOINT_FWD` reports what vertical advection moves across each layer
+interface, up and down separately, for methane and for air. The domain
+integral goes to the log every sync step unconditionally; a gridded file of
+the model-top interface is written only when `CTM_VADV_TOPFLX` names one.
+`docs/vadv-top-flux.md` covers the units, the log line format and the mass
+conversion. The code is `cmaq/CCTM/vadv/zenodo_dadj_fwd/VADV_FLUX_DEFN.F`
+plus optional `INTENT(OUT)` arguments on `VPPM`; it cannot change the
+solution, and the forward output is bit-identical with and without it.
+
 ### Docker build pipeline
 
 `Dockerfile` uses `ghcr.io/openmethane/cmaq:stable` (the
