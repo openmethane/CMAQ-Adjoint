@@ -57,7 +57,9 @@ Set `CTM_VADV_TOPFLX` to the path of the file to write. Leave it unset and no
 file is opened and no per-column accumulator is allocated.
 
 In the Open Methane repository, `WRITE_VADV_TOPFLX` turns it on;
-`cmaq_handle.setup_run` puts the path in the model's environment.
+`cmaq_handle.setup_run` puts the path in the model's environment, and each
+forward pass's file and log records are filed under
+`output/vadv-topflx/<pass>/` so that the next pass does not overwrite them.
 
 ## The log lines
 
@@ -99,8 +101,9 @@ On a `VADVTOP` line the three values sit in `1PE12.4` fields at columns 36-47,
 51-62 and 67-78. On a `VADVFLX` line, columns 34-35 hold `UP` or `DN` and the
 `NLAYS+1` values follow in consecutive `1PE12.4` fields from column 41.
 
-Volume: six lines per sync step for the CH4-only mechanism, so roughly 15 MB of
-log for a month at a five-minute sync step.
+Volume: six lines per sync step for the CH4-only mechanism, measured at 319
+bytes a line, so about 17 MB of log for a month at a five-minute sync step and
+8.5 MB at ten minutes.
 
 ## The gridded file
 
@@ -128,7 +131,8 @@ The spatial field is the point of writing a file rather than only a number: the
 #255 boundary-condition staircase is injected on the perimeter, so a lid flux
 driven by it should show up on the perimeter and not in the interior.
 
-Size is about 120 MB a month for a 200 x 200 domain at hourly output.
+Size is about 2.3 GB a month per forward run on `aust10km`, which is 454 x 430
+cells, at hourly output. Four variables of four bytes over 744 hours.
 
 ## How the mass conversion works
 
