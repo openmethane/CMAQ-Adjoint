@@ -76,6 +76,9 @@ C    21 Aug 09 J.Young: Don't bypass VPPMY if ITER = 0
 C    18 Nov 09 J.Young: Combine VPPMY and VPPM functionality
 C    Aug 2010 by Peter Percell at UH-IMAQS: modified for adjoint/4dvar
 C    Mar 2014 by Peter Percell, UH: renamed ADJ_ZADV_CHK to ADJ_VADV_CHK
+
+C    Sep 2026 by Open Methane: instrumented the interface fluxes, so the flux
+C                              through the model top can be measured
 C-----------------------------------------------------------------------
 
       USE GRID_CONF             ! horizontal & vertical domain specifications
@@ -83,6 +86,7 @@ C-----------------------------------------------------------------------
       USE CHK_FILES_DEFS        ! adjoint checkpoint files definition
       USE CHK_FILES             ! adjoint checkpoint files routines
       USE WVEL_DEFN             ! derived vertical velocity component
+      USE VADV_FLUX_DEFN        ! vertical advection flux diagnostic
 
       IMPLICIT NONE
 
@@ -142,6 +146,8 @@ C for INTERPX
       INTEGER       ETIME, EDATE
       REAL          VEL ( NLAYS+1, MAXSS+1 ) ! Velocities in a N-S column
       REAL          FLX ( NLAYS+1 ) ! upstream donor cell computed conc. flux
+      REAL          FUP ( NLAYS+1 ) ! diagnostic: upward transport per interface
+      REAL          FDN ( NLAYS+1 ) ! diagnostic: downward transport per interface
       REAL, ALLOCATABLE, SAVE :: DS ( : ) ! dx3 (dimensionless in sigma coord.)
       REAL          DTSEC       ! sync time step in seconds
       REAL          DELT        ! adjusted time step
@@ -169,7 +175,7 @@ C for INTERPX
       REAL :: DT(MAXSS+1)
 
       INTERFACE
-         SUBROUTINE VPPM(NI, DT, DS, VEL, CON, FLX)
+         SUBROUTINE VPPM(NI, DT, DS, VEL, CON, FLX, FLXUP, FLXDN)
             IMPLICIT NONE
             INTEGER, INTENT(IN) :: NI
             REAL, INTENT(IN)    :: DT
@@ -177,6 +183,8 @@ C for INTERPX
             REAL, INTENT(INOUT) :: VEL(NI+1)
             REAL, INTENT(INOUT) :: CON(NI)
             REAL, INTENT(IN), OPTIONAL :: FLX(NI+1)
+            REAL, INTENT(OUT), OPTIONAL :: FLXUP(NI+1)
+            REAL, INTENT(OUT), OPTIONAL :: FLXDN(NI+1)
          END SUBROUTINE VPPM
       END INTERFACE
 
@@ -237,6 +245,8 @@ C get file local domain offsets
 
 C Create new adjoint file and open for update
          CALL CHK_FILE_OPEN ( ADJ_VADV_CHK, JDATE, JTIME, .TRUE., TSTEP )
+
+         CALL VADV_FLUX_INIT ( JDATE, JTIME )
 
       END IF                    ! FIRSTIME
 
@@ -326,7 +336,9 @@ C sub-steps.
                   DELT = DELT - DTNEW
 
                   DT(SS) = DTNEW
-                  CALL VPPM ( NLAYS, DT(SS), DS, VEL(:,SS), RJT, FLX )
+                  CALL VPPM ( NLAYS, DT(SS), DS, VEL(:,SS), RJT, FLX,
+     &                 FLXUP = FUP, FLXDN = FDN )
+                  CALL VADV_FLUX_ADD ( N_SPC_ADV, COL, ROW, FUP, FDN )
 
                   IF ( SS .GT. MAXSS ) THEN
                      WRITE( LOGDEV,2005 ) COL, ROW, CC, DELT, SS, JTIME
@@ -351,7 +363,9 @@ C sub-steps.
                ELSE
 
                   DT(SS) = DELT
-                  CALL VPPM ( NLAYS, DT(SS), DS, VEL(:,SS), RJT, FLX )
+                  CALL VPPM ( NLAYS, DT(SS), DS, VEL(:,SS), RJT, FLX,
+     &                 FLXUP = FUP, FLXDN = FDN )
+                  CALL VADV_FLUX_ADD ( N_SPC_ADV, COL, ROW, FUP, FDN )
                   EXIT
 
                END IF
@@ -367,7 +381,9 @@ C Update concentrations of trace species
             DO SPC = 1, N_SPC_ADV - 1
                A2C = ADV_MAP( SPC )
                DO SS = 1, NSS
-                  CALL VPPM(NLAYS, DT(SS), DS, VEL(:,SS), CGRID(COL,ROW,:,A2C))
+                  CALL VPPM(NLAYS, DT(SS), DS, VEL(:,SS), CGRID(COL,ROW,:,A2C),
+     &                 FLXUP = FUP, FLXDN = FDN)
+                  CALL VADV_FLUX_ADD ( SPC, COL, ROW, FUP, FDN )
                END DO
             END DO
 
@@ -377,6 +393,8 @@ C Update concentrations of trace species
 
          END DO                 ! COL
       END DO                    ! ROW
+
+      CALL VADV_FLUX_REPORT ( JDATE, JTIME, TSTEP )
 
       IF ( W_VEL ) THEN
          DO LVL = 1, NLAYS

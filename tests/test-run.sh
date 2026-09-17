@@ -73,6 +73,9 @@ prepare_test_run () {
 
   RUN_DIR="${TEST_RUN_DIR}"
   DATA_DIR="${TEST_DATA_DIR}"
+
+  # exported by enable_vadv_topflx and otherwise inherited by the next run
+  unset CTM_VADV_TOPFLX
 }
 
 read_environment_vars () {
@@ -87,6 +90,21 @@ assert_normal_completion () {
   PROGRAM=$2
   if ! grep -aq "Normal Completion of program ${PROGRAM}" "${LOG}"; then
     fail "${PROGRAM} did not report normal completion in ${LOG}"
+  fi
+}
+
+# The model-top flux diagnostic has to appear in the log, and its numbers have
+# to be finite. Asterisks mean a value overflowed its output field, which is
+# how an unphysically large flux shows up.
+assert_vadv_flux_ok () {
+  LOG=$1
+  if ! grep -aq "VADVTOP" "${LOG}"; then
+    fail "no VADVTOP lines in ${LOG}"
+    return
+  fi
+  if grep -a "VADVTOP\|VADVFLX" "${LOG}" | grep -aqiE "nan|infinity|\*{6,}"; then
+    fail "non-finite vertical advection flux in ${LOG}"
+    grep -a "VADVTOP\|VADVFLX" "${LOG}" | grep -aiE "nan|infinity|\*{6,}" | head -3
   fi
 }
 
@@ -130,6 +148,13 @@ assert_has_nonzero_data () {
   fi
 }
 
+# The gridded model-top flux diagnostic is off unless CTM_VADV_TOPFLX names a
+# file, so the test data's fwd.env does not mention it. Setting it here keeps
+# the file-writing path under test.
+enable_vadv_topflx () {
+  export CTM_VADV_TOPFLX="${RUN_DIR}/output/VADV_TOPFLX.20221207.nc"
+}
+
 run_fwd () {
   pushd "${RUN_DIR}" > /dev/null
   ${MPI_PREFIX} ${ADJ_FWD_BIN}
@@ -146,20 +171,26 @@ run_bwd () {
 echo "=== 001: forward, single process ==="
 prepare_test_run "${TEST_RUNS_ROOT}/001-fwd-sp"
 read_environment_vars "${TEST_DATA_DIR}/fwd.env"
+enable_vadv_topflx
 MPI_PREFIX=""
 run_fwd
 cat "${LOGFILE}"
 assert_normal_completion "${LOGFILE}" "DRIVER_FWD"
+assert_vadv_flux_ok "${LOGFILE}"
+assert_has_nonzero_data "${RUN_DIR}/output/VADV_TOPFLX.20221207.nc"
 
 # --------------------------------------------------------------------------
 echo "=== 002: forward, two processes ==="
 prepare_test_run "${TEST_RUNS_ROOT}/002-fwd-mp"
 read_environment_vars "${TEST_DATA_DIR}/fwd.env"
+enable_vadv_topflx
 export NPCOL_NPROW="2 1"
 MPI_PREFIX="mpirun -np 2"
 run_fwd
 cat "${LOGFILE}"
 assert_normal_completion "${LOGFILE}" "DRIVER_FWD"
+assert_vadv_flux_ok "${LOGFILE}"
+assert_has_nonzero_data "${RUN_DIR}/output/VADV_TOPFLX.20221207.nc"
 
 # --------------------------------------------------------------------------
 # The backward run consumes the forward run's checkpoints, XFIRST state and

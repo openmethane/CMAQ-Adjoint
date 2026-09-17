@@ -24,7 +24,7 @@ C what(1) key, module and SID; SCCS file; date and time of last delta:
 C %W% %P% %G% %U%
 
 C:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      SUBROUTINE VPPM ( NI, DT, DS, VEL, CON, FLX )
+      SUBROUTINE VPPM ( NI, DT, DS, VEL, CON, FLX, FLXUP, FLXDN )
 
 C----------------------------------------------------------------------
 C Function
@@ -92,6 +92,9 @@ C   08 May 09 J.Young: dimension CON with species; eliminate "STEEPEN" option
 C   18 Nov 09 J.Young: combine PPM velocity adjustment and vertically advected
 C                      concentrations on one code
 C   Aug 2010 by Peter Percell at UH-IMAQS: modified for adjoint/4dvar
+
+C   Sep 2026 by Open Methane: optional FLXUP/FLXDN report the advective
+C                             fluxes this call moved across each cell boundary
 C----------------------------------------------------------------------
 
       IMPLICIT NONE
@@ -104,6 +107,12 @@ C Arguments:
       REAL, INTENT( INOUT ) :: VEL( NI+1 ) ! velocities at zone (cell) boundaries
       REAL, INTENT( INOUT ) :: CON( NI ) ! concs in a vertical column
       REAL, INTENT( IN ), OPTIONAL :: FLX( NI+1 ) ! fluxes at zone (cell) boundaries
+
+C Diagnostic only - neither is read back, so requesting them cannot perturb the
+C solution. Both are magnitudes: the caller takes the difference for a net flux.
+
+      REAL, INTENT( OUT ), OPTIONAL :: FLXUP( NI+1 ) ! upward transport across each boundary
+      REAL, INTENT( OUT ), OPTIONAL :: FLXDN( NI+1 ) ! downward transport across each boundary
 
 C Parameters:
 
@@ -211,6 +220,23 @@ c compute fluxes for top face
          CON( I ) = CON( I )
      &        + ( FP( I-1 ) - FP( I ) + FM( I+1 ) - FM( I ) ) / DS( I )
       END DO
+
+C Boundary I sits below cell I, so what crossed it upward is the outflux from
+C the top of cell I-1 and what crossed it downward is the outflux from the
+C bottom of cell I. Units are CON times the sigma thickness swept during DT;
+C the caller scales that to mass.
+
+      IF ( PRESENT( FLXUP ) ) THEN
+         DO I = 1, NI+1
+            FLXUP( I ) = FP( I-1 )
+         END DO
+      END IF
+
+      IF ( PRESENT( FLXDN ) ) THEN
+         DO I = 1, NI+1
+            FLXDN( I ) = FM( I )
+         END DO
+      END IF
 
       RETURN
       END SUBROUTINE VPPM
