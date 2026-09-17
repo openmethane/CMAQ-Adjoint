@@ -56,9 +56,8 @@ the order-of-magnitude argument in the #242 analysis turns on.
 Set `CTM_VADV_TOPFLX` to the path of the file to write. Leave it unset and no
 file is opened and no per-column accumulator is allocated.
 
-In the Open Methane repository the variable belongs alongside the other output
-files in `build_environment` in
-`src/openmethane/fourdvar/util/cmaq_handle.py`.
+In the Open Methane repository, `WRITE_VADV_TOPFLX` turns it on;
+`cmaq_handle.setup_run` puts the path in the model's environment.
 
 ## The log lines
 
