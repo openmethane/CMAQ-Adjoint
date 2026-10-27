@@ -24,7 +24,7 @@ C what(1) key, module and SID; SCCS file; date and time of last delta:
 C %W% %P% %G% %U%
  
 C:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      SUBROUTINE RDBCON ( JDATE, JTIME, TSTEP, LVL, BCON )
+      SUBROUTINE RDBCON ( JDATE, JTIME, TSTEP, LVL, BCON, BCPL )
 
 C-----------------------------------------------------------------------
 C Function:
@@ -32,6 +32,9 @@ C   Read boundary concentrations data for advection and couple with
 C   SqRDMT, Where SqRDMT = Sq. Root [det ( metric tensor )]
 C                        = Vertical Jacobian / (map scale factor)**2
 C   Load Air Density X SqRDMT = RHOJ into last BCON slot for advection
+C   Optionally return BCPL, the derivative of each BCON value with respect
+C   to the BNDY_GASC_1 value it was built from (BCFAC * RHOJ_BND), for the
+C   ADJ_LGRID_BC sensitivity output (see ADJ_BC_SENS)
 
 C Preconditions:
 
@@ -47,6 +50,8 @@ C                   data could come from a larger file, but not the conc cata
 C   23 Jun 03 J.Young: for layer dependent advection tstep
 C   31 Jan 05 J.Young: dyn alloc - establish both horizontal & vertical
 C                      domain specifications in one module
+C   Oct 2026: optional BCPL output for ADJ_LGRID_BC. Backward-model copy
+C             only; the forward model's RDBCON is unchanged.
 C-----------------------------------------------------------------------
 
       USE GRID_CONF            ! horizontal & vertical domain specifications
@@ -84,6 +89,11 @@ C Arguments:
       INTEGER      LVL         ! layer
 !     REAL         BCON( NBNDY,NLAYS,* )  ! boundary concentrations
       REAL      :: BCON( :,: ) ! boundary concentrations
+      REAL, INTENT( OUT ), OPTIONAL :: BCPL( :,: ) ! d BCON / d BNDY_GASC_1
+                                                   ! value; zero for the
+                                                   ! RHOJ slot, species
+                                                   ! with no BC surrogate
+                                                   ! and non-gas species
 
 C Parameters:
  
@@ -294,6 +304,7 @@ C Fill in DENSJ array for boundaries
          END IF   ! WINDOW
 
       BCON = 0.0
+      IF ( PRESENT( BCPL ) ) BCPL = 0.0
 
 C Read & interpolate boundary concentrations
 
@@ -319,6 +330,11 @@ C Read & interpolate boundary concentrations
      &                            * BBUF( BND,LVL,VAR )
      &                            * RHOJ_BND( BND,LVL )
                   END DO
+               IF ( PRESENT( BCPL ) ) THEN
+                  DO BND = 1, NBNDY
+                     BCPL( BND,VAR ) = BCFAC( VAR ) * RHOJ_BND( BND,LVL )
+                     END DO
+                  END IF
                END IF
             ELSE
             DO BND = 1, NBNDY

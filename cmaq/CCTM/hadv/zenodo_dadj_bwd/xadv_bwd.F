@@ -24,7 +24,8 @@ C what(1) key, module and SID; SCCS file; date and time of last delta:
 C %W% %P% %G% %U%
 
 C:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      SUBROUTINE XADV_BWD(LGRID, ASTEP_L, LAYER, CON, XVEL, BCON_ADJ)
+      SUBROUTINE XADV_BWD(LGRID, ASTEP_L, LAYER, CON, XVEL, BCON_ADJ,
+     &     BNDY_ADJ)
 
 C-----------------------------------------------------------------------
 C Function:
@@ -32,6 +33,8 @@ C   Continuous adjoint for advection in the horizontal plane; x1-direction.
 
 C Revision history:
 C   June 2013 by Peter Percell at UH-IMAQS: created for adjoint/4dvar
+C   Oct 2026: return the inflow ghost-cell adjoint in BNDY_ADJ for
+C             ADJ_LGRID_BC
 C-----------------------------------------------------------------------
 
       USE GRID_CONF             ! horizontal & vertical domain specifications
@@ -71,6 +74,9 @@ C Arguments:
       REAL, INTENT(IN), TARGET :: CON(1-SWP:, 1:, 1:) ! advected concentrations
       REAL, INTENT(IN)    :: XVEL(:, :) ! adjusted velocities along rows
       REAL, INTENT(IN) :: BCON_ADJ(:, :) ! boundary values
+      REAL, INTENT(OUT) :: BNDY_ADJ(:, :) ! adjoint of the inflow ghost
+                                ! cells, on this PE's west and east
+                                ! perimeter slots; zero elsewhere
 
 C External Functions not declared in IODECL3.EXT:
       INTEGER, EXTERNAL :: TIME2SEC
@@ -96,6 +102,9 @@ C Local Variables:
 
       INTEGER :: C, R, S, V     ! loop counters
       INTEGER :: A2C
+
+      REAL :: SEED_LO(1:N_SPC_ADV) ! west ghost LAMBDA before HPPM_BWD
+      REAL :: SEED_HI(1:N_SPC_ADV) ! east ghost LAMBDA before HPPM_BWD
 
 #ifdef parallel
       REAL, POINTER :: SEND(:, :, :)
@@ -146,6 +155,8 @@ C Create global map to CGRID
       END IF                    ! FIRSTIME
 
       DT = TIME2SEC(ASTEP_L)
+
+      BNDY_ADJ = 0.0
 
 C Load the interior values of LGRID into LAMBDA
       DO S = 1, N_SPC_ADV
@@ -209,8 +220,27 @@ C Insert the boundary conditions into LAMBDA
             END DO
          END IF
 
+C HPPM_BWD adds the adjoint of the inflow flux into the ghost cell next to
+C the face, on top of whatever LAMBDA was seeded with above (ZFDBC on a
+C forward-inflow face). The seed is never read back into the interior, so
+C the difference is exactly the sensitivity to the ghost value, i.e. to
+C the coupled BCON that the forward model put there
+         IF ( COLSX_PE(1, MYPE+1) == 1 ) SEED_LO = LAMBDA(0, R, :)
+         IF ( COLSX_PE(2, MYPE+1) == GL_NCOLS ) SEED_HI = LAMBDA(NCOLS+1, R, :)
          CALL HPPM_BWD(NCOLS, N_SPC_ADV, CON(:, R, :), LAMBDA(:, R, :),
      &        XVEL(:, R), DT, DS, 'C')
+
+         IF ( COLSX_PE(1, MYPE+1) == 1 ) THEN ! west boundary
+            IF ( XVEL(1,R) > 0.0 ) THEN ! forward-model inflow
+               BNDY_ADJ(WFX+R, :) = LAMBDA(0, R, :) - SEED_LO
+            END IF
+         END IF
+
+         IF ( COLSX_PE(2, MYPE+1) == GL_NCOLS ) THEN ! east boundary
+            IF ( XVEL(NCOLS+1,R) < 0.0 ) THEN ! forward-model inflow
+               BNDY_ADJ(EFX+R, :) = LAMBDA(NCOLS+1, R, :) - SEED_HI
+            END IF
+         END IF
       END DO
 
 C Transfer updated interior concentrations from LAMBDA into LGRID

@@ -52,6 +52,7 @@ C+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       USE PCGRID_DEFN, ONLY : N_SPC_PEMIS ! species slots in PLGRID_EM
       USE PMEM_DEFN, ONLY : N_EMIS_PM, VPOC, VPSO4, VPNO3, VPEC, VPMF,
      &                      VPMC
+      USE ADJ_BC_SENS, ONLY : ADJ_LGRID_BC, BC_SDATE, BC_STIME
 
       IMPLICIT NONE
 
@@ -338,6 +339,35 @@ C Tracer emissions species
      &              ' variables but PLGRID_EM has ', N_SPC_PEMIS
                CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT3)
             END IF
+
+         CASE ( ADJ_LGRID_BC )
+
+C Copy BNDY_GASC_1's header, so that the output lines up with it record for
+C record and cell for cell. Only the start moves, to the first record the
+C run reads (BC_SENS_INIT). BC_SENS_WRITE writes the file, with plain
+C WRITE3, once the run is complete.
+            IF ( .NOT. DESC3(BNDY_GASC_1) ) THEN
+               XMSG = 'Could not get ' // TRIM(BNDY_GASC_1) //
+     &              ' file description'
+               CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
+            END IF
+
+            SDATE3D = BC_SDATE
+            STIME3D = BC_STIME
+
+            FDESC3D(1) = 'Sensitivity output wrt lateral boundary conditions'
+            FDESC3D(2) = 'From CMAQ model dyn alloc version CTM'
+            DO K = 3, MXDESC3
+               FDESC3D(K) = ' '
+            END DO
+
+C Note: "CF" stands for "cost function units"
+            DO S = 1, NVARS3D
+               UNITS3D(S) = 'CF/ppmV'
+               VDESC3D(S) =
+     &              'Sensitivity of cost function to boundary ' //
+     &              'condition of ' // TRIM(VNAME3D(S))
+            END DO
 
          CASE DEFAULT
 

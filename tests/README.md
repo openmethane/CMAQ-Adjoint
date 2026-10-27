@@ -4,17 +4,26 @@ These tests check whether the adjoint binaries compile and run to completion
 on known inputs. They are smoke tests: they do not verify that the numbers
 coming out are correct.
 
-`tests/test-run.sh` runs three cases:
+`tests/test-run.sh` runs five cases:
 
 - **001** — `ADJOINT_FWD`, single process. Checks normal completion.
 - **002** — `ADJOINT_FWD` under `mpirun -np 2`. Checks normal completion.
 - **003** — `ADJOINT_FWD` then `ADJOINT_BWD`, single process. Checks normal
-  completion, no non-finite values in the log, and that the sensitivity output
-  is not empty.
+  completion, no non-finite values in the log, and that the sensitivity
+  outputs (`ADJ_LGRID`, `ADJ_LGRID_EM`, `ADJ_LGRID_BC`) are not empty.
+- **004** — as 003, but both runs use the hourly BCON (see below) and only
+  `ADJ_LGRID_BC` is checked for content.
+- **005** — as 004 under `mpirun -np 2`. Also checks that `ADJ_LGRID_BC`
+  matches 004's to within 1e-5 of its largest value, which tests the gather
+  of the perimeter from both PEs. The two do not match bit for bit:
+  `ADJ_LGRID` itself differs between one and two processes at ~1e-7.
 
 The backward run consumes the forward run's checkpoints, `XFIRST` state and
-concentration output, so case 003 runs both binaries in the same directory
-rather than starting the backward run from clean.
+concentration output, so cases 003–005 run both binaries in the same
+directory rather than starting the backward run from clean.
+
+`ADJ_LGRID_BC` is not in the bundle's `bwd.env`, which predates it, so
+`test-run.sh` sets it.
 
 ## Environment
 
@@ -76,6 +85,26 @@ domain (10x10x32, `GDNAM` `au-test_v1`), the same date, and the same 25 hourly
 records as the rest of this bundle — i.e. exactly what the model is fed in
 production.
 
+## The hourly BCON
+
+The bundle's `BCON.d01.au-test_v1.CH4only.nc` has a single time-independent
+record (`TSTEP = 0`), so it never exercises the backward model's interpolation
+between BCON records. Production BCON is hourly. Cases 004 and 005 use
+the bundle's `cmaq/BCON.d01.au-test_v1.CH4only.hourly.nc` instead. It has 25
+hourly records covering the test day, with values that vary by hour, edge and
+layer, so a misplaced record or perimeter slot in `ADJ_LGRID_BC` shows up as a
+different value.
+
+It is generated from the single-record BCON by `make-hourly-bcon.py`, so the
+smoke test needs no Python in the image. To regenerate it, then rebuild the
+bundle as described below:
+
+```shell
+uv run --no-project --with netCDF4 tests/make-hourly-bcon.py \
+    --template tests/test-data/cmaq/BCON.d01.au-test_v1.CH4only.nc \
+    --output tests/test-data/cmaq/BCON.d01.au-test_v1.CH4only.hourly.nc
+```
+
 ## Test data
 
 As the test data is too large to be committed to the repo, it is fetched from
@@ -90,7 +119,8 @@ bwd.env                 backward-run environment, sourced after fwd.env
 FORCE.20221207.nc       adjoint forcing (see above)
 mcip/                   sample MCIP output for the au-test_v1 domain
 emissions/              emissions for the matching domain and date
-cmaq/                   initial and boundary conditions
+cmaq/                   initial and boundary conditions, including the
+                        hourly BCON (see above)
 ```
 
 Test data is bundled by compressing the contents of `test-data/`. Write the
@@ -107,6 +137,7 @@ Then upload it to the Open Methane Public Data Store and point
 `TEST_DATA_URL` in `test-run.sh` at the new file. Because the URL is
 versioned, updating the bundle is a code change: the two land together.
 
-`test-run.sh` checks for `fwd.env`, `bwd.env` and `FORCE.20221207.nc` up
-front, so a cached bundle predating the backward test fails with a clear
-message rather than part way through a model run.
+`test-run.sh` checks for `fwd.env`, `bwd.env`, `FORCE.20221207.nc` and the
+hourly BCON up front, so a cached bundle predating the backward or boundary
+sensitivity tests fails with a clear message rather than part way through a
+model run.
