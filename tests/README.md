@@ -4,7 +4,7 @@ These tests check whether the adjoint binaries compile and run to completion
 on known inputs. They are smoke tests: they do not verify that the numbers
 coming out are correct.
 
-`tests/test-run.sh` runs five cases:
+`tests/test-run.sh` runs six cases:
 
 - **001** — `ADJOINT_FWD`, single process. Checks normal completion.
 - **002** — `ADJOINT_FWD` under `mpirun -np 2`. Checks normal completion.
@@ -13,13 +13,18 @@ coming out are correct.
   outputs (`ADJ_LGRID`, `ADJ_LGRID_EM`, `ADJ_LGRID_BC`) are not empty.
 - **004** — as 003, but both runs use the hourly BCON (see below) and only
   `ADJ_LGRID_BC` is checked for content.
-- **005** — as 004 under `mpirun -np 2`. Also checks that `ADJ_LGRID_BC`
+- **005** — as 004 under `mpirun -np 2`, split by column
+  (`NPCOL_NPROW="2 1"`). Also checks that `ADJ_LGRID_BC` is finite and
   matches 004's to within 1e-5 of its largest value, which tests the gather
   of the perimeter from both PEs. The two do not match bit for bit:
-  `ADJ_LGRID` itself differs between one and two processes at ~1e-7.
+  `ADJ_LGRID` itself differs between one and two processes at ~1e-7. The
+  size of the data section compared is read from each file's netCDF header.
+- **006** — as 005, split by row (`NPCOL_NPROW="1 2"`). A column split puts
+  the west and east faces on different PEs, a row split the south and north
+  ones, so the two together check every face's slot mapping.
 
 The backward run consumes the forward run's checkpoints, `XFIRST` state and
-concentration output, so cases 003–005 run both binaries in the same
+concentration output, so cases 003–006 run both binaries in the same
 directory rather than starting the backward run from clean.
 
 `ADJ_LGRID_BC` is not in the bundle's `bwd.env`, which predates it, so
@@ -89,7 +94,7 @@ production.
 
 The bundle's `BCON.d01.au-test_v1.CH4only.nc` has a single time-independent
 record (`TSTEP = 0`), so it never exercises the backward model's interpolation
-between BCON records. Production BCON is hourly. Cases 004 and 005 use
+between BCON records. Production BCON is hourly. Cases 004–006 use
 the bundle's `cmaq/BCON.d01.au-test_v1.CH4only.hourly.nc` instead. It has 25
 hourly records covering the test day, with values that vary by hour, edge and
 layer, so a misplaced record or perimeter slot in `ADJ_LGRID_BC` shows up as a

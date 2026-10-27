@@ -55,7 +55,7 @@ runs `/opt/tests/test-run.sh`, which:
    `mpirun -np 2` with `NPCOL_NPROW="2 1"`.
 3. Runs `ADJOINT_FWD` then `ADJOINT_BWD` against the bundle's BCON, then
    against the bundle's hourly BCON, single-process and under `mpirun -np 2`
-   (see `tests/README.md`).
+   split both by column and by row (see `tests/README.md`).
 
 **This is a smoke test only** — it checks the binary compiles and runs to
 completion on known inputs, not that the numerical output is correct. There is
@@ -128,7 +128,9 @@ units per unit of the input they refer to:
 - `ADJ_LGRID_BC` — to the lateral boundary condition `BNDY_GASC_1`, only if
   the `ADJ_LGRID_BC` env var is set. It is a `BNDARY3` file shaped like the
   BCON input, accumulated by module `ADJ_BC_SENS` in
-  `hadv/zenodo_dadj_bwd/`, and written once at the end of the run.
+  `driver/zenodo_cadj_bwd/` (fed by `hadv/zenodo_dadj_bwd/`, the only
+  advection variant that calls `BC_SENS_ACCUM`), and written once at the end
+  of the run.
 
 The output is gathered to PE 0 and written with plain I/O API `WRITE3` from
 a `.f` file (`write3_bndy.f`), because the build's `-DWRITE3=PWRITE3` routes

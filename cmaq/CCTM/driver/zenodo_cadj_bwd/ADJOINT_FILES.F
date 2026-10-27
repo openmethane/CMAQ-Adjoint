@@ -32,6 +32,7 @@ C Parameters
       CHARACTER(16), PARAMETER :: INIT_LGRID_1    = 'INIT_LGRID_1'
       CHARACTER(16), PARAMETER :: ADJ_LGRID       = 'ADJ_LGRID'
       CHARACTER(16), PARAMETER :: ADJ_LGRID_EM    = 'ADJ_LGRID_EM'
+      CHARACTER(16), PARAMETER :: ADJ_LGRID_BC    = 'ADJ_LGRID_BC'
       CHARACTER(16), PARAMETER :: ADJ_FORCE_FILE  = 'ADJ_FORCE'
 
       CHARACTER(16) :: LGRID_OUTPUT_FREQ
@@ -52,7 +53,6 @@ C+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       USE PCGRID_DEFN, ONLY : N_SPC_PEMIS ! species slots in PLGRID_EM
       USE PMEM_DEFN, ONLY : N_EMIS_PM, VPOC, VPSO4, VPNO3, VPEC, VPMF,
      &                      VPMC
-      USE ADJ_BC_SENS, ONLY : ADJ_LGRID_BC, BC_SDATE, BC_STIME
 
       IMPLICIT NONE
 
@@ -343,17 +343,18 @@ C Tracer emissions species
          CASE ( ADJ_LGRID_BC )
 
 C Copy BNDY_GASC_1's header, so that the output lines up with it record for
-C record and cell for cell. Only the start moves, to the first record the
-C run reads (BC_SENS_INIT). BC_SENS_WRITE writes the file, with plain
-C WRITE3, once the run is complete.
+C record and cell for cell. Only the start moves, to JDATE:JTIME, which the
+C caller sets to the first record the run reads (BC_SDATE:BC_STIME from
+C BC_SENS_INIT). BC_SENS_WRITE in module ADJ_BC_SENS writes the file, with
+C plain WRITE3, once the run is complete.
             IF ( .NOT. DESC3(BNDY_GASC_1) ) THEN
                XMSG = 'Could not get ' // TRIM(BNDY_GASC_1) //
      &              ' file description'
                CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
             END IF
 
-            SDATE3D = BC_SDATE
-            STIME3D = BC_STIME
+            SDATE3D = JDATE
+            STIME3D = JTIME
 
             FDESC3D(1) = 'Sensitivity output wrt lateral boundary conditions'
             FDESC3D(2) = 'From CMAQ model dyn alloc version CTM'

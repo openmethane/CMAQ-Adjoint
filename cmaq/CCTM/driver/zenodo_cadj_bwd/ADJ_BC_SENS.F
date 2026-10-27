@@ -26,16 +26,21 @@ C
 C   The four corner perimeter slots are never read by advection, so their
 C   sensitivity is identically zero.
 C
+C   This module lives with the driver, not with the horizontal advection
+C   that feeds it, so that the driver builds whichever hadv variant is
+C   selected. Only hadv/zenodo_dadj_bwd calls BC_SENS_ACCUM; with any other
+C   variant ADJ_LGRID_BC is written as zeros.
+C
 C   Nothing is computed or written unless ADJ_LGRID_BC is set.
 C
 C Revision History:
 C   Oct 2026: created
 C-----------------------------------------------------------------------
 
+      USE ADJOINT_FILES, ONLY : ADJ_LGRID_BC
+
       IMPLICIT NONE
       SAVE
-
-      CHARACTER(16), PARAMETER :: ADJ_LGRID_BC = 'ADJ_LGRID_BC'
 
       LOGICAL :: BC_SENS_ON = .FALSE.
 

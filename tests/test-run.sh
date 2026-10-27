@@ -143,32 +143,72 @@ assert_has_nonzero_data () {
 # all. 7.5 kB sits between the two. The hourly BCON gives ~72 kB.
 ADJ_LGRID_BC_MIN_BYTES=7500
 
+# Print the byte offset at which a classic (CDF1) or 64-bit-offset (CDF2)
+# netCDF file's data section starts, i.e. the smallest "begin" of any
+# variable, by walking the header. The runtime image has no netCDF tools,
+# but perl-base is always there. An IO/API file holds only record variables,
+# so everything from this offset to the end of the file is data.
+nc_data_offset () {
+  perl -e '
+    open(my $f, "<:raw", $ARGV[0]) or die "$ARGV[0]: $!\n";
+    local $/; my $h = <$f>; my $p = 4;
+    my $offsz = (substr($h, 3, 1) eq "\x02") ? 8 : 4;
+    sub i32 { my $v = unpack("N", substr($h, $p, 4)); $p += 4; $v }
+    sub off { my $v = unpack($offsz == 8 ? "Q>" : "N", substr($h, $p, $offsz));
+              $p += $offsz; $v }
+    sub name { my $n = i32(); my $s = substr($h, $p, $n);
+               $p += ($n + 3) & ~3; $s }
+    # attribute list: tag, count, then name, type, nelems, padded values
+    sub atts { i32(); for (1 .. i32()) { name(); my $t = i32(); my $n = i32();
+                 $p += ($n * (0, 1, 1, 2, 4, 4, 8)[$t] + 3) & ~3 } }
+    i32();                                           # numrecs
+    i32(); for (1 .. i32()) { name(); i32() }        # dimensions
+    atts();                                          # global attributes
+    my $begin;
+    i32(); for (1 .. i32()) {                        # variables
+      name(); $p += 4 * i32(); atts(); i32(); i32();
+      my $b = off(); $begin = $b if !defined $begin || $b < $begin }
+    print $begin;
+  ' "$1"
+}
+
 # Compare the data sections of two ADJ_LGRID_BC files. The backward model is
 # not bit-reproducible across decompositions -- ADJ_LGRID itself differs
 # between one and two processes at the ~1e-7 level -- so allow a difference
 # of up to 1e-5 of the largest value. A perimeter slot gathered to the wrong
 # place would be wrong by O(1).
 #
-# The data section is the trailing NREC records of TFLAG plus one variable,
-# 8 + 4 x NLAYS x NPERIM bytes per record, as big-endian floats. TFLAG is
-# read as floats too, which is harmless since it is identical in both.
+# The data section is read from each file's own header, so the check follows
+# the test bundle's grid, layers and variables. It is NREC records of TFLAG
+# plus the variables, as big-endian floats. TFLAG is read as floats too,
+# which is harmless since it is identical in both. od prints a non-finite
+# float as nan or inf, which awk would read as 0, so those fail explicitly.
 assert_bc_close () {
   FILE_A=$1
   FILE_B=$2
-  BYTES=$3
   if [ ! -f "${FILE_A}" ] || [ ! -f "${FILE_B}" ]; then
     fail "cannot compare ${FILE_A} and ${FILE_B}: missing file"
     return
   fi
+  BYTES_A=$(( $(stat -c %s "${FILE_A}") - $(nc_data_offset "${FILE_A}") ))
+  BYTES_B=$(( $(stat -c %s "${FILE_B}") - $(nc_data_offset "${FILE_B}") ))
+  if [ "${BYTES_A}" -ne "${BYTES_B}" ] || [ "${BYTES_A}" -le 0 ]; then
+    fail "$(basename "${FILE_B}") data sections differ in size" \
+         "(${BYTES_A} and ${BYTES_B} bytes)"
+    return
+  fi
+  echo "  comparing ${BYTES_A} bytes of data"
   if ! paste \
-      <(tail -c "${BYTES}" "${FILE_A}" | od -An -v -t f4 --endian=big -w4) \
-      <(tail -c "${BYTES}" "${FILE_B}" | od -An -v -t f4 --endian=big -w4) |
-    awk '{ d = $1 - $2; if (d < 0) d = -d; a = ($1 < 0) ? -$1 : $1
+      <(tail -c "${BYTES_A}" "${FILE_A}" | od -An -v -t f4 --endian=big -w4) \
+      <(tail -c "${BYTES_B}" "${FILE_B}" | od -An -v -t f4 --endian=big -w4) |
+    awk 'tolower($0) ~ /nan|inf/ { bad++; next }
+         { d = $1 - $2; if (d < 0) d = -d; a = ($1 < 0) ? -$1 : $1
            if (d > maxd) maxd = d; if (a > maxa) maxa = a }
-         END { printf "  max |value| %g, max |difference| %g\n", maxa, maxd
-               exit !(maxa > 0 && maxd <= 1e-5 * maxa) }'; then
-    fail "$(basename "${FILE_B}") differs between single process and two" \
-         "processes"
+         END { printf "  max |value| %g, max |difference| %g, non-finite %d\n",
+                      maxa, maxd, bad
+               exit !(bad == 0 && maxa > 0 && maxd <= 1e-5 * maxa) }'; then
+    fail "$(basename "${FILE_B}") differs from the single-process run" \
+         "or holds non-finite values"
   fi
 }
 
@@ -265,27 +305,37 @@ BC_SP="${RUN_DIR}/output/ADJ_LGRID_BC.20221207.nc"
 # --------------------------------------------------------------------------
 # 004 again on two processes. Each PE accumulates the part of the perimeter
 # on its own edge of the domain and PE 0 gathers and writes them, so the
-# output should match 004 to round-off.
-echo "=== 005: forward then backward, hourly BCON, two processes ==="
-prepare_test_run "${TEST_RUNS_ROOT}/005-bwd-bc-mp"
-read_environment_vars "${TEST_DATA_DIR}/fwd.env"
-use_hourly_bcon
-export NPCOL_NPROW="2 1"
-MPI_PREFIX="mpirun -np 2"
-run_fwd
-assert_normal_completion "${LOGFILE}" "DRIVER_FWD"
+# output should match 004 to round-off. A column split puts the west and
+# east faces on different PEs and divides the south and north faces between
+# them; a row split does the opposite, so between them every face's local
+# to global slot mapping is checked.
+run_bc_two_processes () {
+  NAME=$1
+  prepare_test_run "${TEST_RUNS_ROOT}/${NAME}"
+  read_environment_vars "${TEST_DATA_DIR}/fwd.env"
+  use_hourly_bcon
+  # after fwd.env, which sets NPCOL_NPROW="1 1"
+  export NPCOL_NPROW=$2
+  MPI_PREFIX="mpirun -np 2"
+  run_fwd
+  assert_normal_completion "${LOGFILE}" "DRIVER_FWD"
 
-read_environment_vars "${TEST_DATA_DIR}/bwd.env"
-export ADJ_LGRID_BC="${RUN_DIR}/output/ADJ_LGRID_BC.20221207.nc -v"
-run_bwd
-cat "${LOGFILE}"
-assert_normal_completion "${LOGFILE}" "DRIVER_BWD"
-assert_no_nan "${LOGFILE}"
-assert_has_nonzero_data "${RUN_DIR}/output/ADJ_LGRID_BC.20221207.nc" \
-  "${ADJ_LGRID_BC_MIN_BYTES}"
-# 25 hourly records of TFLAG (8 bytes) plus CH4 (32 layers x 44 perimeter)
-assert_bc_close "${BC_SP}" "${RUN_DIR}/output/ADJ_LGRID_BC.20221207.nc" \
-  $((25 * (8 + 4 * 32 * 44)))
+  read_environment_vars "${TEST_DATA_DIR}/bwd.env"
+  export ADJ_LGRID_BC="${RUN_DIR}/output/ADJ_LGRID_BC.20221207.nc -v"
+  run_bwd
+  cat "${LOGFILE}"
+  assert_normal_completion "${LOGFILE}" "DRIVER_BWD"
+  assert_no_nan "${LOGFILE}"
+  assert_has_nonzero_data "${RUN_DIR}/output/ADJ_LGRID_BC.20221207.nc" \
+    "${ADJ_LGRID_BC_MIN_BYTES}"
+  assert_bc_close "${BC_SP}" "${RUN_DIR}/output/ADJ_LGRID_BC.20221207.nc"
+}
+
+echo "=== 005: forward then backward, hourly BCON, two processes by column ==="
+run_bc_two_processes 005-bwd-bc-mp-col "2 1"
+
+echo "=== 006: forward then backward, hourly BCON, two processes by row ==="
+run_bc_two_processes 006-bwd-bc-mp-row "1 2"
 
 # --------------------------------------------------------------------------
 if [ "${FAILURES}" -ne 0 ]; then

@@ -218,7 +218,8 @@ C Create new adjoint output files and open for update
       ! And for the lateral boundary condition, if ADJ_LGRID_BC is set. Every
       ! PE accumulates its own part of the boundary, so all of them set up.
       CALL BC_SENS_INIT(SDATE, STIME, EDATE, ETIME)
-      IF ( BC_SENS_ON ) CALL OP_ADJ_FILE(EDATE, ETIME, TSTEP, ADJ_LGRID_BC)
+      IF ( BC_SENS_ON )
+     &     CALL OP_ADJ_FILE(BC_SDATE, BC_STIME, TSTEP, ADJ_LGRID_BC)
 
       IF ( TRIM(LGRID_OUTPUT_FREQ) == 'OUTPUT_STEP' ) THEN
          ALLOCATE(

@@ -86,10 +86,14 @@ pieces are gathered to PE 0, which writes the file with plain I/O API
 files. On a boundary file it logs a warning and returns failure, so the output
 would silently go missing.
 
-The code is in `cmaq/CCTM/hadv/zenodo_dadj_bwd/` (`ADJ_BC_SENS.F`,
-`write3_bndy.f`, `hadv_bwd.F`, `xadv_bwd.F`, `yadv_bwd.F` and `rdbcon.F`).
-`OP_ADJ_FILE` in `driver/zenodo_cadj_bwd/ADJOINT_FILES.F` creates the file
-header. The forward build is untouched.
+The accumulator and the output live with the driver, in
+`cmaq/CCTM/driver/zenodo_cadj_bwd/` (`ADJ_BC_SENS.F`, `write3_bndy.f`, and
+`OP_ADJ_FILE` in `ADJOINT_FILES.F`, which creates the file header). The
+advection side is in `cmaq/CCTM/hadv/zenodo_dadj_bwd/` (`hadv_bwd.F`,
+`xadv_bwd.F`, `yadv_bwd.F` and `rdbcon.F`), which only calls
+`BC_SENS_ACCUM`. The driver therefore builds with any `ModHadv`, but only
+`hadv/zenodo_dadj_bwd` fills the output; with another variant
+`ADJ_LGRID_BC` is all zeros. The forward build is untouched.
 
 ### Limitations
 
