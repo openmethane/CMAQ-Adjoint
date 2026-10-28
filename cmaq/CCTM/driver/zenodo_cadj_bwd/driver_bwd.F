@@ -51,6 +51,7 @@ C-----------------------------------------------------------------------
       USE CHK_FILES_DEFS        ! adjoint checkpoint files definition
       USE CHK_FILES             ! adjoint checkpoint files routines
       USE EMIS_DEFN, ONLY : EMSENSL ! emis sensitivity layers, set in PCGRID
+      USE ADJ_BC_SENS           ! boundary condition sensitivity
 
       IMPLICIT NONE
 
@@ -214,6 +215,11 @@ C Create new adjoint output files and open for update
       CALL OP_ADJ_FILE(EDATE, ETIME, TSTEP, ADJ_LGRID)
       ! Also for emissions related sensitivity output (mdt|slc.11.2013)
       CALL OP_ADJ_FILE(EDATE, ETIME, TSTEP, ADJ_LGRID_EM)
+      ! And for the lateral boundary condition, if ADJ_LGRID_BC is set. Every
+      ! PE accumulates its own part of the boundary, so all of them set up.
+      CALL BC_SENS_INIT(SDATE, STIME, EDATE, ETIME)
+      IF ( BC_SENS_ON )
+     &     CALL OP_ADJ_FILE(BC_SDATE, BC_STIME, TSTEP, ADJ_LGRID_BC)
 
       IF ( TRIM(LGRID_OUTPUT_FREQ) == 'OUTPUT_STEP' ) THEN
          ALLOCATE(
@@ -341,6 +347,10 @@ C Close checkpoint files
 C Close adjoint file      !slz
       CALL CLOSE_ADJ_FILE(JDATE, JTIME, ADJ_LGRID) !SLZ
       CALL CLOSE_ADJ_FILE(JDATE, JTIME, ADJ_LGRID_EM) !SLZ
+
+C A boundary record is read by the sub-steps on both sides of it, so the
+C boundary condition sensitivity is only complete at the end of the run
+      CALL BC_SENS_WRITE
 
       IF ( TRIM(LGRID_OUTPUT_FREQ) == 'OUTPUT_STEP' ) THEN
          DEALLOCATE(ALGRID)

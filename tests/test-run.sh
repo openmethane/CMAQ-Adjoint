@@ -23,7 +23,7 @@ ADJ_FWD_BIN="${ADJ_FWD_BIN:-/opt/cmaq/bin/ADJOINT_FWD}"
 ADJ_BWD_BIN="${ADJ_BWD_BIN:-/opt/cmaq/bin/ADJOINT_BWD}"
 
 # url to the test data bundle
-TEST_DATA_URL="${TEST_DATA_URL:-https://openmethane.s3.amazonaws.com/tests/cmaq-adjoint/cmaq-adjoint-test-data.20260804.tar.gz}"
+TEST_DATA_URL="${TEST_DATA_URL:-https://openmethane.s3.amazonaws.com/tests/cmaq-adjoint/cmaq-adjoint-test-data.20261028.tar.gz}"
 
 # path to this script and its parent folder
 TESTS_ROOT="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
@@ -42,14 +42,20 @@ if [ ! -d "${TEST_DATA_DIR}" ]; then
 fi
 DATA_DIR="${TEST_DATA_DIR}"
 
+# hourly BCON for the test day (see tests/make-hourly-bcon.py). The bundle's
+# own BCON has a single time-independent record.
+HOURLY_BCON="${TEST_DATA_DIR}/cmaq/BCON.d01.au-test_v1.CH4only.hourly.nc"
+
 # The bundle gained fwd.env (renamed from test.env), bwd.env and the adjoint
-# forcing file when the backward test was added. Check for them up front so a
-# stale cached bundle gives a clear message rather than a confusing model
-# failure part way through.
-for REQUIRED in fwd.env bwd.env FORCE.20221207.nc; do
+# forcing file when the backward test was added, and the hourly BCON when the
+# boundary sensitivity test was. Check for them up front so a stale cached
+# bundle gives a clear message rather than a confusing model failure part way
+# through.
+for REQUIRED in fwd.env bwd.env FORCE.20221207.nc \
+    cmaq/BCON.d01.au-test_v1.CH4only.hourly.nc; do
   if [ ! -f "${DATA_DIR}/${REQUIRED}" ]; then
     echo "ERROR: ${DATA_DIR}/${REQUIRED} is missing."
-    echo "The test data bundle predates the backward test. Delete"
+    echo "The cached test data bundle is out of date. Delete"
     echo "${TEST_DATA_DIR} to re-fetch it, or see tests/README.md to rebuild."
     exit 1
   fi
@@ -130,6 +136,89 @@ assert_has_nonzero_data () {
   fi
 }
 
+# IO/API boundary files are small, so the 20 kB default above would reject
+# a correct one. Measured on this domain: the ADJ_LGRID_BC header alone is
+# ~5.8 kB of non-zero bytes, and the bundle's single-record BCON adds ~3.3 kB
+# of data on top (only the slots on inflow faces are non-zero), ~9.2 kB in
+# all. 7.5 kB sits between the two. The hourly BCON gives ~72 kB.
+ADJ_LGRID_BC_MIN_BYTES=7500
+
+# Print the byte offset at which a classic (CDF1) or 64-bit-offset (CDF2)
+# netCDF file's data section starts, i.e. the smallest "begin" of any
+# variable, by walking the header. The runtime image has no netCDF tools,
+# but perl-base is always there. An IO/API file holds only record variables,
+# so everything from this offset to the end of the file is data.
+nc_data_offset () {
+  perl -e '
+    open(my $f, "<:raw", $ARGV[0]) or die "$ARGV[0]: $!\n";
+    local $/; my $h = <$f>; my $p = 4;
+    my $offsz = (substr($h, 3, 1) eq "\x02") ? 8 : 4;
+    sub i32 { my $v = unpack("N", substr($h, $p, 4)); $p += 4; $v }
+    sub off { my $v = unpack($offsz == 8 ? "Q>" : "N", substr($h, $p, $offsz));
+              $p += $offsz; $v }
+    sub name { my $n = i32(); my $s = substr($h, $p, $n);
+               $p += ($n + 3) & ~3; $s }
+    # attribute list: tag, count, then name, type, nelems, padded values
+    sub atts { i32(); for (1 .. i32()) { name(); my $t = i32(); my $n = i32();
+                 $p += ($n * (0, 1, 1, 2, 4, 4, 8)[$t] + 3) & ~3 } }
+    i32();                                           # numrecs
+    i32(); for (1 .. i32()) { name(); i32() }        # dimensions
+    atts();                                          # global attributes
+    my $begin;
+    i32(); for (1 .. i32()) {                        # variables
+      name(); $p += 4 * i32(); atts(); i32(); i32();
+      my $b = off(); $begin = $b if !defined $begin || $b < $begin }
+    print $begin;
+  ' "$1"
+}
+
+# Compare the data sections of two ADJ_LGRID_BC files. The backward model is
+# not bit-reproducible across decompositions -- ADJ_LGRID itself differs
+# between one and two processes at the ~1e-7 level -- so allow a difference
+# of up to 1e-5 of the largest value. A perimeter slot gathered to the wrong
+# place would be wrong by O(1).
+#
+# The data section is read from each file's own header, so the check follows
+# the test bundle's grid, layers and variables. It is NREC records of TFLAG
+# plus the variables, as big-endian floats. TFLAG is read as floats too,
+# which is harmless since it is identical in both. od prints a non-finite
+# float as nan or inf, which awk would read as 0, so those fail explicitly.
+assert_bc_close () {
+  FILE_A=$1
+  FILE_B=$2
+  if [ ! -f "${FILE_A}" ] || [ ! -f "${FILE_B}" ]; then
+    fail "cannot compare ${FILE_A} and ${FILE_B}: missing file"
+    return
+  fi
+  BYTES_A=$(( $(stat -c %s "${FILE_A}") - $(nc_data_offset "${FILE_A}") ))
+  BYTES_B=$(( $(stat -c %s "${FILE_B}") - $(nc_data_offset "${FILE_B}") ))
+  if [ "${BYTES_A}" -ne "${BYTES_B}" ] || [ "${BYTES_A}" -le 0 ]; then
+    fail "$(basename "${FILE_B}") data sections differ in size" \
+         "(${BYTES_A} and ${BYTES_B} bytes)"
+    return
+  fi
+  echo "  comparing ${BYTES_A} bytes of data"
+  if ! paste \
+      <(tail -c "${BYTES_A}" "${FILE_A}" | od -An -v -t f4 --endian=big -w4) \
+      <(tail -c "${BYTES_B}" "${FILE_B}" | od -An -v -t f4 --endian=big -w4) |
+    awk 'tolower($0) ~ /nan|inf/ { bad++; next }
+         { d = $1 - $2; if (d < 0) d = -d; a = ($1 < 0) ? -$1 : $1
+           if (d > maxd) maxd = d; if (a > maxa) maxa = a }
+         END { printf "  max |value| %g, max |difference| %g, non-finite %d\n",
+                      maxa, maxd, bad
+               exit !(bad == 0 && maxa > 0 && maxd <= 1e-5 * maxa) }'; then
+    fail "$(basename "${FILE_B}") differs from the single-process run" \
+         "or holds non-finite values"
+  fi
+}
+
+use_hourly_bcon () {
+  export BNDY_GASC_1="${HOURLY_BCON}"
+  export BNDY_AERO_1="${HOURLY_BCON}"
+  export BNDY_NONR_1="${HOURLY_BCON}"
+  export BNDY_TRAC_1="${HOURLY_BCON}"
+}
+
 run_fwd () {
   pushd "${RUN_DIR}" > /dev/null
   ${MPI_PREFIX} ${ADJ_FWD_BIN}
@@ -174,6 +263,8 @@ FWD_LOGFILE="${LOGFILE}"
 assert_normal_completion "${FWD_LOGFILE}" "DRIVER_FWD"
 
 read_environment_vars "${TEST_DATA_DIR}/bwd.env"
+# not in the bundle's bwd.env, which predates it
+export ADJ_LGRID_BC="${RUN_DIR}/output/ADJ_LGRID_BC.20221207.nc -v"
 run_bwd
 cat "${LOGFILE}"
 assert_normal_completion "${LOGFILE}" "DRIVER_BWD"
@@ -185,6 +276,66 @@ assert_no_nan "${LOGFILE}"
 # read at the wrong time.
 assert_has_nonzero_data "${RUN_DIR}/output/ADJ_LGRID.20221207.nc"
 assert_has_nonzero_data "${RUN_DIR}/output/ADJ_LGRID_EM.20221207.nc"
+assert_has_nonzero_data "${RUN_DIR}/output/ADJ_LGRID_BC.20221207.nc" \
+  "${ADJ_LGRID_BC_MIN_BYTES}"
+
+# --------------------------------------------------------------------------
+# The same as 003 with an hourly BCON, which takes the backward model's
+# boundary sensitivity through the interpolation between BCON records that
+# the bundle's single-record BCON never exercises. The forward run must use
+# the same BCON, since the backward run replays it.
+echo "=== 004: forward then backward, hourly BCON, single process ==="
+prepare_test_run "${TEST_RUNS_ROOT}/004-bwd-bc-sp"
+read_environment_vars "${TEST_DATA_DIR}/fwd.env"
+use_hourly_bcon
+MPI_PREFIX=""
+run_fwd
+assert_normal_completion "${LOGFILE}" "DRIVER_FWD"
+
+read_environment_vars "${TEST_DATA_DIR}/bwd.env"
+export ADJ_LGRID_BC="${RUN_DIR}/output/ADJ_LGRID_BC.20221207.nc -v"
+run_bwd
+cat "${LOGFILE}"
+assert_normal_completion "${LOGFILE}" "DRIVER_BWD"
+assert_no_nan "${LOGFILE}"
+assert_has_nonzero_data "${RUN_DIR}/output/ADJ_LGRID_BC.20221207.nc" \
+  "${ADJ_LGRID_BC_MIN_BYTES}"
+BC_SP="${RUN_DIR}/output/ADJ_LGRID_BC.20221207.nc"
+
+# --------------------------------------------------------------------------
+# 004 again on two processes. Each PE accumulates the part of the perimeter
+# on its own edge of the domain and PE 0 gathers and writes them, so the
+# output should match 004 to round-off. A column split puts the west and
+# east faces on different PEs and divides the south and north faces between
+# them; a row split does the opposite, so between them every face's local
+# to global slot mapping is checked.
+run_bc_two_processes () {
+  NAME=$1
+  prepare_test_run "${TEST_RUNS_ROOT}/${NAME}"
+  read_environment_vars "${TEST_DATA_DIR}/fwd.env"
+  use_hourly_bcon
+  # after fwd.env, which sets NPCOL_NPROW="1 1"
+  export NPCOL_NPROW=$2
+  MPI_PREFIX="mpirun -np 2"
+  run_fwd
+  assert_normal_completion "${LOGFILE}" "DRIVER_FWD"
+
+  read_environment_vars "${TEST_DATA_DIR}/bwd.env"
+  export ADJ_LGRID_BC="${RUN_DIR}/output/ADJ_LGRID_BC.20221207.nc -v"
+  run_bwd
+  cat "${LOGFILE}"
+  assert_normal_completion "${LOGFILE}" "DRIVER_BWD"
+  assert_no_nan "${LOGFILE}"
+  assert_has_nonzero_data "${RUN_DIR}/output/ADJ_LGRID_BC.20221207.nc" \
+    "${ADJ_LGRID_BC_MIN_BYTES}"
+  assert_bc_close "${BC_SP}" "${RUN_DIR}/output/ADJ_LGRID_BC.20221207.nc"
+}
+
+echo "=== 005: forward then backward, hourly BCON, two processes by column ==="
+run_bc_two_processes 005-bwd-bc-mp-col "2 1"
+
+echo "=== 006: forward then backward, hourly BCON, two processes by row ==="
+run_bc_two_processes 006-bwd-bc-mp-row "1 2"
 
 # --------------------------------------------------------------------------
 if [ "${FAILURES}" -ne 0 ]; then

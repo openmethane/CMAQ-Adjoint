@@ -53,6 +53,9 @@ runs `/opt/tests/test-run.sh`, which:
    `tests/test-data/` (too large to commit).
 2. Runs `ADJOINT_FWD` once single-process, then again under
    `mpirun -np 2` with `NPCOL_NPROW="2 1"`.
+3. Runs `ADJOINT_FWD` then `ADJOINT_BWD` against the bundle's BCON, then
+   against the bundle's hourly BCON, single-process and under `mpirun -np 2`
+   split both by column and by row (see `tests/README.md`).
 
 **This is a smoke test only** — it checks the binary compiles and runs to
 completion on known inputs, not that the numerical output is correct. There is
@@ -91,14 +94,15 @@ Each has a block of `set Mod<Component> = <component>/<variant>` lines, e.g.
 (bwd build, as of this writing):
 
 ```
-set ModDriver = driver/yamo_adj_bwd
-set ModChkpnt = chkpnt/chkpnt_ioapi
-set ModInit   = init/adj_bwd
-set ModCpl    = couple/gencoor
-set ModHadv   = hadv/yamo_cadj_bwd
-set ModVadv   = vadv/vyamo_cadj_bwd
-set ModHdiff  = hdiff/multiscale_adj_bwd
-set ModVdiff  = vdiff/acm2_inline_adj_bwd
+set ModDriver = driver/zenodo_cadj_bwd
+set ModChkpnt = chkpnt/chkpnt_zenodo
+set ModPar    = par/par            # par/par_noop for a serial build
+set ModInit   = init/zenodo_cadj_bwd
+set ModCpl    = couple/zenodo
+set ModHadv   = hadv/zenodo_dadj_bwd
+set ModVadv   = vadv/zenodo_dadj_bwd
+set ModHdiff  = hdiff/zenodo_bwd
+set ModVdiff  = vdiff/zenodo_bwd
 set ModPhot   = phot/phot_noop
 set ModChem   = chem/chem_bwd_noop
 set ModAero   = aero/aero_bwd_noop
@@ -113,6 +117,25 @@ scripts first** to confirm the module is actually part of the active build
 for the binary you care about (fwd vs bwd) — otherwise you may be looking at
 an unused legacy variant that has no effect on program behavior. The fwd and
 bwd scripts can (and do) select different variants of the same component.
+
+### Backward-model sensitivity outputs
+
+`ADJOINT_BWD` writes up to three sensitivity files, all in cost-function
+units per unit of the input they refer to:
+
+- `ADJ_LGRID` — to concentration (initial condition at the run start).
+- `ADJ_LGRID_EM` — to emissions.
+- `ADJ_LGRID_BC` — to the lateral boundary condition `BNDY_GASC_1`, only if
+  the `ADJ_LGRID_BC` env var is set. It is a `BNDARY3` file shaped like the
+  BCON input, accumulated by module `ADJ_BC_SENS` in
+  `driver/zenodo_cadj_bwd/` (fed by `hadv/zenodo_dadj_bwd/`, the only
+  advection variant that calls `BC_SENS_ACCUM`), and written once at the end
+  of the run.
+
+The output is gathered to PE 0 and written with plain I/O API `WRITE3` from
+a `.f` file (`write3_bndy.f`), because the build's `-DWRITE3=PWRITE3` routes
+`.F` code through pario, which cannot write boundary files. See
+`docs/adj-lgrid-bc.md`.
 
 `cmaq/ICL` holds the global includes (species tables, mechanism definitions,
 etc.) referenced by `INCLUDE SUBST_*` across the Fortran source, independent

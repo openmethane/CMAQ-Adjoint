@@ -32,6 +32,7 @@ C Parameters
       CHARACTER(16), PARAMETER :: INIT_LGRID_1    = 'INIT_LGRID_1'
       CHARACTER(16), PARAMETER :: ADJ_LGRID       = 'ADJ_LGRID'
       CHARACTER(16), PARAMETER :: ADJ_LGRID_EM    = 'ADJ_LGRID_EM'
+      CHARACTER(16), PARAMETER :: ADJ_LGRID_BC    = 'ADJ_LGRID_BC'
       CHARACTER(16), PARAMETER :: ADJ_FORCE_FILE  = 'ADJ_FORCE'
 
       CHARACTER(16) :: LGRID_OUTPUT_FREQ
@@ -338,6 +339,36 @@ C Tracer emissions species
      &              ' variables but PLGRID_EM has ', N_SPC_PEMIS
                CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT3)
             END IF
+
+         CASE ( ADJ_LGRID_BC )
+
+C Copy BNDY_GASC_1's header, so that the output lines up with it record for
+C record and cell for cell. Only the start moves, to JDATE:JTIME, which the
+C caller sets to the first record the run reads (BC_SDATE:BC_STIME from
+C BC_SENS_INIT). BC_SENS_WRITE in module ADJ_BC_SENS writes the file, with
+C plain WRITE3, once the run is complete.
+            IF ( .NOT. DESC3(BNDY_GASC_1) ) THEN
+               XMSG = 'Could not get ' // TRIM(BNDY_GASC_1) //
+     &              ' file description'
+               CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
+            END IF
+
+            SDATE3D = JDATE
+            STIME3D = JTIME
+
+            FDESC3D(1) = 'Sensitivity output wrt lateral boundary conditions'
+            FDESC3D(2) = 'From CMAQ model dyn alloc version CTM'
+            DO K = 3, MXDESC3
+               FDESC3D(K) = ' '
+            END DO
+
+C Note: "CF" stands for "cost function units"
+            DO S = 1, NVARS3D
+               UNITS3D(S) = 'CF/ppmV'
+               VDESC3D(S) =
+     &              'Sensitivity of cost function to boundary ' //
+     &              'condition of ' // TRIM(VNAME3D(S))
+            END DO
 
          CASE DEFAULT
 

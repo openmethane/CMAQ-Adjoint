@@ -37,12 +37,15 @@ C   No "skipped" dates and times.
 C Revision History:
 C    Feb 2013 by Peter Percell at UH-IMAQS:
 C    - Modified hadvyppm.F for use with adjoint/4dvar code
+C    Oct 2026: accumulate the boundary condition sensitivity for
+C    ADJ_LGRID_BC (see ADJ_BC_SENS)
 C-----------------------------------------------------------------------
 
       USE GRID_CONF             ! horizontal & vertical domain specifications
       USE CHK_FILES_DEFS        ! adjoint checkpoint files definition
       USE CHK_FILES             ! adjoint checkpoint files routines
       USE SUBST_MODULES         ! stenex
+      USE ADJ_BC_SENS, ONLY : BC_SENS_ON, BC_SENS_ACCUM
 
       IMPLICIT NONE
 
@@ -99,6 +102,9 @@ C Local Variables:
       REAL, ALLOCATABLE, SAVE :: ADJFAC(:, :) ! Yamo's adjustment
       REAL, ALLOCATABLE, SAVE :: XVEL(:, :, :) ! adjusted velocities along rows for substeps
       REAL, ALLOCATABLE, SAVE :: YVEL(:, :, :) ! adjusted velocities along columns for substeps
+      REAL, ALLOCATABLE, SAVE :: BCPL(:, :, :) ! d BCON / d BNDY_GASC_1 value for substeps
+      INTEGER, ALLOCATABLE, SAVE :: SSDATE(:) ! start date of substeps
+      INTEGER, ALLOCATABLE, SAVE :: SSTIME(:) ! start time of substeps
 
       INTEGER :: ALLOCSTAT
 
@@ -114,16 +120,19 @@ C Local Variables:
       INTEGER :: SS             ! loop counter
 
       REAL :: BCON_ADJ(1:NBNDY, 1:N_SPC_ADV) ! boundary conditions for lgrid
+      REAL :: BNDY_ADJ_X(1:NBNDY, 1:N_SPC_ADV) ! adjoint of inflow ghost cells, x sweep
+      REAL :: BNDY_ADJ_Y(1:NBNDY, 1:N_SPC_ADV) ! adjoint of inflow ghost cells, y sweep
       REAL :: CON(1-SWP:NCOLS+SWP, 1-SWP:NROWS+SWP, 1:N_SPC_ADV)
       REAL :: RHOJ_BSS(1:NCOLS, 1:NROWS) ! RHOJ at beginning of advection sub-step
 
       INTERFACE
-         SUBROUTINE RDBCON(ADATE, ATIME, ASTEP_L, LAYER, BCON)
+         SUBROUTINE RDBCON(ADATE, ATIME, ASTEP_L, LAYER, BCON, BCPL)
             IMPLICIT NONE
             INTEGER, INTENT(IN) :: ADATE, ATIME
             INTEGER, INTENT(IN) :: ASTEP_L
             INTEGER, INTENT(IN) :: LAYER
             REAL, INTENT(OUT)   :: BCON(:, :)
+            REAL, INTENT(OUT), OPTIONAL :: BCPL(:, :)
          END SUBROUTINE RDBCON
          SUBROUTINE RDBCON_ADJ(ADATE, ATIME, ASTEP_L, LAYER, BCON_ADJ)
             IMPLICIT NONE
@@ -154,7 +163,8 @@ C Local Variables:
             REAL, INTENT(OUT)    :: YVEL(:, :)
             REAL, INTENT(IN), OPTIONAL :: ADJFAC(0:, 0:)
          END SUBROUTINE YADV_FWD
-         SUBROUTINE XADV_BWD(LGRID, ASTEP_L, LAYER, CON, XVEL, BCON_ADJ)
+         SUBROUTINE XADV_BWD(LGRID, ASTEP_L, LAYER, CON, XVEL, BCON_ADJ,
+     &     BNDY_ADJ)
             IMPLICIT NONE
             REAL, POINTER       :: LGRID(:, :, :, :)
             INTEGER, INTENT(IN) :: ASTEP_L
@@ -162,8 +172,10 @@ C Local Variables:
             REAL, INTENT(IN)    :: CON(:, :, :)
             REAL, INTENT(IN)    :: XVEL(:, :)
             REAL, INTENT(IN)    :: BCON_ADJ(:, :)
+            REAL, INTENT(OUT)   :: BNDY_ADJ(:, :)
          END SUBROUTINE XADV_BWD
-         SUBROUTINE YADV_BWD(LGRID, ASTEP_L, LAYER, CON, YVEL, BCON_ADJ)
+         SUBROUTINE YADV_BWD(LGRID, ASTEP_L, LAYER, CON, YVEL, BCON_ADJ,
+     &     BNDY_ADJ)
             IMPLICIT NONE
             REAL, POINTER       :: LGRID(:, :, :, :)
             INTEGER, INTENT(IN) :: ASTEP_L
@@ -171,6 +183,7 @@ C Local Variables:
             REAL, INTENT(IN)    :: CON(:, :, :)
             REAL, INTENT(IN)    :: YVEL(:, :)
             REAL, INTENT(IN)    :: BCON_ADJ(:, :)
+            REAL, INTENT(OUT)   :: BNDY_ADJ(:, :)
          END SUBROUTINE YADV_BWD
       END INTERFACE
 
@@ -219,15 +232,21 @@ C Note that advstep.F ensures that ASTEP_SEC is an integer divisor of SYNC
             IF ( ALLOCATED(ADV_CHK_Y) ) DEALLOCATE(ADV_CHK_Y)
             IF ( ALLOCATED(XVEL) ) DEALLOCATE(XVEL)
             IF ( ALLOCATED(YVEL) ) DEALLOCATE(YVEL)
+            IF ( ALLOCATED(BCPL) ) DEALLOCATE(BCPL)
+            IF ( ALLOCATED(SSDATE) ) DEALLOCATE(SSDATE)
+            IF ( ALLOCATED(SSTIME) ) DEALLOCATE(SSTIME)
             MX_NSS = NADVSS
             ALLOCATE(
      &           ADV_CHK_X(1-SWP:NCOLS+SWP, 1-SWP:NROWS+SWP, 1:N_SPC_ADV, 1:MX_NSS),
      &           ADV_CHK_Y(1-SWP:NCOLS+SWP, 1-SWP:NROWS+SWP, 1:N_SPC_ADV, 1:MX_NSS),
      &           XVEL(1:NCOLS+1, 1:NROWS, 1:MX_NSS),
      &           YVEL(1:NCOLS, 1:NROWS+1, 1:MX_NSS),
+     &           BCPL(1:NBNDY, 1:N_SPC_ADV, 1:MX_NSS),
+     &           SSDATE(1:MX_NSS),
+     &           SSTIME(1:MX_NSS),
      &           STAT = ALLOCSTAT)
             IF ( ALLOCSTAT .NE. 0 ) THEN
-               XMSG = 'Failure allocating ADV_CHK, XVEL, YVEL'
+               XMSG = 'Failure allocating ADV_CHK, XVEL, YVEL, BCPL'
                CALL M3EXIT(PNAME, JDATE, JTIME, XMSG, XSTAT1)
             END IF
          END IF
@@ -243,7 +262,13 @@ C Push XFIRST(LAYER) backward to end of backward synchronization step
          DO SS = 1, NADVSS      ! SUBSTEPS
             RHOJ_BSS(1:NCOLS, 1:NROWS) = CON(1:NCOLS, 1:NROWS, N_SPC_ADV)
 
-            CALL RDBCON(ADATE, ATIME, ASTEP_L, LAYER, BCON)
+C Keep this sub-step's own start time and boundary coupling factor for
+C ADJ_LGRID_BC. This replay calls RDBCON with exactly the times the forward
+C run used; the RDBCON_ADJ call in the backward loop below does not.
+            SSDATE(SS) = ADATE
+            SSTIME(SS) = ATIME
+            CALL RDBCON(ADATE, ATIME, ASTEP_L, LAYER, BCON,
+     &           BCPL(1:NBNDY, 1:N_SPC_ADV, SS))
 
             IF ( XFIRST_L ) THEN
                ADV_CHK_X(1-SWP:NCOLS+SWP, 1-SWP:NROWS+SWP, 1:N_SPC_ADV, SS) =
@@ -288,18 +313,25 @@ C Push XFIRST(LAYER) backward to end of backward synchronization step
             IF ( XFIRST_L ) THEN
                CALL XADV_BWD(LGRID, ASTEP_L, LAYER,
      &              ADV_CHK_X(1-SWP:NCOLS+SWP, 1:NROWS, 1:N_SPC_ADV, SS),
-     &              XVEL(1:NCOLS+1, 1:NROWS, SS), BCON_ADJ)
+     &              XVEL(1:NCOLS+1, 1:NROWS, SS), BCON_ADJ, BNDY_ADJ_X)
                CALL YADV_BWD(LGRID, ASTEP_L, LAYER,
      &              ADV_CHK_Y(1:NCOLS, 1-SWP:NROWS+SWP, 1:N_SPC_ADV, SS),
-     &              YVEL(1:NCOLS, 1:NROWS+1, SS), BCON_ADJ)
+     &              YVEL(1:NCOLS, 1:NROWS+1, SS), BCON_ADJ, BNDY_ADJ_Y)
             ELSE
                CALL YADV_BWD(LGRID, ASTEP_L, LAYER,
      &              ADV_CHK_Y(1:NCOLS, 1-SWP:NROWS+SWP, 1:N_SPC_ADV, SS),
-     &              YVEL(1:NCOLS, 1:NROWS+1, SS), BCON_ADJ)
+     &              YVEL(1:NCOLS, 1:NROWS+1, SS), BCON_ADJ, BNDY_ADJ_Y)
                CALL XADV_BWD(LGRID, ASTEP_L, LAYER,
      &              ADV_CHK_X(1-SWP:NCOLS+SWP, 1:NROWS, 1:N_SPC_ADV, SS),
-     &              XVEL(1:NCOLS+1, 1:NROWS, SS), BCON_ADJ)
+     &              XVEL(1:NCOLS+1, 1:NROWS, SS), BCON_ADJ, BNDY_ADJ_X)
             END IF
+
+C The x sweep fills the west and east perimeter slots, the y sweep the south
+C and north ones, and both sweeps of a sub-step read the same BCON
+            IF ( BC_SENS_ON )
+     &           CALL BC_SENS_ACCUM(BNDY_ADJ_X + BNDY_ADJ_Y,
+     &           BCPL(1:NBNDY, 1:N_SPC_ADV, SS),
+     &           SSDATE(SS), SSTIME(SS), ASTEP_L, LAYER)
 
             XFIRST_L = ( .NOT. XFIRST_L )
 
