@@ -1,6 +1,6 @@
 [project]
 name = "cmaq-adjoint"
-version = "2.1.0"
+version = "2.1.1.dev1"
 dependencies = []
 
 [tool.towncrier]
