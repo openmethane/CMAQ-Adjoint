@@ -19,6 +19,13 @@ of rst and use slightly different categories.
 
 <!-- towncrier release notes start -->
 
+## CMAQ Adjoint v2.1.0 (2026-10-28)
+
+### 🆕 Features
+
+- `ADJOINT_BWD` can now write the sensitivity of the cost function to the lateral boundary condition. Set `ADJ_LGRID_BC` to an output path to get a boundary file with the same structure, variables and time axis as the `BNDY_GASC_1` input, in `CF/ppmV`. Nothing is written if it is unset. See `docs/adj-lgrid-bc.md`. ([#33](https://github.com/openmethane/CMAQ-adjoint/issues/33))
+
+
 ## CMAQ Adjoint v2.0.1 (2026-09-01)
 
 ### 🎉 Improvements
