@@ -45,39 +45,8 @@ and configuration which will need to be provided.
 
 ## Development
 
-The Dockerfile utilises a multi-stage build pattern where first a `builder`
-image is configured with build tooling and project source code to compile the
-adjoint binaries (Dockerfile:1-32). However, the `builder` image isn't retained
-during the docker build process, making build failures hard to debug.
-
-To debug the `builder` image, use:
-
-```shell
-# build only the "builder" image and tag as "cmaq-adjoint-builder"
-docker build . --progress=plain --target builder -t cmaq-adjoint-builder
-
-# run an interactive bash terminal in the builder
-docker run -it --rm cmaq-adjoint-builder bash
-```
-
-The `builder` will include the source code, libraries and build artifacts in
-`/opt/cmaq`.
-
-## Testing
-
-A simple test script can be invoked with:
-
-```shell
-make test
-```
-
-This mounts the `tests` folder under `/opt/tests` and runs the script under
-`/opt/tests/test-run.sh`. The test script downloads a bundle of test data and
-a file describing necessary environment variables, and then runs the forward
-adjoint on this input.
-
-**Note:** this does **not** perform a numerical test, it simply ensures that
-the compiled binary will successfully run to completion on known inputs.
+See [docs/development.md](docs/development.md) for debugging the build,
+running the tests and how pull requests are reviewed.
 
 # Citations
 
