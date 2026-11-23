@@ -12,6 +12,7 @@ on:
       - 'docs/building.md'
       - 'scripts/**'
       - 'cmaq/**'
+      - 'tests/**'
       - 'Dockerfile'
       - '.github/workflows/native-build.yaml'
   push:
