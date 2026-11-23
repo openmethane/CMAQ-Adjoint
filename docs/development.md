@@ -4,23 +4,24 @@ For building and running the adjoint, see the [README](../README.md).
 
 ## Debugging the build
 
-The Dockerfile utilises a multi-stage build pattern where first a `builder`
-image is configured with build tooling and project source code to compile the
-adjoint binaries (Dockerfile:1-32). However, the `builder` image isn't retained
-during the docker build process, making build failures hard to debug.
-
-To debug the `builder` image, use:
+The Dockerfile is a multi-stage build. The `builder` stage installs
+`openmethane-cmaq-dev` into a clean `debian:trixie-slim` and compiles the
+adjoint binaries, but it isn't part of any exported target, so a compile
+failure leaves nothing to look at. To debug it, use:
 
 ```shell
-# build only the "builder" image and tag as "cmaq-adjoint-builder"
+# build only the "builder" stage and tag as "cmaq-adjoint-builder"
 docker build . --progress=plain --target builder -t cmaq-adjoint-builder
 
 # run an interactive bash terminal in the builder
 docker run -it --rm cmaq-adjoint-builder bash
 ```
 
-The `builder` will include the source code, libraries and build artifacts in
-`/opt/cmaq`.
+The sources are in `/opt/cmaq-adjoint/cmaq`, the build directories in
+`/opt/cmaq-adjoint/scripts`, and the binaries in `/opt/cmaq/bin`. To build
+against an unmerged `openmethane-cmaq-dev`, add
+`--build-context cmaq-dev=<directory holding the .deb>`. The steps are
+described in [building.md](building.md).
 
 ## Testing
 
@@ -30,10 +31,12 @@ A simple test script can be invoked with:
 make test
 ```
 
-This mounts the `tests` folder under `/opt/tests` and runs the script under
-`/opt/tests/test-run.sh`. The test script downloads a bundle of test data and
-a file describing necessary environment variables, and then runs the forward
-adjoint on this input.
+This builds the `test` stage, a clean `debian:trixie-slim` with only the
+package installed, which has already checked with `ldd` that every ELF file in
+the package finds its libraries. It then mounts the `tests` folder under
+`/opt/tests` and runs `/opt/tests/test-run.sh`, as CI does. The test script
+downloads a bundle of test data and a file describing necessary environment
+variables, and then runs the forward and backward adjoint on this input.
 
 **Note:** this does **not** perform a numerical test, it simply ensures that
 the compiled binary will successfully run to completion on known inputs.

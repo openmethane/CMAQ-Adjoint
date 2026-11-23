@@ -19,3 +19,6 @@ work
 
 # Test data is too large for the repo
 tests/test-data
+dist/
+scripts/BLD_*
+scripts/cfg.*

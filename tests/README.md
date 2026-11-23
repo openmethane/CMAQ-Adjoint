@@ -4,6 +4,12 @@ These tests check whether the adjoint binaries compile and run to completion
 on known inputs. They are smoke tests: they do not verify that the numbers
 coming out are correct.
 
+They run against the installed `openmethane-cmaq-adjoint` package. `make test`
+builds the Dockerfile's `test` stage, a clean `debian:trixie-slim` with only
+the package installed, and runs `tests/test-run.sh` in it. Building that stage
+runs `tests/check-libs.sh`, which prints the package's `Depends:` line and
+fails if `ldd` reports a missing library in any ELF file of the package.
+
 `tests/test-run.sh` runs six cases:
 
 - **001** — `ADJOINT_FWD`, single process. Checks normal completion.
@@ -78,7 +84,7 @@ emptiness check, not the completion check, is what catches it.
 To regenerate the file:
 
 ```shell
-# needs netCDF4, which the runtime image deliberately does not carry;
+# needs netCDF4, which the test image deliberately does not carry;
 # py4dvar's virtualenv has it
 /path/to/openmethane/.venv/bin/python tests/make-force-file.py \
     --template /path/to/openmethane/tests/test-data/templates/force_template.nc \

@@ -1,0 +1,26 @@
+name: Delete dev builds
+
+# Deletes the dev-pr<PR>-* pre-releases and their tags when a pull request closes
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Delete dev pre-releases of this pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          tags=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 200 --json tagName -q '.[].tagName')
+          # grep exits 1 when nothing matches, which is the usual case
+          for tag in $(grep -E "^dev-pr${PR}-" <<<"$tags" || [ $? -eq 1 ]); do
+            echo "Deleting $tag"
+            gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes
+          done

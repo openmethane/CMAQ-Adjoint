@@ -1,0 +1,62 @@
+name: Native build
+
+# Follows docs/building.md literally on a GitHub-hosted runner, with no
+# container. CMAQ's libraries and config.cmaq come from following CMAQ's own
+# docs/building.md at the version pinned in the Dockerfile. This keeps the
+# document true.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'docs/building.md'
+      - 'scripts/**'
+      - 'cmaq/**'
+      - 'Dockerfile'
+      - '.github/workflows/native-build.yaml'
+  push:
+    branches:
+      - 'main'
+  schedule:
+    - cron: '0 3 * * 1'
+
+jobs:
+  native-build:
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # The CMAQ version is kept in one place, the Dockerfile
+      - name: Read the pinned CMAQ version
+        id: cmaq
+        run: echo "version=$(sed -n 's/^ARG CMAQ_VERSION=//p' Dockerfile)" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout CMAQ
+        uses: actions/checkout@v4
+        with:
+          repository: openmethane/CMAQ
+          ref: v${{ steps.cmaq.outputs.version }}
+          path: cmaq-src
+
+      # CMAQ's libraries and config.cmaq, built as CMAQ's document says
+      - name: Follow CMAQ's docs/building.md
+        working-directory: cmaq-src
+        run: |
+          awk '/<!-- ci:run -->/{getline; if ($0 ~ /^```/) {inblock=1; next}} inblock && /^```/{inblock=0} inblock' docs/building.md > "$RUNNER_TEMP/cmaq-building.sh"
+          cat "$RUNNER_TEMP/cmaq-building.sh"
+          bash -euxo pipefail "$RUNNER_TEMP/cmaq-building.sh"
+
+      # This runs the commands in docs/building.md marked `<!-- ci:run -->`
+      - name: Follow docs/building.md
+        env:
+          CMAQ_CONFIG: ${{ github.workspace }}/cmaq-src/scripts/config.cmaq
+        run: |
+          awk '/<!-- ci:run -->/{getline; if ($0 ~ /^```/) {inblock=1; next}} inblock && /^```/{inblock=0} inblock' docs/building.md > "$RUNNER_TEMP/building.sh"
+          cat "$RUNNER_TEMP/building.sh"
+          bash -euxo pipefail "$RUNNER_TEMP/building.sh"
+
+      - name: Run tests
+        run: tests/test-run.sh
