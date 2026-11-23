@@ -59,5 +59,12 @@ jobs:
           cat "$RUNNER_TEMP/building.sh"
           bash -euxo pipefail "$RUNNER_TEMP/building.sh"
 
+      # distr_env.c crashes under mpirun when a variable has an empty value
+      # (https://github.com/openmethane/CMAQ-Adjoint/issues/38), and runners
+      # have some. Remove them for the tests until that's fixed.
       - name: Run tests
-        run: tests/test-run.sh
+        run: |
+          for name in $(env | sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)=$/\1/p'); do
+            unset "$name"
+          done
+          tests/test-run.sh
