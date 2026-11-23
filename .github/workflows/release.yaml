@@ -81,19 +81,51 @@ jobs:
           git commit -a -m "bump(pre-release): version $NEW_VERSION > $NEXT_VERSION"
           git push && git push --tags
 
+  # Builds the package from the tagged commit and tests it. The release
+  # is only created if this passes, so a release never exists without its package.
+  build-package:
+    name: Build and test package
+    needs: bump-version
+    uses: ./.github/workflows/build-package.yaml
+    with:
+      ref: v${{ needs.bump-version.outputs.release-version }}
+    permissions:
+      contents: read
+
   publish-release:
     name: Create release
     runs-on: ubuntu-latest
-    needs: bump-version
+    needs: [bump-version, build-package]
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
+      - name: Download package
+        uses: actions/download-artifact@v4
         with:
-          fetch-depth: 0
+          name: debs
+          path: dist
+
+      - name: Check the package version matches the tag
+        env:
+          TAG_VERSION: ${{ needs.bump-version.outputs.release-version }}
+        run: |
+          EXPECTED=$(sed -E 's/\.?(dev|a|b|rc)([0-9]+)/~\1\2/g' <<<"$TAG_VERSION")
+          for deb in dist/*.deb; do
+            [ "$(dpkg-deb -f "$deb" Version)" = "$EXPECTED" ] || { echo "$deb does not have version $EXPECTED"; exit 1; }
+          done
+          # GitHub turns ~ in asset names into ., so name the files that way
+          # before checksumming, and SHA256SUMS lists the names of the assets
+          for deb in dist/*.deb; do
+            [ "$deb" = "${deb//\~/.}" ] || mv "$deb" "${deb//\~/.}"
+          done
+          (cd dist && sha256sum *.deb > SHA256SUMS && cat SHA256SUMS)
 
       - name: Create release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ needs.bump-version.outputs.release-version }}
           body: ${{ needs.bump-version.outputs.release-notes }}
+          # a, b and rc versions are pre-releases
+          prerelease: ${{ contains(needs.bump-version.outputs.release-version, 'dev') || contains(needs.bump-version.outputs.release-version, 'a') || contains(needs.bump-version.outputs.release-version, 'b') || contains(needs.bump-version.outputs.release-version, 'rc') }}
+          files: |
+            dist/*.deb
+            dist/SHA256SUMS
           token: "${{ secrets.PAT }}"

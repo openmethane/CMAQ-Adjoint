@@ -15,17 +15,33 @@ set echo
 #             http://www.cmascenter.org/help_desk.cfm                 #
 # =================================================================== #
 
-#> Source the config.cmaq file to set the build environment
- source ./config.cmaq
+#> The build environment comes from config.cmaq, installed by the
+#> openmethane-cmaq-dev package (see docs/building.md). Override the location
+#> with CMAQ_CONFIG.
+ if ( ! $?CMAQ_CONFIG ) setenv CMAQ_CONFIG /opt/scripts/config.cmaq
+ if ( ! -f $CMAQ_CONFIG ) then
+    echo "   config.cmaq not found at $CMAQ_CONFIG"
+    echo "   Install openmethane-cmaq-dev or set CMAQ_CONFIG, see docs/building.md"
+    exit 1
+    endif
+ source $CMAQ_CONFIG
+
+#> The sources of this repository, which config.cmaq knows nothing about.
+#> Override the location with ADJOINT_SRC.
+ if ( ! $?ADJOINT_SRC ) setenv ADJOINT_SRC `cd $0:h/../cmaq && pwd`
 
 #===============================================================================
 
-## Check for M3MODEL and M3LIB settings:
- if ( ! -e $M3MODEL || ! -e $M3LIB ) then
-    echo "   $M3MODEL or $M3LIB directory not found"
+## Check for the sources and the libraries:
+ if ( ! -d $ADJOINT_SRC/CCTM || ! -d $ADJOINT_SRC/ICL ) then
+    echo "   $ADJOINT_SRC does not contain CCTM and ICL"
     exit 1
     endif
- echo "   Model archive path: $M3MODEL"
+ if ( ! -e $M3LIB ) then
+    echo "   $M3LIB directory not found"
+    exit 1
+    endif
+ echo "   Model source path: $ADJOINT_SRC"
  echo "         library path: $M3LIB"
 
 setenv BLD_OS Linux2
@@ -38,10 +54,10 @@ setenv BLD_OS Linux2
 #:#:#:#:#:#:#:#:#:#:#:# Begin User Input Section #:#:#:#:#:#:#:#:#:#:#:#
 
 #> user choices:
-set Project = ${M3MODEL}/${CMAQ_DIRNAME} #CCTM
-set GlobInc = $M3MODEL/ICL
+set Project = ${ADJOINT_SRC}/CCTM
+set GlobInc = $ADJOINT_SRC/ICL
 
-setenv REPOROOT $M3MODEL/${CMAQ_DIRNAME}
+setenv REPOROOT $ADJOINT_SRC/CCTM
 
 #> user choices: base working directory
 set Base = $cwd
@@ -209,7 +225,7 @@ set Blder = "$M3LIB/bldmake -verbose"
     cp -p ${STENEX_MOD}/se_*.mod ${STENEX_MOD}/swap_sandia.mod $Bld
     set LIB2 = "-L${PARIO_LIB}"
     set LIB3 =
-    set LIB4 = "-lmpich"
+    set LIB4 = "$mpi"
     set Str1 = (// Parallel / Include message passing definitions)
     set Str2 = (include SUBST_MPICH mpif.h;)
  else

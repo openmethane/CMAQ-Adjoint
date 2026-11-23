@@ -1,0 +1,93 @@
+name: Publish dev build
+
+# Run by hand on a pull request's branch:
+#   gh workflow run dev-build.yaml -R openmethane/CMAQ-Adjoint --ref <branch>
+#
+# Publishes the package as a GitHub pre-release tagged dev-pr<PR>-<sha7>, so
+# that a downstream pull request can pin their URL and checksum. The
+# pre-release is deleted when the pull request closes (dev-cleanup.yaml).
+
+on:
+  workflow_dispatch:
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      pr: ${{ steps.version.outputs.pr }}
+      sha7: ${{ steps.version.outputs.sha7 }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Determine version
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR=$(gh pr list --head "$GITHUB_REF_NAME" --state open --json number -q '.[0].number')
+          if [ -z "$PR" ]; then
+            echo "No open pull request for branch $GITHUB_REF_NAME"
+            exit 1
+          fi
+          SHA7=$(git rev-parse --short=7 HEAD)
+          # <next>~dev<N>+pr<PR>.g<sha7>, where <next> is the version the branch is heading for
+          BASE=$(scripts/debian-version.sh | sed -E 's/~dev[0-9]+$//')
+          echo "pr=$PR" >> $GITHUB_OUTPUT
+          echo "sha7=$SHA7" >> $GITHUB_OUTPUT
+          echo "version=${BASE}~dev${GITHUB_RUN_NUMBER}+pr${PR}.g${SHA7}" >> $GITHUB_OUTPUT
+
+  build:
+    needs: version
+    uses: ./.github/workflows/build-package.yaml
+    with:
+      version: ${{ needs.version.outputs.version }}
+    permissions:
+      contents: read
+
+  publish:
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: dev-pr${{ needs.version.outputs.pr }}-${{ needs.version.outputs.sha7 }}
+    steps:
+      - name: Download package
+        uses: actions/download-artifact@v4
+        with:
+          name: debs
+          path: dist
+      - name: Create pre-release
+        run: |
+          cd dist
+          # GitHub turns ~ in asset names into ., so name the files that way
+          # before checksumming, and SHA256SUMS lists the names of the assets
+          for deb in *.deb; do
+            [ "$deb" = "${deb//\~/.}" ] || mv "$deb" "${deb//\~/.}"
+          done
+          sha256sum *.deb > SHA256SUMS
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --prerelease --latest=false \
+            --title "Dev build of pull request #${{ needs.version.outputs.pr }} (${{ needs.version.outputs.sha7 }})" \
+            --notes "Development build, deleted when the pull request closes. Do not merge a pin to this." \
+            *.deb SHA256SUMS
+      - name: Write pins to the job summary
+        run: |
+          # GitHub may rewrite characters such as ~ and + in asset names, so
+          # read the real names and URLs back instead of building them
+          {
+            echo "## Pins for \`$TAG\`"
+            echo '```dockerfile'
+            gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets \
+              -q '.assets[] | select(.name | endswith(".deb")) | [.name, .url] | @tsv' \
+            | while IFS=$'\t' read -r name url; do
+                sum=$(gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern "$name" -O - | sha256sum | cut -d' ' -f1)
+                echo "ADD --checksum=sha256:$sum $url /"
+              done
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

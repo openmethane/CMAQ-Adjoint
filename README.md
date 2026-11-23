@@ -9,39 +9,92 @@ Colorado Boulder.
 Additional changes have been made to support CH4 modelling for the Open Methane
 project.
 
-## Build and run
+## Package
 
-The easiest way to run the CMAQ Adjoint is using
-[Docker](https://www.docker.com/get-started/).
+The adjoint is published as one Debian package, `openmethane-cmaq-adjoint`,
+attached to each [GitHub release](https://github.com/openmethane/CMAQ-Adjoint/releases)
+together with a `SHA256SUMS` file. It is built for Debian 13 (trixie), and its
+dependencies name trixie packages.
 
-To build the docker container, tagged `cmaq-adjoint`:
+| Package | Contents |
+| --- | --- |
+| `openmethane-cmaq-adjoint` | `/opt/cmaq/bin/ADJOINT_FWD` and `/opt/cmaq/bin/ADJOINT_BWD`. Depends on the libraries they link, which `dpkg-shlibdeps` generates, and `mpich` for `mpirun`. |
 
-```shell
-make build
+**Images are no longer published.** The last image is
+`ghcr.io/openmethane/cmaq-adjoint:2.1.0`, and it and earlier ones stay
+available. The `CMAQ_ADJOINT_VERSION` environment variable went with them:
+`dpkg-query -W openmethane-cmaq-adjoint` gives the installed version.
+
+### Installing
+
+Pin the package by URL and checksum, for example in a Dockerfile. In the file
+name of a pre-release, GitHub shows the `~` of the version as `.`, so
+`2.2.0~rc1` is `openmethane-cmaq-adjoint_2.2.0.rc1_amd64.deb`.
+
+```dockerfile
+FROM scratch AS cmaq-adjoint-deb
+ADD --checksum=sha256:<sum> https://github.com/openmethane/CMAQ-Adjoint/releases/download/v<ver>/openmethane-cmaq-adjoint_<ver>_amd64.deb /
+
+FROM debian:trixie-slim
+RUN --mount=type=bind,from=cmaq-adjoint-deb,target=/debs \
+    apt-get update && apt-get install -y /debs/*.deb
 ```
 
-Then run the adjoint in the container with:
+Then run the adjoint with:
 
 ```shell
 # run the fwd adjoint
-docker run -it --rm cmaq-adjoint /opt/cmaq/bin/ADJOINT_FWD
+/opt/cmaq/bin/ADJOINT_FWD
 
 # run the bwd adjoint
-docker run -it --rm cmaq-adjoint /opt/cmaq/bin/ADJOINT_BWD
+/opt/cmaq/bin/ADJOINT_BWD
 ```
 
 These binaries will need input data and a number of environment variables,
 which should be familiar to users of the adjoint.
 
-### Running without docker
+### Testing an unmerged change downstream
 
-This project uses [openmethane/CMAQ](https://github.com/openmethane/CMAQ) as
-the base docker image, which provides a build environment pre-configured for
-compiling and running CMAQ-based tools.
+Define the package as a named stage, as above, and install it from a bind
+mount on that stage. BuildKit lets a build replace a named stage with
+`--build-context <stage>=<source>`, without editing the Dockerfile.
 
-If you wish to build and run the forward and backward adjoint in a different
-environment, that repo provides a good reference for the packages, dependencies
-and configuration which will need to be provided.
+Locally, from the pull request's CI artifact `debs`:
+
+```shell
+# <branch> is this repository's pull request branch
+RUN_ID=$(gh run list -R openmethane/CMAQ-Adjoint --branch <branch> --workflow build.yaml \
+  --status success --limit 1 --json databaseId -q '.[0].databaseId')
+gh run download "$RUN_ID" -R openmethane/CMAQ-Adjoint -n debs -D debs/cmaq-adjoint
+docker build --build-context cmaq-adjoint-deb=./debs/cmaq-adjoint -t openmethane:dev .
+```
+
+In downstream CI, or in AWS, the package needs a public URL. Run the
+`Publish dev build` workflow on the pull request's branch:
+
+```shell
+gh workflow run dev-build.yaml -R openmethane/CMAQ-Adjoint --ref <branch>
+```
+
+It publishes a pre-release tagged `dev-pr<PR>-<sha7>` with the package, and
+writes the `ADD --checksum=…` line to the job summary. Pin that in the
+downstream pull request temporarily, and move the pin to a real release before
+it merges. The pre-release is deleted when this repository's pull request
+closes.
+
+This repository is also downstream of
+[openmethane/CMAQ](https://github.com/openmethane/CMAQ), whose
+`openmethane-cmaq-dev` package it builds against. To build against an unmerged
+one, download that pull request's `debs` artifact and build with
+`--build-context cmaq-dev=./debs/cmaq`. To run CI against it, pin a dev
+pre-release of CMAQ in the `Dockerfile`'s `CMAQ_DEV_URL` and `CMAQ_DEV_SHA256`.
+
+### Building
+
+`make build` builds the package in Docker and exports it to `dist/`, and
+`make test` installs it in a clean `debian:trixie-slim` and runs the tests. See
+[docs/building.md](docs/building.md) for the steps, and for building without
+Docker.
 
 ## Development
 

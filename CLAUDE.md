@@ -12,31 +12,28 @@ Fortran; there is no application-level Python/JS code, only build tooling.
 
 ## Commands
 
-All building and testing is done through Docker — there is no supported
-native build path in this repo (see "Building outside Docker" below).
+All building and testing is done through Docker, which is the supported
+build. Building outside Docker isn't supported, but `docs/building.md`
+documents it and a CI job follows that document.
 
 ```shell
-make build          # build the docker image, tagged `cmaq-adjoint` (linux/amd64)
-make build-aarch64   # same, for arm64
-make run             # build then run the container, mounting the repo at /opt/project
-make test             # build then run tests/test-run.sh inside the container
+make build          # build the Debian package, exported to dist/ (linux/amd64)
+make test           # install the package in a clean image and run tests/test-run.sh
 ```
 
-Run the compiled binaries directly:
-
-```shell
-docker run -it --rm cmaq-adjoint /opt/cmaq/bin/ADJOINT_FWD
-docker run -it --rm cmaq-adjoint /opt/cmaq/bin/ADJOINT_BWD
-```
+No image is published. The product is the `openmethane-cmaq-adjoint` Debian
+package, attached to each GitHub release, containing `/opt/cmaq/bin/ADJOINT_FWD`
+and `/opt/cmaq/bin/ADJOINT_BWD`.
 
 Both binaries require input data and environment variables set by the caller
-(not provided by this repo/image).
+(not provided by this repo/package).
 
 ### Debugging the build
 
-The Dockerfile is a multi-stage build; the `builder` stage (which has the
-compiled source, libraries and build artifacts under `/opt/cmaq`) is discarded
-in the final image, which makes compile failures hard to inspect. To debug:
+The Dockerfile is a multi-stage build; the `builder` stage (a clean
+`debian:trixie-slim` with `openmethane-cmaq-dev` installed, and the compiled
+source and build artifacts) isn't part of any exported target, which makes
+compile failures hard to inspect. To debug:
 
 ```shell
 docker build . --progress=plain --target builder -t cmaq-adjoint-builder
@@ -45,8 +42,11 @@ docker run -it --rm cmaq-adjoint-builder bash
 
 ### Testing
 
-`make test` (or the `Run tests` CI step) mounts `tests/` at `/opt/tests` and
-runs `/opt/tests/test-run.sh`, which:
+`make test` (or the `Run tests` CI step) builds the Dockerfile's `test` stage,
+mounts `tests/` at `/opt/tests` and runs `/opt/tests/test-run.sh`. Building
+that stage first installs the package into a clean `debian:trixie-slim` and
+runs `tests/check-libs.sh`, which fails if `ldd` finds a missing library in any
+ELF file of the package. `test-run.sh`:
 
 1. Downloads and caches a test data bundle (MCIP sample output + matching
    initial/boundary conditions) from the Open Methane public data store into
@@ -68,9 +68,13 @@ by `towncrier` from fragment files in `changelog/`, named `<PR#>.<type>.md`
 (`feature`/`improvement`/`fix`/`docs`/`deprecation`/`breaking`/`trivial` — see
 `changelog/README.md`). Releases are cut via the manual `release.yaml`
 GitHub Actions workflow (`workflow_dispatch`), which bumps the version,
-runs `towncrier build`, tags, creates a GitHub release, then bumps to the next
-`dev` pre-release version. Don't hand-edit `CHANGELOG.md` directly for a PR —
-add a fragment file instead.
+runs `towncrier build`, tags, builds and tests the package from the tag,
+creates a GitHub release with the `.deb` and `SHA256SUMS` attached, then bumps
+to the next `dev` pre-release version. The package version is the release
+version converted to a Debian version by `scripts/debian-version.sh`
+(`2.2.1.dev1` becomes `2.2.1~dev1`). `dev-build.yaml` publishes a pre-release
+from a pull request's branch for downstream testing (see the README). Don't
+hand-edit `CHANGELOG.md` directly for a PR — add a fragment file instead.
 
 ## Before opening a pull request
 
@@ -183,23 +187,29 @@ a `.f` file (`write3_bndy.f`), because the build's `-DWRITE3=PWRITE3` routes
 etc.) referenced by `INCLUDE SUBST_*` across the Fortran source, independent
 of the per-component module selection above.
 
-### Docker build pipeline
+### Build pipeline
 
-`Dockerfile` uses `ghcr.io/openmethane/cmaq:stable` (the
-[openmethane/CMAQ](https://github.com/openmethane/CMAQ) repo) as both the
-`builder` base and the final runtime base — that upstream repo is the
-reference for the underlying CMAQ build system (`config.cmaq`), and for the
-I/O API / netCDF / MPICH toolchain this project assumes is already present.
-The `builder` stage:
+The `Dockerfile` builds against `openmethane-cmaq-dev`, a Debian package from
+the [openmethane/CMAQ](https://github.com/openmethane/CMAQ) releases, pinned
+by version and checksum in the `CMAQ_VERSION` and `CMAQ_DEV_SHA256` build
+args. That package supplies the I/O API, PARIO, STENEX and `bldmake` under
+`/opt/lib`, and `config.cmaq` at `/opt/scripts/config.cmaq`; its `Depends:`
+brings the toolchain. Nothing else is taken from CMAQ. The bldit scripts say
+what they use:
 
-1. Installs build tooling (gfortran, mpich dev headers, netcdf dev headers, csh, m4).
-2. Copies `cmaq/` in as the CCTM model source tree.
-3. Runs `bldit.adjoint.fwd.openmethane` then `bldit.adjoint.bwd.openmethane`
-   to produce `/opt/cmaq/bin/ADJOINT_FWD` and `/opt/cmaq/bin/ADJOINT_BWD`.
+- they source `$CMAQ_CONFIG` (default `/opt/scripts/config.cmaq`) and exit
+  with a message if it's missing;
+- they take this repo's sources from `$ADJOINT_SRC` (default: this repo's
+  `cmaq/`), never from `M3MODEL`, so they aren't merged with CMAQ's;
+- they link the MPI library named by `config.cmaq`'s `mpi`.
 
-The final image copies only `/opt/cmaq/bin` out of the builder and installs
-just the runtime shared libs (`libnetcdff7`, `mpich`) — no compiler toolchain.
+Stages: `cmaq-dev` (the pinned `.deb`, replaceable with
+`--build-context cmaq-dev=<dir>`), `builder` (a clean `debian:trixie-slim`
+with it installed; one `RUN scripts/build.sh fwd|bwd` per binary), `package`
+(`scripts/build-deb.sh` over the two binaries, at the paths the build put
+them), `deb` (only the `.deb`, exported by `make build`) and `test`.
 
-CI (`.github/workflows/build_docker.yaml`) builds and pushes this image to
-`ghcr.io/openmethane/cmaq-adjoint` on pushes to `main`, on `v*` tags, and on
-PRs, and runs the same `tests/test-run.sh` smoke test against the built image.
+CI (`.github/workflows/build.yaml`, via `build-package.yaml`) builds and
+tests the package on pushes to `main` and on PRs, and uploads it as the
+`debs` artifact. Nothing is pushed to ghcr. `native-build.yaml` follows
+`docs/building.md` literally, with no container.
