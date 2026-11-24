@@ -19,6 +19,13 @@ of rst and use slightly different categories.
 
 <!-- towncrier release notes start -->
 
+## CMAQ Adjoint v2.2.0 (2026-11-24)
+
+### ⚠️ Breaking Changes
+
+- Stopped publishing the `ghcr.io/openmethane/cmaq-adjoint` image. The adjoint is now published as the Debian package `openmethane-cmaq-adjoint`, attached to each release: install it from the release instead. The last image is 2.1.0. ([#37](https://github.com/openmethane/CMAQ-adjoint/issues/37))
+
+
 ## CMAQ Adjoint v2.1.0 (2026-10-28)
 
 ### 🆕 Features
